@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  答案序号圆圈。尺寸由 PageNumberView.onMeasure 强制成正方形，
+  duplicateParentState 让它跟随 TabView 的选中态。
+-->
+<com.heikeji.phonesearch.ui.common.PageNumberView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/pageNumber"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:duplicateParentState="true" />

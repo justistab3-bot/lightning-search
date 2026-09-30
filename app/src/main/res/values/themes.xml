@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+      设计语言（参考 Claude 设计系统）：
+      - 暖羊皮纸底 + 象牙白卡片，不使用冷灰、不使用渐变
+      - 陶土色是唯一的高信号色，只用于主操作
+      - 标题用衬线体、正文用无衬线体，行高放宽
+      - 层次靠暖色表面差与 1px 暖描边，而不是重投影
+    -->
+    <style name="Theme.FlashSearch" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/terracotta</item>
+        <item name="colorOnPrimary">@color/ivory</item>
+        <item name="colorPrimaryContainer">@color/warm_sand</item>
+        <item name="colorOnPrimaryContainer">@color/charcoal_warm</item>
+        <item name="colorSecondary">@color/coral</item>
+        <item name="colorOnSecondary">@color/near_black</item>
+        <item name="colorError">@color/error_crimson</item>
+
+        <item name="colorSurface">@color/parchment</item>
+        <item name="colorOnSurface">@color/near_black</item>
+        <item name="colorSurfaceVariant">@color/ivory</item>
+        <item name="colorOnSurfaceVariant">@color/olive_gray</item>
+        <item name="colorSurfaceContainerLowest">@color/pure_white</item>
+        <item name="colorSurfaceContainerLow">@color/ivory</item>
+        <item name="colorSurfaceContainer">@color/ivory</item>
+        <item name="colorSurfaceContainerHigh">@color/warm_sand</item>
+        <item name="colorSurfaceContainerHighest">@color/warm_sand</item>
+        <item name="colorOutline">@color/ring_warm</item>
+        <item name="colorOutlineVariant">@color/border_cream</item>
+
+        <item name="android:colorBackground">@color/parchment</item>
+        <item name="android:windowBackground">@color/parchment</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
+
+    <!-- 相机 / 裁剪：暖炭色沉浸式 -->
+    <style name="Theme.FlashSearch.Camera" parent="Theme.FlashSearch">
+        <item name="android:windowBackground">@color/deep_dark</item>
+        <item name="android:colorBackground">@color/deep_dark</item>
+        <item name="colorSurface">@color/deep_dark</item>
+        <item name="colorOnSurface">@color/ivory</item>
+        <item name="colorSurfaceContainerLow">@color/dark_surface</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
+
+    <!-- 首页：暖底，浅色状态栏图标由头部承担 -->
+    <style name="Theme.FlashSearch.Home" parent="Theme.FlashSearch" />
+
+    <!-- ============================ 字体 ============================ -->
+
+    <!-- 衬线标题：单一字重（不做粗体），这是这套设计的关键约束 -->
+    <style name="TextAppearance.FlashSearch.Serif.Display" parent="TextAppearance.Material3.HeadlineMedium">
+        <item name="android:fontFamily">serif</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:textColor">@color/near_black</item>
+        <item name="android:letterSpacing">0</item>
+        <item name="android:lineSpacingMultiplier">1.15</item>
+        <item name="android:textFontWeight" tools:targetApi="28">500</item>
+    </style>
+
+    <style name="TextAppearance.FlashSearch.Serif.Title" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:fontFamily">serif</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:textColor">@color/near_black</item>
+        <item name="android:letterSpacing">0</item>
+        <item name="android:textFontWeight" tools:targetApi="28">500</item>
+    </style>
+
+    <style name="TextAppearance.FlashSearch.Serif.Section" parent="TextAppearance.Material3.TitleMedium">
+        <item name="android:fontFamily">serif</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:textColor">@color/near_black</item>
+        <item name="android:letterSpacing">0</item>
+        <item name="android:textFontWeight" tools:targetApi="28">500</item>
+    </style>
+
+    <!-- 正文：行高放宽到接近 1.6，偏阅读而不是仪表盘 -->
+    <style name="TextAppearance.FlashSearch.Body" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:lineSpacingMultiplier">1.5</item>
+        <item name="android:textColor">@color/olive_gray</item>
+    </style>
+
+    <style name="TextAppearance.FlashSearch.Caption" parent="TextAppearance.Material3.BodySmall">
+        <item name="android:lineSpacingMultiplier">1.4</item>
+        <item name="android:textColor">@color/stone_gray</item>
+    </style>
+
+    <!-- 小标签：加一点字距，保持小字号可读性 -->
+    <style name="TextAppearance.FlashSearch.Label" parent="TextAppearance.Material3.LabelMedium">
+        <item name="android:letterSpacing">0.06</item>
+        <item name="android:textColor">@color/stone_gray</item>
+    </style>
+
+    <!-- ============================ 按钮 ============================ -->
+
+    <!-- 主操作：陶土色，整套设计里唯一的高饱和色 -->
+    <style name="Widget.FlashSearch.PrimaryButton" parent="Widget.Material3.Button">
+        <item name="backgroundTint">@color/terracotta</item>
+        <item name="android:textColor">@color/ivory</item>
+        <item name="android:paddingTop">17dp</item>
+        <item name="android:paddingBottom">17dp</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:letterSpacing">0.01</item>
+        <item name="cornerRadius">14dp</item>
+        <item name="iconSize">20dp</item>
+        <item name="iconGravity">textStart</item>
+        <item name="iconPadding">10dp</item>
+        <item name="iconTint">@color/ivory</item>
+        <item name="elevation">0dp</item>
+        <item name="rippleColor">#33FFFFFF</item>
+    </style>
+
+    <!-- 次级：暖沙色 + 1px 暖描边（环形层次的近似） -->
+    <style name="Widget.FlashSearch.SecondaryButton" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="backgroundTint">@color/warm_sand</item>
+        <item name="android:textColor">@color/charcoal_warm</item>
+        <item name="strokeColor">@color/ring_warm</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="cornerRadius">12dp</item>
+        <item name="android:paddingTop">14dp</item>
+        <item name="android:paddingBottom">14dp</item>
+        <item name="android:textSize">15sp</item>
+        <item name="iconTint">@color/charcoal_warm</item>
+        <item name="elevation">0dp</item>
+    </style>
+
+    <!-- 文字按钮：低调，用于「退出登录」这类次要动作 -->
+    <style name="Widget.FlashSearch.TextButton" parent="Widget.Material3.Button.TextButton">
+        <item name="android:textColor">@color/olive_gray</item>
+        <item name="rippleColor">@color/warm_sand</item>
+        <item name="elevation">0dp</item>
+    </style>
+
+    <!--
+      圆形半透明图标按钮（相机控件用）。
+      必须用 ImageButton 能识别的属性——MaterialButton 的 iconTint/iconSize 套在
+      ImageButton 上不会生效，所以走 android:background + android:tint。
+    -->
+    <style name="Widget.FlashSearch.CircleButton" parent="">
+        <item name="android:background">@drawable/bg_circle_scrim</item>
+        <item name="android:tint">@color/white</item>
+        <item name="android:padding">12dp</item>
+        <item name="android:scaleType">fitCenter</item>
+        <item name="android:minWidth">48dp</item>
+        <item name="android:minHeight">48dp</item>
+    </style>
+
+    <!-- ============================ 容器 ============================ -->
+
+    <!-- 标准卡片：象牙白 + 1px 暖描边，不用重投影 -->
+    <style name="Widget.FlashSearch.Card" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardBackgroundColor">@color/ivory</item>
+        <item name="cardCornerRadius">16dp</item>
+        <item name="cardElevation">0dp</item>
+        <item name="strokeColor">@color/border_cream</item>
+        <item name="strokeWidth">1dp</item>
+    </style>
+
+    <!-- 大容器：更圆，用于首页主卡片 -->
+    <style name="Widget.FlashSearch.Card.Hero" parent="Widget.FlashSearch.Card">
+        <item name="cardCornerRadius">24dp</item>
+        <item name="cardElevation">2dp</item>
+    </style>
+</resources>

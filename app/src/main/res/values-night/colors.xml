@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 暗色主题：暖炭色表面，保持同样的暖色调 -->
+<resources>
+    <color name="parchment">#141413</color>
+    <color name="ivory">#30302E</color>
+    <color name="pure_white">#30302E</color>
+    <color name="warm_sand">#3D3D3A</color>
+    <color name="dark_surface">#30302E</color>
+    <color name="deep_dark">#0E0E0D</color>
+
+    <color name="near_black">#FAF9F5</color>
+    <color name="charcoal_warm">#E8E6DC</color>
+    <color name="olive_gray">#B0AEA5</color>
+    <color name="stone_gray">#87867F</color>
+    <color name="dark_warm">#D1CFC5</color>
+    <color name="warm_silver">#B0AEA5</color>
+
+    <color name="border_cream">#30302E</color>
+    <color name="border_warm">#3D3D3A</color>
+    <color name="border_dark">#3D3D3A</color>
+    <color name="ring_warm">#4D4C48</color>
+    <color name="ring_deep">#5E5D59</color>
+
+    <color name="terracotta">#D97757</color>
+    <color name="terracotta_pressed">#C96442</color>
+    <color name="coral">#E08A6B</color>
+
+    <color name="subject_math">#D97757</color>
+    <color name="subject_chinese">#8B9A6F</color>
+    <color name="subject_english">#7B8B9C</color>
+    <color name="subject_physics">#9A7CAE</color>
+    <color name="subject_chemistry">#6F9A8B</color>
+    <color name="subject_biology">#8BAE6F</color>
+    <color name="subject_history">#BA8B5F</color>
+    <color name="subject_geography">#7F9AAE</color>
+    <color name="subject_politics">#AE7C7C</color>
+    <color name="subject_default">#87867F</color>
+</resources>

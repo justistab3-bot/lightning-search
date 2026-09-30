@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">闪电搜题</string>
+    <string name="brand_tagline">拍一下，答案立刻出来 ⚡</string>
+
+    <!-- 首页 -->
+    <string name="home_greeting">%1$s，你好</string>
+    <string name="home_greeting_anonymous">已登录</string>
+    <string name="home_tip">对准题目拍一张，自动识别并给出答案与解析 📸</string>
+    <string name="action_take_photo">拍照搜题</string>
+    <string name="stats_today">今日搜题</string>
+    <string name="stats_total">累计搜题</string>
+    <string name="history_title">最近搜题</string>
+    <string name="history_empty">还没有搜题记录，拍一张试试 📷</string>
+    <string name="action_logout">退出登录</string>
+    <string name="logout_confirm_title">退出登录</string>
+    <string name="logout_confirm_message">将清除本机保存的登录会话与设备签名缓存。</string>
+    <string name="action_confirm">确定</string>
+
+    <!-- 相机 -->
+    <string name="camera_hint">把题目放进框内，保持清晰 🔍</string>
+    <string name="camera_flash">闪光灯</string>
+    <string name="camera_shutter">拍照</string>
+    <string name="camera_switch">切换镜头</string>
+    <string name="camera_flip">预览翻转（画面倒置时使用）</string>
+    <string name="camera_permission_denied">需要相机权限才能拍照搜题</string>
+    <string name="camera_failed">相机启动失败，请重试 😵</string>
+    <string name="camera_capture_failed">拍照失败：%1$s</string>
+
+    <!-- 裁剪 / 旋转 -->
+    <string name="crop_title">裁剪与旋转</string>
+    <string name="crop_hint">拖动框内平移，拖四角缩放；两角标可左右旋转 90° ✂️</string>
+    <string name="crop_rotate_left">左转 90 度</string>
+    <string name="crop_rotate_right">右转 90 度</string>
+    <string name="crop_too_small">裁剪区域太小，请重新调整</string>
+    <string name="action_use_photo">用这张搜题 ✅</string>
+
+    <!-- 结果页 -->
+    <string name="label_question_photo">你拍摄的题目图片</string>
+    <string name="action_collapse_photo">收起图片</string>
+    <string name="action_expand_photo">展开图片</string>
+    <string name="result_title_format">%1$s · 第 %2$d/%3$d 条</string>
+    <string name="result_title_plain">%1$s</string>
+    <string name="result_no_subject">搜题结果</string>
+    <string name="result_loading">正在搜题… 🔍</string>
+    <string name="action_cancel">取消</string>
+    <string name="action_retry">重试 🔄</string>
+    <string name="result_empty">没有匹配到答案，换一张更清晰的图片试试 🙈</string>
+    <string name="image_load_failed">图片加载失败 😢</string>
+
+    <!-- 登录 -->
+    <string name="login_title">登录闪电搜题 ⚡</string>
+    <string name="login_tab_sms">短信登录</string>
+    <string name="login_tab_password">密码登录</string>
+    <string name="login_hint_phone">手机号</string>
+    <string name="login_hint_code">短信验证码</string>
+    <string name="login_hint_password">密码</string>
+    <string name="action_send_code">获取验证码</string>
+    <string name="action_send_code_countdown">%1$d 秒后重发</string>
+    <string name="action_login">登录</string>
+    <string name="login_privacy_hint">登录即表示同意仅将账号用于本人合法授权范围内的搜题</string>
+
+    <!-- 验证页 -->
+    <string name="verification_title">安全验证</string>
+    <string name="verification_tip">请按页面提示完成验证，完成后会自动继续搜题 🔐</string>
+    <string name="verification_failed">验证未完成</string>
+
+    <!-- 通用 -->
+    <string name="action_answer_fullscreen">答案区全屏</string>
+    <string name="action_answer_exit_fullscreen">退出全屏</string>
+    <string name="camera_rotate_format">预览已旋转 %1$d°</string>
+    <string name="action_close">关闭</string>
+    <string name="error_image_failed">图片处理失败，请重新拍摄</string>
+</resources>

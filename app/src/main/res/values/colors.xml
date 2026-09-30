@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  暖色调中性色 + 陶土色品牌（参考 Claude 设计系统）。
+  刻意不使用冷灰、不使用渐变：层次靠暖色表面差与环形描边建立。
+-->
+<resources>
+    <!-- 品牌 -->
+    <color name="terracotta">#C96442</color>
+    <color name="terracotta_pressed">#B0563A</color>
+    <color name="coral">#D97757</color>
+    <color name="error_crimson">#B53333</color>
+    <color name="focus_blue">#3898EC</color>
+
+    <!-- 表面 -->
+    <color name="parchment">#F5F4ED</color>
+    <color name="ivory">#FAF9F5</color>
+    <color name="pure_white">#FFFFFF</color>
+    <color name="warm_sand">#E8E6DC</color>
+    <color name="dark_surface">#30302E</color>
+    <color name="deep_dark">#141413</color>
+
+    <!-- 文字 -->
+    <color name="near_black">#141413</color>
+    <color name="charcoal_warm">#4D4C48</color>
+    <color name="olive_gray">#5E5D59</color>
+    <color name="stone_gray">#87867F</color>
+    <color name="dark_warm">#3D3D3A</color>
+    <color name="warm_silver">#B0AEA5</color>
+
+    <!-- 描边 / 环形 -->
+    <color name="border_cream">#F0EEE6</color>
+    <color name="border_warm">#E8E6DC</color>
+    <color name="border_dark">#30302E</color>
+    <color name="ring_warm">#D1CFC5</color>
+    <color name="ring_deep">#C2C0B6</color>
+
+    <!-- 相机（沉浸深色） -->
+    <color name="camera_scrim">#66000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="black">#FF000000</color>
+
+    <!-- 学科标识色（低饱和、偏土质，与整体色调一致） -->
+    <color name="subject_math">#C96442</color>
+    <color name="subject_chinese">#6B7A4F</color>
+    <color name="subject_english">#5B6B7C</color>
+    <color name="subject_physics">#7A5C8E</color>
+    <color name="subject_chemistry">#4F7A6B</color>
+    <color name="subject_biology">#6B8E4F</color>
+    <color name="subject_history">#9A6B3F</color>
+    <color name="subject_geography">#5F7A8E</color>
+    <color name="subject_politics">#8E5C5C</color>
+    <color name="subject_default">#87867F</color>
+</resources>
