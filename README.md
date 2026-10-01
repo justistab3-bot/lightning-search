@@ -6,12 +6,12 @@
 
 <h2>原作者：<strong>yijia</strong></h2>
 
-<h3>本仓库是「腕上搜题」的<strong>手机端衍生实现</strong>，<strong>不是原创项目</strong>。</h3>
+<h3>本仓库是「腕上搜题」的<strong>手机端衍生实现</strong>。</h3>
 
 <p>
 <strong>协议设计、接口定义、加密与签名方案，以及全部业务逻辑，均出自原作者 yijia 的「腕上搜题」。</strong><br>
 <strong>本项目仅在其工作成果之上，做了 Android 手机端的重新实现与界面适配。</strong><br>
-<strong>相关著作权与署名权归原作者 yijia 所有。</strong>
+<strong>相关著作权与署名权归yijia 所有。</strong>
 </p>
 
 <p>
@@ -25,11 +25,8 @@
 
 # 闪电搜题（手机版）
 
-**本项目是「腕上搜题」（原作者 yijia）的手机端衍生实现，不是原创项目。**
-
-以 `watchsearch_api_full_chain_handoff.md` 为协议依据，在原项目的工作成果之上重新实现 Android 手机客户端。
-原手表版 `com.heikeji.watchsearch` 的反编译结果作为协议参考；客户端代码为手机端重写，
-**协议设计、加密与签名方案、业务逻辑的功劳均属于原作者 yijia**。
+**本项目是「腕上搜题」（原作者 yijia）的手机端衍生实现**
+**协议设计、加密与签名方案、业务逻辑的功劳均属于yijia**。
 
 - 应用名：**闪电搜题**
 - 包名：`com.heikeji.phonesearch`（与原手表版隔离，可共存）
@@ -264,23 +261,3 @@ $env:JAVA_HOME="D:\ansidio\jbr"
 - 实名信息（姓名、身份证号）不缓存、不落盘、不进日志。
 - 日志禁止出现：手机号/密码/验证码、KDUSS/CUID、signA/signB/deviceSecret/responseKey/sign、
   姓名/身份证号、validatedInfo、完整题目图片、Cookie。
-
-## 已知待验证项
-
-1. **真实网络链路尚未跑通验证**：需要可用账号完成短信/密码登录。
-   协议层（签名、RC4、DES、解码）有 34 个单元测试覆盖，但端到端需实账号确认。
-2. **密码登录端点** `loginv2`：反编译的 `P0.c` 只实现了短信登录，密码登录按
-   `{phone, password, idfa:"", yongsterStatus:"0"}` 的内层顺序复用通用加密 POST，需实测确认。
-3. **`app_zyb_identityCheck` 的参数名**：假设页面通过 `param.name` / `param.id` 传值，
-   缺失时回 404。若服务端用别的字段名需要调整。
-4. **原实现的 `m(html, cuid)` 预处理**：该方法在 JADX 合并类里无法按签名定位，
-   其图片地址规范化语义与渲染期的 `AnswerHtmlSanitizer` 一致，因此统一放到渲染期处理。
-5. 协议常量（`vc=1170` / `vcname=6.49.0` / `token` / `certificateDigest`）是版本绑定值，
-   服务端升级后需要整体更新 `ProtocolProfile`。
-
-## 与原交接文档的差异
-
-1. 文档 §10.1 说 `sid` 未保存到挑战对象 —— 实际 `P0.k(validatedInfo, sid)` 已传入，本实现同样保存 `sid`。
-2. 文档 §3.2 的 `identityIdV2` / `occupationType` 不在会话对象 `P0.l` 里，而是 `P0.c` 的实例状态。
-   本实现把它们随会话持久化，并在恢复会话时重新拉 `userinfov3` 回填（原版重启后会退化为 0）。
-3. 密码登录 `loginv2` 见上「已知待验证项 2」。
