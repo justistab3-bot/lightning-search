@@ -1,5 +1,8 @@
 # 版本记录
 
+> **原项目：腕上搜题 · 原作者：yijia**
+> 本仓库是其手机端衍生实现，协议设计与业务逻辑的著作权归原作者所有。详见 [README](README.md) 顶部声明。
+
 包名固定为 `com.heikeji.phonesearch`，`versionCode` 每轮 +1，归档产物在 `dist/`。
 
 归档命令：

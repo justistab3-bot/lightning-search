@@ -2,6 +2,21 @@ MIT License
 
 Copyright (c) 2026 justistab3-bot
 
+---------------------------------------------------------------------------
+原项目与原作者声明 / ATTRIBUTION
+
+本软件是「腕上搜题」的手机端衍生实现（derivative work）。
+
+    原项目：腕上搜题  (com.heikeji.watchsearch)
+    原作者：yijia
+
+协议设计、接口定义、加密与签名方案，以及全部业务逻辑，均出自原作者
+yijia 的「腕上搜题」，其著作权与署名权归原作者所有。本仓库仅在其工作
+成果之上做了 Android 手机端的重新实现与界面适配。
+
+使用、分发或二次开发本软件时，请一并注明原作者 yijia 与原项目「腕上搜题」。
+---------------------------------------------------------------------------
+
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
