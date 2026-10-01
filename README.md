@@ -87,6 +87,31 @@ pwsh -File tools/package-apk.ps1   # -> dist/闪电搜题-v<版本>.apk
 
 代码中不含任何真实账号、密码、会话或设备标识；协议常量与测试向量均来自公开的反编译分析。
 
+## 整页搜题
+
+首页可选**单题 / 整页**两种模式。整页模式对应原项目的 `/picsearch/submit/pagesearch`：
+
+```
+拍一整页 -> 保留原图临时文件 -> 最长边 2400 / 质量 92 上传
+  -> 解析 sid / picture / mainPageInfo+tids+locs+angles
+  -> 题块列表（每个题块可有多个候选答案）
+  -> 用户点原图框选一道题 -> 从原始文件区域解码 -> 最长边 1600 / 质量 92
+  -> /singlesearch，pageExtraInfo={wholeSearchSid,index,loc}，referer=3
+  -> 按 serviceIndex 缓存精搜结果
+```
+
+几个容易做错的点（都按交接文档实现）：
+
+| 点 | 做法 |
+|---|---|
+| 题块数 | 是 `max(mainPageInfo, tids, locs, angles)` 四个数组长度的最大值，不是 `mainPageInfo.length` |
+| `pageExtraInfo.index` | 用服务端的 **serviceIndex**，不是客户端列表位置——两者不能合并 |
+| `loc` | 是框选在整页图片坐标系下的 **包围矩形**（`left@top@right@bottom`），不是 8 点原始串；用 `Float.toString` 序列化所以带 `.0` |
+| 裁剪来源 | 必须从**原始文件**区域解码（`BitmapRegionDecoder`），不能从 900px 预览图二次裁剪 |
+| EXIF 逆映射 | 正向矩阵与「预览怎么摆正的」共用同一份定义，取逆把归一化框选映射回原图坐标 |
+| 定位可用性 | 服务端图片尺寸 == 上传 JPEG 尺寸、`rotateAngle == 0`、`dealInfo` 全 0，缺一不可；不可用时答案照常显示，只是没有定位框 |
+| 单块失败 | 只写进该题块的 warning，不影响其他题块 |
+
 ## 设计语言
 
 参考 Claude 设计系统，刻意避开"AI 产品"那套冷色 + 渐变 + 霓虹：

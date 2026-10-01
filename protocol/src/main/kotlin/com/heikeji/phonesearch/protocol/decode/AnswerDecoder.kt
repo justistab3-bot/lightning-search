@@ -53,6 +53,9 @@ object AnswerDecoder {
         val trimmed = raw.trim()
         if (trimmed.startsWith(ProtocolProfile.ANSWER_PLAINTEXT_JSON_PREFIX)) return trimmed
 
+        // 整页响应可能直接返回候选答案数组（1.1.1 新增形态）。
+        if (trimmed.startsWith(ProtocolProfile.ANSWER_PLAINTEXT_JSON_ARRAY_PREFIX)) return trimmed
+
         val lower = trimmed.lowercase()
         if (lower.startsWith(ProtocolProfile.ANSWER_PLAINTEXT_HTML_PREFIX) ||
             lower.startsWith(ProtocolProfile.ANSWER_PLAINTEXT_HTML2_PREFIX)

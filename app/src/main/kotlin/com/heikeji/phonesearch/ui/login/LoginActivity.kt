@@ -13,6 +13,7 @@ import com.heikeji.phonesearch.ui.common.applySystemBarPadding
 import com.heikeji.phonesearch.ui.common.displayMessage
 import com.heikeji.phonesearch.ui.common.showMessage
 import com.heikeji.phonesearch.ui.home.HomeActivity
+import com.heikeji.phonesearch.ui.notice.UsageNotice
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -39,6 +40,15 @@ class LoginActivity : AppCompatActivity() {
         setContentView(binding.root)
         binding.root.applySystemBarPadding(horizontal = true)
 
+        // 首次启动先给出使用边界说明，未接受就不进入应用。
+        UsageNotice.ensureAccepted(
+            activity = this,
+            onAccepted = { startLoginFlow() },
+            onDeclined = { finish() },
+        )
+    }
+
+    private fun startLoginFlow() {
         if (container.sessions.current() != null) {
             leaveAfterLogin()
             return

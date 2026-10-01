@@ -4,18 +4,23 @@ import com.heikeji.phonesearch.net.ApiClient
 import com.heikeji.phonesearch.net.ApiException
 import com.heikeji.phonesearch.net.ProtocolContext
 import com.heikeji.phonesearch.protocol.ProtocolException
+import com.heikeji.phonesearch.protocol.codec.PageExtraInfo
 import com.heikeji.phonesearch.protocol.decode.AnswerDecoder
 import com.heikeji.phonesearch.protocol.model.AnswerItem
+import com.heikeji.phonesearch.protocol.model.PageSearchResult
 import com.heikeji.phonesearch.protocol.model.SearchChallenge
+import com.heikeji.phonesearch.protocol.model.SearchMode
 import com.heikeji.phonesearch.protocol.model.SearchResult
 import com.heikeji.phonesearch.protocol.parse.AnswerParser
+import com.heikeji.phonesearch.protocol.parse.PageSearchParser
 import org.json.JSONObject
 import java.util.UUID
 
 /**
  * 搜题编排：请求 -> （可能的验证挑战）-> 解码 -> 解析。
  *
- * 解码与解析逻辑对应原 O0.a 的 case 2。
+ * 三种模式共用一套挑战机制，挑战会保存**完整 [SearchTask]**，
+ * 验证成功后按原模式恢复，不会把整页/框选降级成普通单题。
  */
 class SearchRepository(
     private val apiClient: ApiClient,
@@ -23,35 +28,129 @@ class SearchRepository(
     private val challenges: SearchChallengeStore,
 ) {
 
-    /** 发起搜题。若服务端要求验证，抛出 [com.heikeji.phonesearch.net.SearchChallengeException] 并已存好挑战。 */
-    fun search(jpeg: ByteArray, grade: Int, kduss: String): SearchResult {
+    // ------------------------------------------------------------------ 单题 / 框选
+
+    /**
+     * 普通单题或框选精搜。
+     *
+     * 框选时若整页关联信息可用，会发送 `referer=3` 与 `pageExtraInfo={wholeSearchSid,index,loc}`；
+     * 否则**自动退化为普通单题参数**（`referer=1`、空 pageExtraInfo）。
+     */
+    fun search(task: SearchTask, grade: Int): SearchResult {
+        val pageExtraInfo = pageExtraInfoOf(task)
+        val effectiveMode = if (task.requestMode == SearchMode.CROP_SINGLE &&
+            pageExtraInfo.isEmpty()
+        ) {
+            SearchMode.SINGLE
+        } else {
+            task.requestMode
+        }
+
         val data = try {
-            apiClient.searchRaw(jpeg, grade)
+            apiClient.searchRaw(task.uploadJpeg, grade, effectiveMode, pageExtraInfo)
         } catch (e: com.heikeji.phonesearch.net.SearchChallengeException) {
-            challenges.put(
-                SearchChallenge(
-                    localToken = UUID.randomUUID().toString(),
-                    validatedInfo = e.validatedInfo,
-                    sid = e.sid,
-                    originalJpeg = jpeg,
-                    kdussSnapshot = kduss,
-                ),
-            )
+            rememberChallenge(e, task)
             throw e
         }
-        return parse(data)
+        return parseSingle(data, task.uploadJpeg)
     }
 
-    /** 验证完成后再用同一张图重试。 */
-    fun retryAfterVerification(jpeg: ByteArray, grade: Int, kduss: String): SearchResult {
-        challenges.clear()
-        return search(jpeg, grade, kduss)
+    // ------------------------------------------------------------------ 整页
+
+    /** 整页搜题：返回题块与候选答案。 */
+    fun searchPage(task: SearchTask, grade: Int): PageSearchResult {
+        val data = try {
+            apiClient.searchRaw(task.uploadJpeg, grade, SearchMode.PAGE)
+        } catch (e: com.heikeji.phonesearch.net.SearchChallengeException) {
+            rememberChallenge(e, task)
+            throw e
+        }
+        return try {
+            PageSearchParser.parseJson(
+                dataJson = data.toString(),
+                uploadWidth = task.uploadWidth,
+                uploadHeight = task.uploadHeight,
+                responseKey = protocol.responseKey(),
+            )
+        } catch (e: ProtocolException) {
+            throw ApiException(e.message ?: "整页结果无法解析", 0, e)
+        }
     }
 
-    /** 是否存在尚未完成的验证挑战（登录中断后据此决定是否续跑原题）。 */
+    // ------------------------------------------------------------------ 挑战
+
     fun hasPendingChallenge(): Boolean = challenges.peek() != null
 
-    private fun parse(data: JSONObject): SearchResult {
+    fun pendingTask(): SearchTask? = challenges.peek()?.task
+
+    fun clearChallenge() {
+        challenges.clear()
+    }
+
+    /**
+     * 验证完成后按**原模式**恢复。
+     *
+     * 调用方必须先核对任务未过期（generation / 图片 / KDUSS / UID）。
+     */
+    fun retryAfterVerification(task: SearchTask, grade: Int): SearchOutcome {
+        challenges.clear()
+        return when (task.requestMode) {
+            SearchMode.PAGE -> SearchOutcome.Page(searchPage(task, grade))
+            else -> SearchOutcome.Single(search(task, grade))
+        }
+    }
+
+    /** 验证成功后的恢复结果，按模式区分。 */
+    sealed interface SearchOutcome {
+        data class Single(val result: SearchResult) : SearchOutcome
+        data class Page(val result: PageSearchResult) : SearchOutcome
+    }
+
+    private fun rememberChallenge(
+        e: com.heikeji.phonesearch.net.SearchChallengeException,
+        task: SearchTask,
+    ) {
+        challenges.put(
+            SearchChallenge(
+                localToken = UUID.randomUUID().toString(),
+                validatedInfo = e.validatedInfo,
+                sid = e.sid,
+                originalJpeg = task.uploadJpeg,
+                kdussSnapshot = task.kdussSnapshot,
+            ),
+            task,
+        )
+    }
+
+    // ------------------------------------------------------------------ 内部
+
+    /**
+     * 构造框选关联信息。
+     *
+     * `index` 用 serviceIndex；`loc` 是框选在整页响应图片坐标系下的包围矩形，
+     * 用 `Float.toString` 序列化（所以带 `.0`）。
+     */
+    private fun pageExtraInfoOf(task: SearchTask): String {
+        if (task.requestMode != SearchMode.CROP_SINGLE) return ""
+        if (!task.hasPageLink) return ""
+        val rect = task.selectedRectNormalized ?: return ""
+        if (rect.size != 4) return ""
+        if (task.uploadWidth < 1 || task.uploadHeight < 1) return ""
+
+        val left = Math.round(rect[0] * task.uploadWidth)
+        val top = Math.round(rect[1] * task.uploadHeight)
+        val right = Math.round(rect[2] * task.uploadWidth)
+        val bottom = Math.round(rect[3] * task.uploadHeight)
+        if (right - left < 1 || bottom - top < 1) return ""
+
+        return PageExtraInfo.build(
+            wholeSearchSid = task.wholeSearchSid,
+            serviceIndex = task.serviceBlockIndex,
+            loc = PageExtraInfo.formatLoc(left, top, right, bottom),
+        )
+    }
+
+    private fun parseSingle(data: JSONObject, uploadJpeg: ByteArray): SearchResult {
         val answers = data.optJSONObject("answers")
             ?: throw ApiException("搜索响应缺少 answers，无法读取题目")
         val mainPageInfo = answers.optJSONArray("mainPageInfo")

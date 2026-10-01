@@ -70,9 +70,24 @@ object ProtocolProfile {
     const val PATH_PASSWORD_LOGIN = "/session/submit/loginv2"
     const val PATH_USER_INFO = "/kdcore/user/userinfov3"
     const val PATH_SEARCH = "/picsearch/submit/singlesearch"
+    /** 整页搜题（1.1.1 新增）。 */
+    const val PATH_PAGE_SEARCH = "/picsearch/submit/pagesearch"
     const val PATH_CHECK_IDENTITY = "/resourceserver/checkidentity"
     const val PATH_VERIFICATION =
         "/static/hy/fe-paisou-vue/anti-grabbing-verification.html"
+
+    // ---- 搜题业务参数 ----
+    /** 普通单题首次搜索。 */
+    const val SEARCH_REFERER_SINGLE = "1"
+    /** 由整页题块框选触发的精搜。 */
+    const val SEARCH_REFERER_CROP = "3"
+    /** 整页搜题。 */
+    const val SEARCH_REFERER_PAGE = "home"
+    const val SEARCH_SHUMEI = ""
+    const val SEARCH_REF = "1"
+    const val SEARCH_IMG_CORRECTION = "0"
+    const val SEARCH_IS_STUDENT_MODE = "1"
+    const val SEARCH_FROM = "homePage"
 
     // ---- HTTP 行为 ----
     const val CONNECT_TIMEOUT_MS = 15_000
@@ -101,8 +116,37 @@ object ProtocolProfile {
     // ---- 图片 ----
     const val IMAGE_MAX_INPUT_BYTES = 24 * 1024 * 1024
     const val IMAGE_DECODE_MAX_EDGE = 2048
+
+    /** 普通单题：最长边 1600 / 质量 88。 */
     const val IMAGE_OUTPUT_MAX_EDGE = 1600
     const val IMAGE_JPEG_QUALITY = 88
+
+    /** 整页搜题：保留更多分辨率，便于服务端返回可靠题框。 */
+    const val IMAGE_PAGE_OUTPUT_MAX_EDGE = 2400
+    const val IMAGE_PAGE_JPEG_QUALITY = 92
+
+    /** 框选裁剪后精搜。 */
+    const val IMAGE_CROP_OUTPUT_MAX_EDGE = 1600
+    const val IMAGE_CROP_JPEG_QUALITY = 92
+
+    /** 原图预览最长边。 */
+    const val IMAGE_PREVIEW_MAX_EDGE = 900
+
+    // ---- 整页题框 ----
+    const val LOC_SEPARATOR = "@"
+
+    /** `locs[i]` 必须是 8 个坐标。 */
+    const val LOC_POINT_COUNT = 8
+
+    /** 图片宽高与坐标的合法上界。 */
+    const val LOC_MAX_COORDINATE = 100_000
+
+    /** `angles[i]` 的闭区间。 */
+    const val QUAD_ANGLE_MIN = -360
+    const val QUAD_ANGLE_MAX = 360
+
+    /** 没有服务端题框时，框选的默认归一化区域（面向用户所见图片）。 */
+    val QUAD_DEFAULT_RECT = floatArrayOf(0.08f, 0.25f, 0.92f, 0.75f)
 
     /** 允许从 http 升级到 https 的图片域名。 */
     const val IMAGE_HTTPS_HOST_REGEX =
@@ -110,6 +154,11 @@ object ProtocolProfile {
 
     // ---- 答案解码 ----
     const val ANSWER_PLAINTEXT_JSON_PREFIX = "{"
+    /**
+     * 整页响应里 `mainPageInfo[i]` 解码后可能是候选答案数组（1.1.1 新增形态）。
+     * Base64 字母表不含 `[`，所以把它当明文标记是安全的。
+     */
+    const val ANSWER_PLAINTEXT_JSON_ARRAY_PREFIX = "["
     const val ANSWER_PLAINTEXT_HTML_PREFIX = "<!doctype html"
     const val ANSWER_PLAINTEXT_HTML2_PREFIX = "<html"
 }

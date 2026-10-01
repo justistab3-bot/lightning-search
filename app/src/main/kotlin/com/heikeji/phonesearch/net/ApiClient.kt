@@ -8,6 +8,7 @@ import com.heikeji.phonesearch.protocol.codec.UrlForm
 import com.heikeji.phonesearch.protocol.crypto.Digests
 import com.heikeji.phonesearch.protocol.crypto.Rc4
 import com.heikeji.phonesearch.protocol.model.AccountSession
+import com.heikeji.phonesearch.protocol.model.SearchMode
 import com.heikeji.phonesearch.protocol.sign.RequestSigner
 import org.json.JSONArray
 import org.json.JSONException
@@ -77,9 +78,19 @@ class ApiClient(
     /**
      * 发起图片搜题，返回响应 data 对象。
      *
+     * 三种模式（原 `O0.l.f686a`）：
+     * - [SearchMode.SINGLE]：普通单题，`referer=1`，`pageExtraInfo` 为空
+     * - [SearchMode.PAGE]：整页搜题，`referer=home`，`imgCorrection=0`，**不发送 pageExtraInfo**
+     * - [SearchMode.CROP_SINGLE]：框选重搜，`referer=3`，携带 `{wholeSearchSid,index,loc}`
+     *
      * 若 data 含非空 validatedInfo，抛 [SearchChallengeException]，由上层走官方验证页后重试。
      */
-    fun searchRaw(jpeg: ByteArray, grade: Int): JSONObject {
+    fun searchRaw(
+        jpeg: ByteArray,
+        grade: Int,
+        mode: SearchMode,
+        pageExtraInfo: String = "",
+    ): JSONObject {
         if (jpeg.size < 4) throw ApiException("请选择或拍摄一张清晰题目图片")
         if ((jpeg[0].toInt() and 0xFF) != 0xFF || (jpeg[1].toInt() and 0xFF) != 0xD8) {
             throw ApiException("上传图片必须先转换为 JPEG")
@@ -87,15 +98,34 @@ class ApiClient(
 
         val params = LinkedHashMap<String, String?>()
         params["picMD5"] = Digests.md5Upper(jpeg)
-        params["shumei"] = ""
-        params["ref"] = "1"
-        params["pageExtraInfo"] = ""
-        params["referer"] = "1"
-        params["isStudentMode"] = "1"
-        params["grade"] = grade.toString()
-        params["from"] = "homePage"
+        params["shumei"] = ProtocolProfile.SEARCH_SHUMEI
+        params["ref"] = ProtocolProfile.SEARCH_REF
+        when (mode) {
+            SearchMode.PAGE -> {
+                params["referer"] = ProtocolProfile.SEARCH_REFERER_PAGE
+                params["imgCorrection"] = ProtocolProfile.SEARCH_IMG_CORRECTION
+            }
 
-        val data = post(ProtocolProfile.HOST_KDDZY, ProtocolProfile.PATH_SEARCH, params, jpeg, null)
+            SearchMode.CROP_SINGLE -> {
+                params["pageExtraInfo"] = pageExtraInfo
+                params["referer"] = ProtocolProfile.SEARCH_REFERER_CROP
+            }
+
+            SearchMode.SINGLE -> {
+                params["pageExtraInfo"] = ""
+                params["referer"] = ProtocolProfile.SEARCH_REFERER_SINGLE
+            }
+        }
+        params["isStudentMode"] = ProtocolProfile.SEARCH_IS_STUDENT_MODE
+        params["grade"] = grade.toString()
+        params["from"] = ProtocolProfile.SEARCH_FROM
+
+        val path = if (mode == SearchMode.PAGE) {
+            ProtocolProfile.PATH_PAGE_SEARCH
+        } else {
+            ProtocolProfile.PATH_SEARCH
+        }
+        val data = post(ProtocolProfile.HOST_KDDZY, path, params, jpeg, null)
         val validatedInfo = data.optString("validatedInfo", "")
         if (validatedInfo.isNotEmpty()) {
             throw SearchChallengeException(validatedInfo, data.optString("sid", ""))
@@ -296,9 +326,9 @@ class ApiClient(
         val result = transport.post(host, path, body, contentType, cookie)
         protocol.calibrate(result.dateMillis)
 
-        if (result.statusCode in 200..299) return unwrap(result.body)
+        if (result.statusCode in 200..299) return unwrap(result.body, kduss)
 
-        if (result.statusCode == 401 && hadKduss) sessions.clear()
+        if (result.statusCode == 401 && hadKduss) sessions.clearIfCurrent(kduss)
         val message = if (result.statusCode == 401 && hadKduss) {
             "登录已失效，请重新登录"
         } else {
@@ -308,7 +338,7 @@ class ApiClient(
     }
 
     /** 响应外壳（原 P0.c.h）。 */
-    private fun unwrap(body: String): JSONObject {
+    private fun unwrap(body: String, kduss: String): JSONObject {
         val json = try {
             JSONObject(body)
         } catch (e: JSONException) {
@@ -320,7 +350,7 @@ class ApiClient(
             json.optInt("errno", -1)
         }
         if (errNo != 0) {
-            if (errNo == 3) sessions.clear()
+            if (errNo == 3) sessions.clearIfCurrent(kduss)
             throw ApiException(json.optString("errstr", "服务器拒绝请求（$errNo）"), errNo)
         }
         val data = json.opt("data")

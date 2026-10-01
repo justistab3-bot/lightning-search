@@ -73,8 +73,7 @@ class ResultActivity : AppCompatActivity(), AnswerScrollHost, AnswerImageHost {
         ActivityResultContracts.StartActivityForResult(),
     ) { activityResult ->
         when (activityResult.resultCode) {
-            VerificationActivity.RESULT_VERIFIED ->
-                viewModel.retryAfterVerification(jpegBytes, grade())
+            VerificationActivity.RESULT_VERIFIED -> viewModel.retryAfterVerification(grade())
 
             VerificationActivity.RESULT_NEED_LOGIN -> launchLogin()
 
@@ -86,7 +85,7 @@ class ResultActivity : AppCompatActivity(), AnswerScrollHost, AnswerImageHost {
         ActivityResultContracts.StartActivityForResult(),
     ) {
         if (appContainer.sessions.current() != null) {
-            viewModel.resumeAfterLogin(jpegBytes, grade())
+            viewModel.resumeAfterLogin(grade())
         } else {
             finish()
         }

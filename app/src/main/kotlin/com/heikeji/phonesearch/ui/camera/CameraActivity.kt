@@ -3,6 +3,7 @@ package com.heikeji.phonesearch.ui.camera
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.content.Intent
 import android.hardware.display.DisplayManager
 import android.os.Bundle
 import android.view.Surface
@@ -17,9 +18,11 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import com.heikeji.phonesearch.R
 import com.heikeji.phonesearch.databinding.ActivityCameraBinding
+import com.heikeji.phonesearch.protocol.model.SearchMode
 import com.heikeji.phonesearch.ui.common.applySystemBarPadding
 import com.heikeji.phonesearch.ui.common.showMessage
 import com.heikeji.phonesearch.ui.crop.CropActivity
+import com.heikeji.phonesearch.ui.page.PageResultActivity
 import java.io.File
 import java.util.UUID
 import kotlin.math.max
@@ -46,6 +49,7 @@ class CameraActivity : AppCompatActivity() {
     private var imageCapture: ImageCapture? = null
     private var flashMode = ImageCapture.FLASH_MODE_AUTO
     private var previewRotation = DEFAULT_ROTATION
+    private var sourceMode = SearchMode.SINGLE
 
     private val prefs by lazy { getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE) }
 
@@ -77,6 +81,9 @@ class CameraActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityCameraBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        sourceMode = SearchMode.fromWire(intent.getIntExtra(EXTRA_MODE, SearchMode.SINGLE.wireValue))
+            ?: SearchMode.SINGLE
 
         binding.topBar.applySystemBarPadding(top = true, bottom = false, horizontal = true)
         binding.bottomBar.applySystemBarPadding(top = false, bottom = true, horizontal = true)
@@ -267,14 +274,19 @@ class CameraActivity : AppCompatActivity() {
         )
     }
 
-    private companion object {
-        const val PREFS_NAME = "camera_prefs"
-        const val KEY_ROTATION = "preview_rotation"
+    companion object {
+        private const val PREFS_NAME = "camera_prefs"
+        private const val KEY_ROTATION = "preview_rotation"
+        private const val EXTRA_MODE = "source_mode"
 
         /**
          * 默认旋转 180°：实测本机预览需要额外转 180° 才是正的（HAL 上报的传感器方向有偏差）。
          * 用户仍可用翻转按钮调整，调整后会覆盖这个默认值。
          */
-        const val DEFAULT_ROTATION = 180
+        private const val DEFAULT_ROTATION = 180
+
+        fun newIntent(context: Context, mode: SearchMode): Intent =
+            Intent(context, CameraActivity::class.java)
+                .putExtra(EXTRA_MODE, mode.wireValue)
     }
 }

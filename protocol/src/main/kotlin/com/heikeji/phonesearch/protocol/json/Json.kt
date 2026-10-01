@@ -33,6 +33,17 @@ object Json {
             null
         }
     }
+
+    /** 容错解析数组：失败返回 null。 */
+    fun tryParseArray(text: String?): JsonArray? {
+        if (text.isNullOrBlank()) return null
+        return try {
+            val element = JsonParser.parseString(text)
+            if (element.isJsonArray) element.asJsonArray else null
+        } catch (e: RuntimeException) {
+            null
+        }
+    }
 }
 
 /** 对应 `optString(name, "")`。 */

@@ -57,6 +57,19 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
+        <!-- 整页搜题：题块列表 + 候选答案 -->
+        <activity
+            android:name=".ui.page.PageResultActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- 框选一道题：缩放平移 + 拖动框角 -->
+        <activity
+            android:name=".ui.page.SelectImageActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:exported="false"
+            android:theme="@style/Theme.FlashSearch.Camera" />
+
         <activity
             android:name=".ui.verification.VerificationActivity"
             android:exported="false"

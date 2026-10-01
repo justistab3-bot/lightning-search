@@ -64,6 +64,31 @@
     <string name="verification_title">安全验证</string>
     <string name="verification_tip">请按页面提示完成验证，完成后会自动继续搜题 🔐</string>
     <string name="verification_failed">验证未完成</string>
+    <!-- 整页搜题 -->
+    <string name="mode_single">单题</string>
+    <string name="mode_page">整页</string>
+    <string name="mode_hint_single">拍一道题，直接出答案</string>
+    <string name="mode_hint_page">拍一整页，识别出多道题后逐题查看</string>
+    <string name="page_title">整页搜题</string>
+    <string name="page_title_format">%1$s · 共 %2$d 题</string>
+    <string name="page_original_photo">整页原图</string>
+    <string name="page_tap_to_select">点击框选</string>
+    <string name="page_block_format">第 %1$d 题</string>
+    <string name="page_block_no_answer">无答案</string>
+    <string name="page_select_title">框选一道题</string>
+    <string name="page_select_hint">双指缩放、平移图片；拖动框角调整范围，框内拖动整体移动。</string>
+    <string name="page_select_hint_highlight">白色方框是服务端识别的题目位置，可在此基础上调整。</string>
+    <string name="action_reset_view">复位</string>
+    <string name="action_search_selection">搜索框选题目</string>
+    <string name="action_crop_research">框选重搜</string>
+    <string name="page_empty">这一页没有识别出题目，换个角度或靠近一点重拍试试 🙈</string>
+    <string name="page_refined">已用框选结果</string>
+    <string name="page_crop_failed">框选区域处理失败，请重新框选</string>
+    <!-- 首次使用说明 -->
+    <string name="notice_title">使用前请阅读</string>
+    <string name="notice_body">「闪电搜题」是非官方客户端，仅供个人学习与技术交流，请勿用于商业用途或批量请求。\n\n本应用基于 yijia 的「腕上搜题」做手机端实现，协议与业务逻辑的著作权归原作者所有。\n\n使用本应用需要登录你自己的账号，请遵守相关服务的使用规则；因使用本应用产生的一切后果由使用者自行承担。</string>
+    <string name="notice_accept">同意并继续</string>
+    <string name="notice_decline">不同意</string>
 
     <!-- 通用 -->
     <string name="action_answer_fullscreen">答案区全屏</string>

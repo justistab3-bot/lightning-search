@@ -15,6 +15,7 @@ import com.heikeji.phonesearch.data.relativeTime
 import com.heikeji.phonesearch.data.todayLabel
 import com.heikeji.phonesearch.databinding.ActivityHomeBinding
 import com.heikeji.phonesearch.databinding.ItemHistoryBinding
+import com.heikeji.phonesearch.protocol.model.SearchMode
 import com.heikeji.phonesearch.ui.camera.CameraActivity
 import com.heikeji.phonesearch.ui.common.Greetings
 import com.heikeji.phonesearch.ui.common.applySystemBarPadding
@@ -49,10 +50,33 @@ class HomeActivity : AppCompatActivity() {
         }
 
         bindGreeting()
-        binding.takePhotoButton.setOnClickListener {
-            startActivity(Intent(this, CameraActivity::class.java))
-        }
+        setupModeToggle()
         binding.logoutButton.setOnClickListener { confirmLogout() }
+    }
+
+    /**
+     * 搜题模式选择：单题 / 整页。
+     *
+     * 整页模式会跳过裁剪页（需要保留整页分辨率给服务端定位题框），拍完直接进整页结果页。
+     */
+    private fun setupModeToggle() {
+        binding.modeGroup.check(R.id.modeSingle)
+        binding.modeGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked) return@addOnButtonCheckedListener
+            binding.modeHint.setText(
+                if (checkedId == R.id.modePage) R.string.mode_hint_page
+                else R.string.mode_hint_single,
+            )
+        }
+        binding.modeHint.setText(R.string.mode_hint_single)
+        binding.takePhotoButton.setOnClickListener {
+            val mode = if (binding.modeGroup.checkedButtonId == R.id.modePage) {
+                SearchMode.PAGE
+            } else {
+                SearchMode.SINGLE
+            }
+            startActivity(CameraActivity.newIntent(this, mode))
+        }
     }
 
     override fun onResume() {

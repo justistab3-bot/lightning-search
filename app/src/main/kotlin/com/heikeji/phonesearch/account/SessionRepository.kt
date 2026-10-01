@@ -41,4 +41,16 @@ class SessionRepository(private val store: SecureSessionStore) {
         _session.value = null
         store.clear()
     }
+
+    /**
+     * compare-and-clear：只有当前存储的 KDUSS 仍等于**发起该请求时**用的那个，才清除会话。
+     *
+     * 否则一个失败请求的 HTTP 401 或业务错误码 3 会误删用户刚刚登录的新会话。
+     * 交接文档 §9 / §12.3。
+     */
+    fun clearIfCurrent(kduss: String) {
+        if (kduss.isEmpty()) return
+        if (_session.value?.kduss != kduss) return
+        clear()
+    }
 }

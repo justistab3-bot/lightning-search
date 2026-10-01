@@ -7,8 +7,10 @@ import com.heikeji.phonesearch.AppContainer
 import com.heikeji.phonesearch.account.SessionRepository
 import com.heikeji.phonesearch.net.SearchChallengeException
 import com.heikeji.phonesearch.net.SessionExpiredException
+import com.heikeji.phonesearch.protocol.model.SearchMode
 import com.heikeji.phonesearch.protocol.model.SearchResult
 import com.heikeji.phonesearch.search.SearchRepository
+import com.heikeji.phonesearch.search.SearchTask
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -19,9 +21,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * 搜题流程的状态机：发起请求、处理验证挑战、处理登录失效、可取消。
+ * 单题搜题的状态机：发起请求、处理验证挑战、处理登录失效、可取消。
  *
- * 网络与解码都在 IO 线程；Activity 只负责把状态映射到界面。
+ * 1.1.1 起内部持有完整 [SearchTask]，验证与重登后按原任务恢复，
+ * 并在回调落地前核对 generation / KDUSS / UID。
  */
 class SearchViewModel(
     private val repository: SearchRepository,
@@ -36,25 +39,38 @@ class SearchViewModel(
     /** 防止旋转后重复拉起验证页（状态存在 ViewModel 里，能跨配置变更保留）。 */
     private var challengeLaunched = false
 
-    fun start(jpeg: ByteArray, grade: Int) {
+    private var generation = 0L
+    private var task: SearchTask? = null
+
+    fun start(
+        jpeg: ByteArray,
+        grade: Int,
+        uploadWidth: Int = 0,
+        uploadHeight: Int = 0,
+    ) {
         challengeLaunched = false
-        launch { repository.search(jpeg, grade, sessions.kduss()) }
+        task = buildTask(
+            requestMode = SearchMode.SINGLE,
+            sourceMode = SearchMode.SINGLE,
+            originalJpeg = jpeg,
+            uploadJpeg = jpeg,
+            uploadWidth = uploadWidth,
+            uploadHeight = uploadHeight,
+        )
+        run(grade)
     }
 
-    /** 验证完成后用同一张图重试。 */
-    fun retryAfterVerification(jpeg: ByteArray, grade: Int) {
+    /** 验证完成后重试。 */
+    fun retryAfterVerification(grade: Int) {
         challengeLaunched = false
-        launch { repository.retryAfterVerification(jpeg, grade, sessions.kduss()) }
+        repository.clearChallenge()
+        run(grade)
     }
 
-    /** 从登录页回来后：有未完成的挑战就继续原题，否则重新搜。 */
-    fun resumeAfterLogin(jpeg: ByteArray, grade: Int) {
+    /** 从登录页回来后继续原任务。 */
+    fun resumeAfterLogin(grade: Int) {
         challengeLaunched = false
-        if (repository.hasPendingChallenge()) {
-            launch { repository.retryAfterVerification(jpeg, grade, sessions.kduss()) }
-        } else {
-            launch { repository.search(jpeg, grade, sessions.kduss()) }
-        }
+        run(grade)
     }
 
     fun cancel() {
@@ -69,24 +85,55 @@ class SearchViewModel(
 
     fun shouldLaunchChallenge(): Boolean = !challengeLaunched
 
-    private fun launch(block: suspend () -> SearchResult) {
+    private fun buildTask(
+        requestMode: SearchMode,
+        sourceMode: SearchMode,
+        originalJpeg: ByteArray,
+        uploadJpeg: ByteArray,
+        uploadWidth: Int,
+        uploadHeight: Int,
+    ): SearchTask {
+        generation += 1
+        return SearchTask(
+            generation = generation,
+            requestMode = requestMode,
+            sourceMode = sourceMode,
+            originalSearchJpeg = originalJpeg,
+            uploadJpeg = uploadJpeg,
+            uploadWidth = uploadWidth,
+            uploadHeight = uploadHeight,
+            kdussSnapshot = sessions.kduss(),
+            uidSnapshot = sessions.current()?.uid.orEmpty(),
+        )
+    }
+
+    private fun run(grade: Int) {
+        val current = task ?: return
         if (job?.isActive == true) return
+
         job = viewModelScope.launch {
             _state.value = SearchUiState.Loading
             try {
-                val result = withContext(Dispatchers.IO) { block() }
+                val result = withContext(Dispatchers.IO) { repository.search(current, grade) }
+                if (isStale(current)) return@launch
                 _state.value = SearchUiState.Success(result)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: SearchChallengeException) {
+                if (isStale(current)) return@launch
                 _state.value = SearchUiState.Challenge(e.validatedInfo, e.sid)
             } catch (e: SessionExpiredException) {
                 _state.value = SearchUiState.NeedLogin(e.message ?: "登录已失效，请重新登录")
             } catch (e: Exception) {
+                if (isStale(current)) return@launch
                 _state.value = SearchUiState.Failure(e.message ?: "搜题失败，请重试")
             }
         }
     }
+
+    /** 回调落地前核对：任务未过期，且 KDUSS / UID 与快照一致。 */
+    private fun isStale(current: SearchTask): Boolean =
+        !current.stillMatches(generation, sessions.kduss(), sessions.current()?.uid.orEmpty())
 
     companion object {
         fun factory(container: AppContainer): ViewModelProvider.Factory =
