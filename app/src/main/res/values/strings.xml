@@ -89,6 +89,12 @@
     <string name="notice_body">「闪电搜题」是非官方客户端，仅供个人学习与技术交流，请勿用于商业用途或批量请求。\n\n本应用基于 yijia 的「腕上搜题」做手机端实现，协议与业务逻辑的著作权归原作者所有。\n\n使用本应用需要登录你自己的账号，请遵守相关服务的使用规则；因使用本应用产生的一切后果由使用者自行承担。</string>
     <string name="notice_accept">同意并继续</string>
     <string name="notice_decline">不同意</string>
+    <!-- 断网提示 -->
+    <string name="no_network_title">网络好像断开了</string>
+    <string name="no_network_message">检查一下 WiFi 或移动数据是否正常，连上后会自动继续。</string>
+    <string name="no_network_retry">重新检测</string>
+    <string name="no_network_settings">打开网络设置</string>
+    <string name="no_network_still_offline">还是没有连上，再检查一下网络开关吧</string>
 
     <!-- 通用 -->
     <string name="action_answer_fullscreen">答案区全屏</string>

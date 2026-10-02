@@ -62,6 +62,43 @@ echo "sdk.dir=/path/to/Android/Sdk" > local.properties
 
 产物：`app/build/outputs/apk/debug/app-debug.apk`
 
+## 公式排版
+
+答案页内置**本地 KaTeX**（`app/src/main/assets/math/`，约 547 KB），同时保留一套纯 Kotlin 的兜底渲染器，双向容错：
+
+| 情况 | 表现 |
+|---|---|
+| KaTeX 正常加载 | `render.js` 用 `data-tex` 里的原始 LaTeX 重新渲染，cases / matrix / 复杂上下标都能正确显示 |
+| KaTeX 被拦或加载失败 | 页面上仍是 Kotlin 渲染的 HTML+CSS 排版，**不会退化成原始 LaTeX 源码** |
+
+Kotlin 侧（`protocol/render/LatexRenderer`）支持分式、根式、上下标、希腊字母、常用运算符，
+并把原始 LaTeX 写进 `data-tex` 属性交给 KaTeX 二次渲染。
+
+### JavaScript 的安全边界
+
+答案页**开启** JavaScript（跑 KaTeX），边界靠三层守住：
+
+1. **CSP**：`script-src` 只允许 `https://appassets.androidplatform.net`，答案正文里的脚本、
+   事件处理器、外部资源一律加载不了；`connect-src` / `object-src` / `frame-src` / `form-action` 全部 `'none'`
+2. **HTML 白名单清洗**：渲染前就剔除 `<script>` 与 `on*` 属性
+3. **WebView 设置**：不开 file/content access、不开 DOM storage、不注册任何 JS Bridge、
+   禁止多窗口与第三方 Cookie
+
+本地资源用 `WebViewAssetLoader` 以 https 提供，因此不需要 `allowFileAccess`。
+
+> **"来源可靠"不是安全属性。** 答案正文是服务端返回的 HTML、走网络传输，不属于我们自己的代码。
+> 所以 JS 开了，但这三层边界保留着——它们不影响 KaTeX 正常工作，只在内容被污染时兜底。
+
+## 断网提示
+
+`NetworkMonitor` 用 `registerDefaultNetworkCallback` 监听连通性，`SearchApp` 在两条路径上触发：
+
+- 每次有页面回到前台时检查一次（覆盖「打开应用时就没网」）
+- 监听连通性变化（覆盖「用着用着断网了」）
+
+弹出的是全屏 `NoNetworkActivity`，网络恢复后**自动关闭**回到原页面，不需要手动返回。
+另有「重新检测」和「打开网络设置」两个入口。
+
 按版本归档（会读 `app/build.gradle.kts` 里的版本号）：
 
 ```powershell

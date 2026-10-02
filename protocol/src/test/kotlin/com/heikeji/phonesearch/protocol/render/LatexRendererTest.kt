@@ -30,16 +30,25 @@ class LatexRendererTest {
     @Test
     fun `renders superscript subscript and sqrt`() {
         assertEquals(
-            "<span class=\"math\">x<sup>2</sup></span>",
+            "<span class=\"math\" data-tex=\"x^2\">x<sup>2</sup></span>",
             LatexRenderer.renderInHtml(m("x^2")),
         )
         assertEquals(
-            "<span class=\"math\">a<sub>1</sub></span>",
+            "<span class=\"math\" data-tex=\"a_1\">a<sub>1</sub></span>",
             LatexRenderer.renderInHtml(m("a_1")),
         )
         val sqrt = LatexRenderer.renderInHtml(m("\\sqrt{2}"))
         assertTrue(sqrt, sqrt.contains("class=\"sqrt\""))
         assertTrue(sqrt, sqrt.contains("<span class=\"rad\">2</span>"))
+        assertTrue(sqrt, sqrt.contains("data-tex=\"\\sqrt{2}\""))
+    }
+
+    @Test
+    fun `data-tex keeps the raw latex and escapes quotes`() {
+        // 属性里的双引号必须转义，否则会截断属性
+        val html = LatexRenderer.renderInHtml(m("\\text{a\"b}"))
+        assertTrue(html, html.contains("&quot;"))
+        assertFalse(html, html.contains("data-tex=\"\\text{a\"b}\""))
     }
 
     @Test
@@ -88,8 +97,10 @@ class LatexRendererTest {
     @Test
     fun `unknown commands keep their name instead of vanishing`() {
         val html = LatexRenderer.renderInHtml(m("\\weirdcmd{x}"))
+        // 兜底排版里保留命令名，不吞内容
         assertTrue(html, html.contains("weirdcmd"))
-        assertFalse(html, html.contains("\\weirdcmd"))
+        // data-tex 里保留原始写法是预期行为（交给 KaTeX 二次渲染）
+        assertTrue(html, html.contains("data-tex=\"\\weirdcmd{x}\""))
     }
 
     @Test

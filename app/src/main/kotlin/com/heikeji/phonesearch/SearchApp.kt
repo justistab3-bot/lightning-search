@@ -1,25 +1,85 @@
 package com.heikeji.phonesearch
 
+import android.app.Activity
 import android.app.Application
 import android.content.Context
+import android.content.Intent
+import android.os.Bundle
 import com.heikeji.phonesearch.account.SecureSessionStore
 import com.heikeji.phonesearch.account.SessionRepository
 import com.heikeji.phonesearch.data.HistoryStore
 import com.heikeji.phonesearch.net.ApiClient
 import com.heikeji.phonesearch.net.DeviceIdentity
 import com.heikeji.phonesearch.net.HttpTransport
+import com.heikeji.phonesearch.net.NetworkMonitor
 import com.heikeji.phonesearch.net.ProtocolContext
 import com.heikeji.phonesearch.search.SearchChallengeStore
 import com.heikeji.phonesearch.search.SearchRepository
+import com.heikeji.phonesearch.ui.offline.NoNetworkActivity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import java.lang.ref.WeakReference
 
 class SearchApp : Application() {
 
     lateinit var container: AppContainer
         private set
 
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private var resumedActivity = WeakReference<Activity>(null)
+
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
+        container.network.start()
+
+        registerActivityLifecycleCallbacks(ActivityTracker())
+        observeConnectivity()
+    }
+
+    /**
+     * 断网时拉起全屏提示页。
+     *
+     * 两条触发路径：
+     * 1. 每次有页面回到前台时检查一次（覆盖「打开应用时就没网」）
+     * 2. 监听连通性变化（覆盖「用着用着断网了」）
+     */
+    private fun observeConnectivity() {
+        scope.launch {
+            container.network.online.collect { online ->
+                if (!online) showOfflinePage()
+            }
+        }
+    }
+
+    private fun showOfflinePage() {
+        val activity = resumedActivity.get() ?: return
+        if (activity is NoNetworkActivity) return
+        if (activity.isFinishing || activity.isDestroyed) return
+        runCatching {
+            activity.startActivity(Intent(activity, NoNetworkActivity::class.java))
+        }
+    }
+
+    private inner class ActivityTracker : ActivityLifecycleCallbacks {
+        override fun onActivityResumed(activity: Activity) {
+            resumedActivity = WeakReference(activity)
+            if (activity !is NoNetworkActivity && !container.network.isOnline()) {
+                showOfflinePage()
+            }
+        }
+
+        override fun onActivityPaused(activity: Activity) {
+            if (resumedActivity.get() === activity) resumedActivity = WeakReference(null)
+        }
+
+        override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
+        override fun onActivityStarted(activity: Activity) = Unit
+        override fun onActivityStopped(activity: Activity) = Unit
+        override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
+        override fun onActivityDestroyed(activity: Activity) = Unit
     }
 }
 
@@ -29,6 +89,7 @@ class AppContainer(context: Context) {
     val identity = DeviceIdentity(context)
     val transport = HttpTransport()
     val protocol = ProtocolContext(context, identity, transport)
+    val network = NetworkMonitor(context)
 
     private val sessionStore = SecureSessionStore(context)
     val sessions = SessionRepository(sessionStore)

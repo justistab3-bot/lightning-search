@@ -46,9 +46,14 @@ object LatexRenderer {
         val sb = StringBuilder(text.length + 32)
         for (segment in segments) {
             if (segment.isMath) {
-                sb.append("<span class=\"math\">")
-                sb.append(renderMath(unescape(segment.content)))
-                sb.append("</span>")
+                val latex = unescape(segment.content)
+                // data-tex 保留原始 LaTeX：答案页的 KaTeX 会用它重新渲染一遍；
+                // KaTeX 加载失败时，下面这段 HTML 就是兜底排版。
+                sb.append("<span class=\"math\" data-tex=\"")
+                    .append(escapeAttribute(latex))
+                    .append("\">")
+                    .append(renderMath(latex))
+                    .append("</span>")
             } else {
                 sb.append(segment.content)
             }
@@ -271,6 +276,19 @@ object LatexRenderer {
 
     private fun escape(text: String): String = buildString(text.length) {
         for (c in text) append(escapeChar(c))
+    }
+
+    /** HTML 属性值转义（比文本转义多一个双引号）。 */
+    private fun escapeAttribute(text: String): String = buildString(text.length + 8) {
+        for (c in text) {
+            when (c) {
+                '&' -> append("&amp;")
+                '"' -> append("&quot;")
+                '<' -> append("&lt;")
+                '>' -> append("&gt;")
+                else -> append(c)
+            }
+        }
     }
 
     /** 文本段里已经过 HTML 转义，公式内容要先还原再解析。 */

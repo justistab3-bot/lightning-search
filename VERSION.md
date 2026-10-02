@@ -23,6 +23,7 @@ pwsh -File tools/package-apk.ps1
 | 1.7.0 | 7 | 答案图片点击看大图（锚点方案，无 JS）、抖动修复（滚动抑制窗口）、横屏序号行随阅读模式收起、横屏快门移到右侧、各处 emoji |
 | 1.8.0 | 8 | 竖屏滚动时原图整块隐藏、横屏全屏时顶栏一并收起（浮动退出按钮）、版本号显示与归档 |
 | 1.9.0 | 9 | 同步「腕上搜题」1.1.1：新增**整页搜题**（`/pagesearch`）、题块与候选答案两级切换、原图缩放平移框选、EXIF 逆映射区域解码裁剪、`pageExtraInfo{sid,index,loc}` 框选精搜、完整 `SearchTask` 与 generation 校验、会话 compare-and-clear、首次使用说明 |
+| 1.10.0 | 10 | 答案页开启 JavaScript 并内置本地 **KaTeX**（`WebViewAssetLoader` + CSP 锁死脚本来源），Kotlin 渲染器降级为兜底；新增**断网全屏提示页**（自动弹出、网络恢复自动关闭） |
 
 ## 每轮迭代的固定动作
 

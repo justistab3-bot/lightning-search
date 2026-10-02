@@ -21,8 +21,29 @@ import com.heikeji.phonesearch.protocol.model.AnswerItem
  */
 object AnswerPageRenderer {
 
-    private const val CSP =
-        "default-src 'none'; img-src https: data:; style-src 'unsafe-inline'"
+    /**
+     * 页面 origin。KaTeX 的本地资源由 `WebViewAssetLoader` 挂在这个域名下提供，
+     * 这样既不用开 `allowFileAccess`，也让 CSP 有一个稳定的来源可以写。
+     */
+    const val ASSET_BASE_URL = "https://appassets.androidplatform.net/"
+
+    private const val KATEX_CSS = ASSET_BASE_URL + "assets/math/katex.min.css"
+    private const val KATEX_JS = ASSET_BASE_URL + "assets/math/katex.min.js"
+    private const val RENDER_JS = ASSET_BASE_URL + "assets/math/render.js"
+
+    /**
+     * 只允许本地 appassets 的脚本与样式，其余全部禁止。
+     *
+     * 答案页会开启 JavaScript 来跑本地 KaTeX，但脚本来源被 CSP 锁死在本机资源上：
+     * 答案正文里的脚本与事件处理器进不来（清洗阶段已剔除，CSP 再兜一层）。
+     */
+    private const val CSP = "default-src 'none'; " +
+        "script-src $ASSET_BASE_URL; " +
+        "style-src 'unsafe-inline' $ASSET_BASE_URL; " +
+        "font-src $ASSET_BASE_URL; " +
+        "img-src https: data:; " +
+        "connect-src 'none'; object-src 'none'; frame-src 'none'; " +
+        "media-src 'none'; base-uri 'none'; form-action 'none'"
 
     /** 最佳匹配星标。 */
     private const val STAR_PATH =
@@ -124,7 +145,10 @@ object AnswerPageRenderer {
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
         <meta http-equiv="Content-Security-Policy" content="$CSP">
+        <link rel="stylesheet" href="$KATEX_CSS">
         <style>${palette(dark)}</style>
+        <script src="$KATEX_JS" defer></script>
+        <script src="$RENDER_JS" defer></script>
         </head>
         <body>
         $body
@@ -260,12 +284,20 @@ object AnswerPageRenderer {
             .empty { color: ${p.muted}; }
 
             /* ---------- 公式排版 ---------- */
+            /* 下面这套是 KaTeX 不可用时的兜底排版；KaTeX 渲染成功后会被中和掉。 */
             .math {
               font-family: $MATH_FONT;
               font-size: 1.02em;
               line-height: 1.35;
               white-space: normal;
             }
+            .math[data-math-engine="katex"] {
+              font-family: inherit;
+              font-size: 1em;
+              line-height: inherit;
+            }
+            .katex { font-size: 1.05em; }
+            .katex-display { margin: .5em 0; overflow-x: auto; overflow-y: hidden; }
             sup, sub { font-size: .72em; line-height: 0; }
             .frac {
               display: inline-block;

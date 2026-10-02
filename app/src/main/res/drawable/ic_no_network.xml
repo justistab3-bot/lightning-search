@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- WiFi 信号 + 斜杠：表示无网络 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M12,18.5 m-1.6,0 a1.6,1.6 0 1,0 3.2,0 a1.6,1.6 0 1,0 -3.2,0"
+        android:strokeColor="#FF87867F"
+        android:strokeWidth="1.8" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M8.5,15.5 A5,5 0 0,1 15.5,15.5 M5.5,12.5 A9,9 0 0,1 18.5,12.5 M2.5,9.5 A13,13 0 0,1 21.5,9.5"
+        android:strokeColor="#FF87867F"
+        android:strokeLineCap="round"
+        android:strokeWidth="1.8" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M4,4 L20,20"
+        android:strokeColor="#FFC96442"
+        android:strokeLineCap="round"
+        android:strokeWidth="2.2" />
+</vector>
