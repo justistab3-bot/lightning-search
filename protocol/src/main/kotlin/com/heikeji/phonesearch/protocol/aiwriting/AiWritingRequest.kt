@@ -52,13 +52,39 @@ object AiWritingRequest {
 
     const val DEFAULT_GRADE = 6
 
+    /** 可选文体；界面上「自动」表示不指定，交给服务端识别。 */
+    val GENRES = listOf("记叙文", "议论文", "说明文", "书信", "散文", "小说", "诗歌", "其他")
+
+    /** 各文体的写法要求。 */
+    private val GENRE_HINTS = mapOf(
+        "记叙文" to "以叙事为主，写清时间、地点、人物和情节",
+        "议论文" to "必须有明确的中心论点、分论点和论据，用讲道理的方式展开，不要写成记叙文",
+        "说明文" to "以说明事物特征或事理为主，条理清晰、语言准确",
+        "书信" to "用书信格式，包含称呼、正文、祝语、署名和日期",
+        "散文" to "形散神聚，语言优美，注重情感与意境的表达",
+        "小说" to "有完整的人物、情节和环境描写",
+        "诗歌" to "分行排列，讲究节奏与意象，不要写成散文",
+    )
+
     /**
-     * 服务端对 `gradeId` 几乎不敏感（实测二年级与高三生成的水平、字数都差不多），
-     * 但 `describe` 是会被采纳的写作要求，所以把年级折进去，让选择真正起点作用。
+     * 拼出 `describe`（写作要求）。
+     *
+     * 为什么不改 `queryType`：实测把它改成「诗歌」，服务端**照抄回显**，
+     * 但 `articleType` 仍是「记叙文-叙事」、正文也还是记叙文 —— 它只是个回显字段。
+     * `describe` 才是真会被采纳的（年级与文体的效果都实测验证过）。
+     *
+     * @param genre 手动指定的文体；传 null 表示用自动识别的结果
      */
-    fun gradeHint(gradeId: Int): String {
-        val label = GRADES.firstOrNull { it.first == gradeId }?.second ?: return ""
-        return "写作要求：符合${label}学生的认知水平和语言风格。"
+    fun writingRequirements(gradeId: Int, genre: String?): String {
+        val parts = ArrayList<String>(2)
+        GRADES.firstOrNull { it.first == gradeId }?.second?.let {
+            parts += "符合${it}学生的认知水平和语言风格"
+        }
+        genre?.takeIf { it.isNotBlank() }?.let { g ->
+            val hint = GENRE_HINTS[g]
+            parts += if (hint.isNullOrEmpty()) "写成$g" else "写成$g，$hint"
+        }
+        return if (parts.isEmpty()) "" else "写作要求：" + parts.joinToString("；") + "。"
     }
 
     /** query 里的 `queryType` 固定用枚举值 5（原实现如此）。 */
@@ -127,6 +153,7 @@ object AiWritingRequest {
         gradeId: Int,
         writeDate: Long,
         language: EssayLanguage,
+        describe: String,
     ): String {
         val json = JsonObject()
         json.addProperty("hybrid", 1)
@@ -138,7 +165,7 @@ object AiWritingRequest {
         json.addProperty("sessionId", "")
         json.add("session", JsonObject())
         json.addProperty("title", title)
-        json.addProperty("describe", gradeHint(gradeId))
+        json.addProperty("describe", describe)
         json.addProperty("sid", "")
         json.addProperty("language", language.code)
         json.addProperty("queryType", queryType)
@@ -154,6 +181,7 @@ object AiWritingRequest {
         wordCount: String,
         gradeId: Int,
         language: EssayLanguage,
+        describe: String,
     ): String {
         val params = LinkedHashMap<String, String?>()
         params["uid"] = ""
@@ -164,7 +192,7 @@ object AiWritingRequest {
         params["move"] = ""
         params["title"] = title
         params["wordCount"] = wordCount
-        params["describe"] = gradeHint(gradeId)
+        params["describe"] = describe
         params["voiceDescribe"] = ""
         params["entityStr"] = ""
         params["language"] = language.queryName
@@ -183,6 +211,7 @@ object AiWritingRequest {
         wordCount: String,
         gradeId: Int,
         language: EssayLanguage,
+        describe: String,
     ): String {
         val params = LinkedHashMap<String, String?>()
         params["sid"] = sid
@@ -197,7 +226,7 @@ object AiWritingRequest {
         params["move"] = ""
         params["title"] = title
         params["wordCount"] = wordCount
-        params["describe"] = gradeHint(gradeId)
+        params["describe"] = describe
         params["entityStr"] = ""
         params["entityContent"] = ""
         params["language"] = language.queryName

@@ -126,6 +126,8 @@
     <string name="essay_mode_map">导图</string>
     <string name="essay_mode_english">英语</string>
     <string name="essay_hint_title">输入作文标题</string>
+    <string name="essay_label_genre">文体</string>
+    <string name="essay_genre_auto">自动识别</string>
     <string name="essay_label_word_count">字数</string>
     <string name="essay_label_grade">年级</string>
     <string name="essay_action_generate">开始写 ✍️</string>
@@ -137,6 +139,9 @@
     <string name="essay_status_done_format">已完成 · %1$s · %2$d 字 / 目标 %3$s</string>
     <string name="essay_status_short">生成的字数比目标少不少，再点一次「开始写」会重新生成一篇</string>
     <string name="essay_action_copy">复制全文</string>
+    <string name="essay_font_smaller">A−</string>
+    <string name="essay_font_larger">A+</string>
+    <string name="essay_font_size_format">正文字号 %1$d</string>
     <string name="essay_copied">已复制到剪贴板 ✅</string>
     <string name="essay_action_regenerate">重新生成</string>
     <string name="essay_empty_title">请先输入作文标题</string>

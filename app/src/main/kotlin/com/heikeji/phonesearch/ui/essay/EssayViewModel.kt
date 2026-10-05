@@ -29,6 +29,8 @@ data class EssayUiState(
     val title: String = "",
     val wordCount: String = AiWritingRequest.DEFAULT_WORD_COUNT_CHINESE,
     val gradeId: Int = AiWritingRequest.DEFAULT_GRADE,
+    /** 手动指定的文体；null 表示自动识别。 */
+    val genre: String? = null,
     /** 识别出的文体，识别到才有值。 */
     val queryType: String = "",
     val stage: Stage = Stage.IDLE,
@@ -79,7 +81,8 @@ class EssayViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun onModeChanged(mode: WritingMode) {
-        if (mode == _state.value.mode) return
+        val previous = _state.value
+        if (mode == previous.mode) return
         // 换模式/语言后旧结果不再适用：取消在跑的生成并清空
         job?.cancel()
         job = null
@@ -90,12 +93,18 @@ class EssayViewModel(application: Application) : AndroidViewModel(application) {
             EssayLanguage.CHINESE
         }
         val wordCounts = AiWritingRequest.wordCountsOf(language)
-        _state.value = _state.value.copy(
+        val languageChanged = language != previous.language
+
+        _state.value = previous.copy(
             mode = mode,
             language = language,
             // 切换语言时字数档位不通用，回到该语言的默认值
-            wordCount = wordCounts.firstOrNull { it == _state.value.wordCount }
+            wordCount = wordCounts.firstOrNull { it == previous.wordCount }
                 ?: AiWritingRequest.defaultWordCount(language),
+            // 中英互换时标题语言也对不上，一并清掉
+            title = if (languageChanged) "" else previous.title,
+            // 文体是中文作文的概念，英语没有
+            genre = if (language == EssayLanguage.ENGLISH) null else previous.genre,
             text = "",
             outline = "",
             article = null,
@@ -118,6 +127,19 @@ class EssayViewModel(application: Application) : AndroidViewModel(application) {
 
     fun onGradeChanged(gradeId: Int) {
         _state.value = _state.value.copy(gradeId = gradeId)
+    }
+
+    /** @param genre null 表示「自动」 */
+    fun onGenreChanged(genre: String?) {
+        _state.value = _state.value.copy(
+            genre = genre,
+            // 文体变了旧结果不再对得上
+            text = "",
+            article = null,
+            queryType = "",
+            stage = EssayUiState.Stage.IDLE,
+            failed = false,
+        )
     }
 
     // ------------------------------------------------------------------ 生成
@@ -178,16 +200,20 @@ class EssayViewModel(application: Application) : AndroidViewModel(application) {
         val target = wordCount.takeWhile { it.isDigit() }.toIntOrNull() ?: 0
 
         // 1. 文体识别（仅中文，失败不致命）
-        val queryType = if (language == EssayLanguage.CHINESE) {
-            val detected = withContext(Dispatchers.IO) {
+        val detected = if (language == EssayLanguage.CHINESE) {
+            withContext(Dispatchers.IO) {
                 client.detectQueryType(cuid, title, gradeId)
             } ?: DEFAULT_QUERY_TYPE
-            _state.value = _state.value.copy(queryType = detected)
-            detected
         } else {
             // 英语作文没有文体概念
             DEFAULT_QUERY_TYPE
         }
+        // 手动选了文体就以它为准，否则用识别结果
+        val queryType = snapshot.genre?.takeIf { it.isNotBlank() } ?: detected
+        _state.value = _state.value.copy(queryType = queryType)
+
+        // 年级 + 文体都折进 describe，这是实测唯一起作用的写法约束
+        val describe = AiWritingRequest.writingRequirements(gradeId, snapshot.genre)
 
         // 2 + 3. 准备 + 流式生成。
         //
@@ -218,10 +244,11 @@ class EssayViewModel(application: Application) : AndroidViewModel(application) {
                     gradeId = gradeId,
                     queryType = queryType,
                     writeDate = System.currentTimeMillis() / 1000,
+                    describe = describe,
                 )
             }
 
-            streamInto(title, wordCount, gradeId, mode, language, prepared)
+            streamInto(title, wordCount, gradeId, mode, language, prepared, describe)
 
             // 收尾通知（失败无所谓）
             withContext(Dispatchers.IO) { client.acknowledge(cuid, prepared.sid) }
@@ -256,6 +283,7 @@ class EssayViewModel(application: Application) : AndroidViewModel(application) {
         mode: WritingMode,
         language: EssayLanguage,
         prepared: AiWritingClient.Prepared,
+        describe: String,
     ) {
         val channel = Channel<AiWritingEvent>(Channel.UNLIMITED)
         coroutineScope {
@@ -269,6 +297,7 @@ class EssayViewModel(application: Application) : AndroidViewModel(application) {
                         title = title,
                         wordCount = wordCount,
                         gradeId = gradeId,
+                        describe = describe,
                     ) { event -> channel.trySend(event) }
                     channel.close()
                 } catch (e: CancellationException) {

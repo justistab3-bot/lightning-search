@@ -57,9 +57,11 @@ class AiWritingClient {
         gradeId: Int,
         queryType: String,
         writeDate: Long,
+        describe: String,
     ): Prepared {
         val path = AiWritingRequest.preInstantPath(mode, language)
-        val query = AiWritingRequest.preInstantQuery(title, wordCount, gradeId, language)
+        val query =
+            AiWritingRequest.preInstantQuery(title, wordCount, gradeId, language, describe)
         val body = AiWritingRequest.preInstantBody(
             title = title,
             queryType = queryType,
@@ -67,6 +69,7 @@ class AiWritingClient {
             gradeId = gradeId,
             writeDate = writeDate,
             language = language,
+            describe = describe,
         )
         val json = postJson(cuid, path, query, body)
             ?: throw ProtocolException("准备生成失败")
@@ -91,6 +94,7 @@ class AiWritingClient {
         title: String,
         wordCount: String,
         gradeId: Int,
+        describe: String,
         onEvent: (AiWritingEvent) -> Unit,
     ) {
         val path = AiWritingRequest.instantPath(mode, language)
@@ -102,6 +106,7 @@ class AiWritingClient {
             wordCount = wordCount,
             gradeId = gradeId,
             language = language,
+            describe = describe,
         )
         val url = ProtocolProfile.HOST_API_KDDZY + path + "?" + query
         val connection = open(url)

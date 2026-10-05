@@ -176,6 +176,28 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:text="@string/essay_label_genre"
+                                android:textAppearance="@style/TextAppearance.FlashSearch.Label" />
+
+                            <Spinner
+                                android:id="@+id/genreSpinner"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="6dp"
+                                android:background="@drawable/bg_input"
+                                android:minHeight="48dp" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="10dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
                                 android:text="@string/essay_label_word_count"
                                 android:textAppearance="@style/TextAppearance.FlashSearch.Label" />
 
@@ -191,7 +213,7 @@
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="12dp"
+                            android:layout_marginStart="10dp"
                             android:layout_weight="1"
                             android:orientation="vertical">
 
@@ -294,6 +316,34 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:textAppearance="@style/TextAppearance.FlashSearch.Label" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/fontSmallerButton"
+                            style="@style/Widget.FlashSearch.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:contentDescription="@string/essay_font_smaller"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:minWidth="0dp"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp"
+                            android:text="@string/essay_font_smaller"
+                            android:textSize="13sp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/fontLargerButton"
+                            style="@style/Widget.FlashSearch.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:contentDescription="@string/essay_font_larger"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:minWidth="0dp"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp"
+                            android:text="@string/essay_font_larger"
+                            android:textSize="17sp" />
                     </LinearLayout>
 
                     <TextView
