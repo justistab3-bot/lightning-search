@@ -154,6 +154,14 @@
     <string name="essay_empty_result">写出来的内容会显示在这里 📝</string>
     <string name="essay_stopped">已停止生成</string>
 
+    <!-- 查看整本答案 -->
+    <string name="book_answer_title">教材答案</string>
+    <string name="book_answer_entry">查看整本答案</string>
+    <string name="book_answer_loading">正在加载整本答案…</string>
+    <string name="book_answer_failed">这本教材暂时没有可查看的答案 🙈</string>
+    <string name="book_answer_page_format">%1$d / %2$d</string>
+    <string name="book_answer_hint">左右滑动翻页，双指可缩放</string>
+
     <!-- 通用 -->
     <string name="action_answer_fullscreen">答案区全屏</string>
     <string name="action_answer_exit_fullscreen">退出全屏</string>

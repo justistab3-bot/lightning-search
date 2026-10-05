@@ -21,6 +21,7 @@ import com.google.android.material.tabs.TabLayoutMediator
 import com.heikeji.phonesearch.R
 import com.heikeji.phonesearch.appContainer
 import com.heikeji.phonesearch.databinding.ActivityPageResultBinding
+import com.heikeji.phonesearch.ui.book.BookAnswerActivity
 import com.heikeji.phonesearch.image.OriginalImageHandle
 import com.heikeji.phonesearch.image.QuestionImageProcessor
 import com.heikeji.phonesearch.protocol.ProtocolProfile
@@ -202,7 +203,23 @@ class PageResultActivity : AppCompatActivity(), AnswerImageHost {
             binding.blockRow.removeAllViews()
             binding.emptyText.visibility = View.GONE
             binding.pager.visibility = View.INVISIBLE
+            binding.bookButton.visibility = View.GONE
             return
+        }
+
+        // 「查看整本答案」：只有服务端给了教材信息才显示
+        val relatedBook = result.relatedBook
+        if (relatedBook != null && relatedBook.isUsable && relatedBook.bookId.isNotEmpty()) {
+            binding.bookButton.visibility = View.VISIBLE
+            binding.bookButton.isEnabled = !state.loading
+            binding.bookButton.setOnClickListener {
+                startActivity(
+                    BookAnswerActivity.newIntent(this, relatedBook.bookId, grade()),
+                )
+            }
+        } else {
+            binding.bookButton.visibility = View.GONE
+            binding.bookButton.setOnClickListener(null)
         }
 
         binding.subjectBadge.subject = result.subject
