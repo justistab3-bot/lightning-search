@@ -67,11 +67,17 @@ class LayoutSanityTest {
         return out
     }
 
-    private fun idsOf(file: File): Set<String> {
-        val found = sortedSetOf<String>()
+    private fun idsOf(file: File): Set<String> =
+        idToTag(file).keys
+
+    /** id -> 视图标签名。重复 id 只保留最后一个（另有专门用例检查重复）。 */
+    private fun idToTag(file: File): Map<String, String> {
+        val found = LinkedHashMap<String, String>()
         for (element in allElements(parse(file))) {
             val id = element.getAttribute("android:id")
-            if (id.startsWith("@+id/")) found.add(id.removePrefix("@+id/"))
+            if (id.startsWith("@+id/")) {
+                found[id.removePrefix("@+id/")] = element.tagName
+            }
         }
         return found
     }
@@ -132,6 +138,62 @@ class LayoutSanityTest {
         assertTrue(
             "竖屏与横屏的 id 必须一致，否则 ViewBinding 会把字段变成可空、某个方向下 NPE：\n" +
                 problems.joinToString("\n"),
+            problems.isEmpty(),
+        )
+    }
+
+    // ------------------------------------------------------------------ 规则 3
+
+    /**
+     * 同一个 id 在两个方向必须是**同一种 View**。
+     *
+     * ViewBinding 只会按其中一份布局生成字段类型，另一份若不同，
+     * 运行时强转就 `ClassCastException` —— 表现就是「转到某个方向就闪退」。
+     */
+    @Test
+    fun `same id keeps the same view type across orientations`() {
+        val problems = ArrayList<String>()
+        for (land in layouts("layout-land")) {
+            val portrait = File(resDir, "layout/${land.name}")
+            if (!portrait.isFile) continue
+            val portraitTags = idToTag(portrait)
+            val landscapeTags = idToTag(land)
+            for ((id, landTag) in landscapeTags) {
+                val portraitTag = portraitTags[id] ?: continue
+                if (landTag != portraitTag) {
+                    problems.add("${land.name}: id=$id 竖屏是 <$portraitTag>，横屏是 <$landTag>")
+                }
+            }
+        }
+        assertTrue(
+            "同一个 id 在不同方向必须是同一种 View，否则 ViewBinding 强转崩溃：\n" +
+                problems.joinToString("\n"),
+            problems.isEmpty(),
+        )
+    }
+
+    // ------------------------------------------------------------------ 规则 4
+
+    /** 一份布局里 id 不能重复：ViewBinding 会抛，且 findViewById 行为不确定。 */
+    @Test
+    fun `no layout declares the same id twice`() {
+        val problems = ArrayList<String>()
+        for (sub in listOf("layout", "layout-land")) {
+            for (file in layouts(sub)) {
+                val seen = HashMap<String, Int>()
+                for (element in allElements(parse(file))) {
+                    val id = element.getAttribute("android:id")
+                    if (!id.startsWith("@+id/")) continue
+                    val name = id.removePrefix("@+id/")
+                    seen[name] = (seen[name] ?: 0) + 1
+                }
+                seen.filterValues { it > 1 }.forEach { (name, count) ->
+                    problems.add("$sub/${file.name}: id=$name 出现 $count 次")
+                }
+            }
+        }
+        assertTrue(
+            "同一份布局里 id 不能重复：\n" + problems.joinToString("\n"),
             problems.isEmpty(),
         )
     }

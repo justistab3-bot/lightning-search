@@ -165,6 +165,9 @@
     <string name="chat_title">快问 AI</string>
     <string name="chat_entry">快问 AI</string>
     <string name="chat_entry_hint">问什么都能聊</string>
+    <string name="chat_entry_desc">学习、生活、奇思妙想</string>
+    <string name="essay_entry_hint">AI 作文</string>
+    <string name="essay_entry_desc">给个标题，一键成文</string>
     <string name="chat_clear">清空</string>
     <string name="chat_greeting">有什么想问的？</string>
     <string name="chat_greeting_hint">学习、生活、奇思妙想都可以</string>

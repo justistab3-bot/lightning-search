@@ -336,7 +336,9 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun bindHistory() {
-        val entries = container.history.list(HISTORY_PREVIEW)
+        // 横屏高度只有竖屏的一半左右，展开的历史会把主体挤没，所以少放几条
+        val preview = if (isLandscape()) HISTORY_PREVIEW_LAND else HISTORY_PREVIEW
+        val entries = container.history.list(preview)
         binding.historyList.removeAllViews()
         binding.historyEmpty.visibility = if (entries.isEmpty()) View.VISIBLE else View.GONE
 
@@ -427,8 +429,12 @@ class HomeActivity : AppCompatActivity() {
         finish()
     }
 
+    private fun isLandscape(): Boolean =
+        resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+
     private companion object {
         const val HISTORY_PREVIEW = 6
+        const val HISTORY_PREVIEW_LAND = 3
         const val PREFS_HOME = "home_ui"
         const val KEY_HISTORY_EXPANDED = "historyExpanded"
     }

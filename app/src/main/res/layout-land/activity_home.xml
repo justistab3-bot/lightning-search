@@ -1,16 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  横屏首页：**整页不滚动**，所有功能一屏展示完。
+  横屏首页 —— **为横屏单独设计**，不是把竖屏改一改。
 
-  布局意图：
-  - 根节点是普通 LinearLayout，不是 NestedScrollView —— 横屏下滑动很别扭，
-    而且一旦能滚就说明内容溢出了，属于设计没做完。
-  - 两栏分担高度：左栏「问候 + 主操作」，右栏「统计 + 最近搜题 + 底部信息」，
-    这样比原来「左栏堆四块、右栏只有一块」更均衡，也不容易顶破高度。
-  - 最近搜题默认收起，展开时也不会把页面撑出屏幕（右栏顶部，向下展开）。
-  - 各处 padding / 字号都收紧了一档，横屏高度通常只有 320–360dp。
+  目标设备约 1000×450dp（小米平板横屏），特点：很宽、很矮。
+  竖屏那套「一列往下堆」在这里必然溢出，所以结构完全不同：
 
-  ID 必须与 layout/activity_home.xml 完全一致，LayoutSanityTest 会检查。
+  1. **三块功能并排**，而不是左一坨右一坨 —— 横屏的视觉重心应该在中间。
+     两侧留白（weight 0.6）把内容挤到中间，避免大屏上元素贴着边框拉得很散。
+  2. **主操作在正中**（拍照搜题），两个次要入口（AI 作文 / 快问 AI）分列两侧，
+     权重 4 : 2.2 : 2.2 —— 拍照是主路径，给最大的卡片。
+  3. 头部压成一行（问候在左、版本号在右），底部一行放统计 / 最近搜题 / 退出。
+  4. **整页不滚动**：根节点是普通 LinearLayout。
+
+  ID 与类型必须与 layout/activity_home.xml 完全一致（ViewBinding 会按其中一份生成字段，
+  不一致就是「竖屏转横屏闪退」）。LayoutSanityTest 检查 id 集合与视图类型两条规则。
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -18,26 +21,28 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?android:attr/colorBackground"
-    android:baselineAligned="false"
-    android:orientation="horizontal"
-    android:paddingBottom="8dp">
+    android:orientation="vertical"
+    android:paddingBottom="6dp">
 
-    <!-- ============================ 左栏：问候 + 主操作 ============================ -->
+    <!-- ============================ 头部：问候 + 版本 ============================ -->
     <LinearLayout
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="1"
-        android:orientation="vertical"
-        android:paddingStart="20dp"
-        android:paddingEnd="8dp">
+        android:id="@+id/header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:baselineAligned="false"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="28dp"
+        android:paddingTop="8dp"
+        android:paddingEnd="28dp"
+        android:paddingBottom="10dp">
 
         <LinearLayout
-            android:id="@+id/header"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingTop="6dp"
-            android:paddingBottom="8dp">
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
             <TextView
                 android:id="@+id/dateLabel"
@@ -47,24 +52,55 @@
 
             <TextView
                 android:id="@+id/greeting"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
+                android:layout_marginStart="14dp"
                 android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Title" />
-
-            <TextView
-                android:id="@+id/tagline"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="@string/brand_tagline"
-                android:textAppearance="@style/TextAppearance.FlashSearch.Caption" />
         </LinearLayout>
 
+        <TextView
+            android:id="@+id/tagline"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:text="@string/brand_tagline"
+            android:textAppearance="@style/TextAppearance.FlashSearch.Caption" />
+
+        <TextView
+            android:id="@+id/versionLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackground"
+            android:paddingStart="8dp"
+            android:paddingTop="4dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="4dp"
+            android:textAppearance="@style/TextAppearance.FlashSearch.Label" />
+    </LinearLayout>
+
+    <!-- ============================ 主体：三块功能并排，居中 ============================ -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:baselineAligned="false"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp">
+
+        <!-- 左右留白：把三块内容挤到中间，大屏上才不会贴着边框 -->
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="0.6" />
+
+        <!-- 主操作：拍照搜题 -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/heroCard"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_weight="4"
             app:cardBackgroundColor="@color/ivory"
             app:cardCornerRadius="20dp"
             app:cardElevation="0dp"
@@ -75,13 +111,13 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="14dp">
+                android:padding="16dp">
 
                 <com.google.android.material.button.MaterialButtonToggleGroup
                     android:id="@+id/modeGroup"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="10dp"
+                    android:layout_marginBottom="12dp"
                     app:selectionRequired="true"
                     app:singleSelection="true">
 
@@ -115,8 +151,8 @@
                     style="@style/Widget.FlashSearch.PrimaryButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingTop="13dp"
-                    android:paddingBottom="13dp"
+                    android:paddingTop="15dp"
+                    android:paddingBottom="15dp"
                     android:text="@string/action_take_photo"
                     app:icon="@drawable/ic_camera" />
 
@@ -124,7 +160,7 @@
                     android:id="@+id/systemCameraHint"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
+                    android:layout_marginTop="8dp"
                     android:gravity="center"
                     android:text="@string/hint_long_press_system_camera"
                     android:textAppearance="@style/TextAppearance.FlashSearch.Label" />
@@ -134,191 +170,222 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
+                    android:gravity="center"
                     android:maxLines="2"
                     android:text="@string/home_tip"
                     android:textAppearance="@style/TextAppearance.FlashSearch.Caption" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:orientation="horizontal">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/essayButton"
-                        style="@style/Widget.FlashSearch.SecondaryButton"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:paddingTop="11dp"
-                        android:paddingBottom="11dp"
-                        android:text="@string/essay_entry" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/chatButton"
-                        style="@style/Widget.FlashSearch.SecondaryButton"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:layout_weight="1"
-                        android:paddingTop="11dp"
-                        android:paddingBottom="11dp"
-                        android:text="@string/chat_entry" />
-                </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+
+        <!-- 次要入口：AI 作文 -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_weight="2.2"
+            app:cardBackgroundColor="@color/ivory"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/border_cream"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingStart="14dp"
+                android:paddingTop="18dp"
+                android:paddingEnd="14dp"
+                android:paddingBottom="18dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="@string/essay_entry_hint"
+                    android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Section" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:gravity="center"
+                    android:maxLines="2"
+                    android:text="@string/essay_entry_desc"
+                    android:textAppearance="@style/TextAppearance.FlashSearch.Caption" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/essayButton"
+                    style="@style/Widget.FlashSearch.SecondaryButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:text="@string/essay_entry" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- 次要入口：快问 AI -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_weight="2.2"
+            app:cardBackgroundColor="@color/ivory"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/border_cream"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingStart="14dp"
+                android:paddingTop="18dp"
+                android:paddingEnd="14dp"
+                android:paddingBottom="18dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="@string/chat_entry_hint"
+                    android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Section" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:gravity="center"
+                    android:maxLines="2"
+                    android:text="@string/chat_entry_desc"
+                    android:textAppearance="@style/TextAppearance.FlashSearch.Caption" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/chatButton"
+                    style="@style/Widget.FlashSearch.SecondaryButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:text="@string/chat_entry" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="0.6" />
     </LinearLayout>
 
-    <!-- ============================ 右栏：统计 + 最近搜题 + 底部 ============================ -->
+    <!-- ============================ 最近搜题（收起，向下展开） ============================ -->
     <LinearLayout
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="1"
+        android:id="@+id/historySection"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingStart="8dp"
-        android:paddingEnd="20dp">
+        android:paddingStart="28dp"
+        android:paddingEnd="28dp">
+
+        <LinearLayout
+            android:id="@+id/historyToggle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackground"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/history_title"
+                android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Section" />
+
+            <ImageView
+                android:id="@+id/historyChevron"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_marginStart="6dp"
+                android:contentDescription="@string/history_title"
+                android:src="@drawable/ic_chevron_down" />
+        </LinearLayout>
+
+        <ScrollView
+            android:id="@+id/historyBody"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:id="@+id/historyList"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+
+                <TextView
+                    android:id="@+id/historyEmpty"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/history_empty"
+                    android:textAppearance="@style/TextAppearance.FlashSearch.Caption"
+                    android:visibility="gone" />
+            </LinearLayout>
+        </ScrollView>
+    </LinearLayout>
+
+    <!-- ============================ 底部：统计 + 退出 ============================ -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:baselineAligned="false"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="28dp"
+        android:paddingTop="2dp"
+        android:paddingEnd="28dp">
 
         <LinearLayout
             android:id="@+id/statsRow"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
+            android:layout_weight="1"
             android:orientation="horizontal">
 
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="0dp"
+            <TextView
+                android:id="@+id/todayCount"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                app:cardBackgroundColor="@color/ivory"
-                app:cardCornerRadius="14dp"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/border_cream"
-                app:strokeWidth="1dp">
+                android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Section" />
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingStart="12dp"
-                    android:paddingTop="10dp"
-                    android:paddingEnd="12dp"
-                    android:paddingBottom="10dp">
-
-                    <TextView
-                        android:id="@+id/todayCount"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Section" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="6dp"
-                        android:text="@string/stats_today"
-                        android:textAppearance="@style/TextAppearance.FlashSearch.Label" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="0dp"
+            <TextView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_weight="1"
-                app:cardBackgroundColor="@color/ivory"
-                app:cardCornerRadius="14dp"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/border_cream"
-                app:strokeWidth="1dp">
+                android:layout_marginStart="5dp"
+                android:text="@string/stats_today"
+                android:textAppearance="@style/TextAppearance.FlashSearch.Label" />
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingStart="12dp"
-                    android:paddingTop="10dp"
-                    android:paddingEnd="12dp"
-                    android:paddingBottom="10dp">
-
-                    <TextView
-                        android:id="@+id/totalCount"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Section" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="6dp"
-                        android:text="@string/stats_total"
-                        android:textAppearance="@style/TextAppearance.FlashSearch.Label" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-        </LinearLayout>
-
-        <!-- 最近搜题：默认收起 -->
-        <LinearLayout
-            android:id="@+id/historySection"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_marginTop="8dp"
-            android:layout_weight="1"
-            android:orientation="vertical">
-
-            <LinearLayout
-                android:id="@+id/historyToggle"
-                android:layout_width="match_parent"
+            <TextView
+                android:id="@+id/totalCount"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="?attr/selectableItemBackground"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingTop="6dp"
-                android:paddingBottom="6dp">
+                android:layout_marginStart="18dp"
+                android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Section" />
 
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/history_title"
-                    android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Section" />
-
-                <ImageView
-                    android:id="@+id/historyChevron"
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:contentDescription="@string/history_title"
-                    android:src="@drawable/ic_chevron_down" />
-            </LinearLayout>
-
-            <ScrollView
-                android:id="@+id/historyBody"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
-                android:visibility="gone">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-
-                    <LinearLayout
-                        android:id="@+id/historyList"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical" />
-
-                    <TextView
-                        android:id="@+id/historyEmpty"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="@string/history_empty"
-                        android:textAppearance="@style/TextAppearance.FlashSearch.Caption"
-                        android:visibility="gone" />
-                </LinearLayout>
-            </ScrollView>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="5dp"
+                android:text="@string/stats_total"
+                android:textAppearance="@style/TextAppearance.FlashSearch.Label" />
         </LinearLayout>
 
         <com.google.android.material.button.MaterialButton
@@ -326,17 +393,9 @@
             style="@style/Widget.FlashSearch.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="end"
             android:minWidth="0dp"
             android:paddingTop="4dp"
             android:paddingBottom="4dp"
             android:text="@string/action_logout" />
-
-        <TextView
-            android:id="@+id/versionLabel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:textAppearance="@style/TextAppearance.FlashSearch.Label" />
     </LinearLayout>
 </LinearLayout>

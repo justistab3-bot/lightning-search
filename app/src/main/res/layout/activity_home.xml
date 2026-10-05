@@ -1,11 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+  竖屏首页：整体可滚动。
+
+  注意根节点必须是 LinearLayout —— 横屏那份的根也是 LinearLayout。
+  两份布局同一个 id 若是不同 View 类型，ViewBinding 只会按其中一份生成字段，
+  切到另一个方向就会 ClassCastException（这正是「竖屏转横屏闪退」的原因）。
+  LayoutSanityTest 会检查这条规则。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?android:attr/colorBackground"
-    android:fillViewport="true">
+    android:orientation="vertical">
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -247,30 +260,36 @@
                     android:src="@drawable/ic_chevron_down" />
             </LinearLayout>
 
-            <LinearLayout
+            <!-- ScrollView 只能有一个直接子 View，所以里面再包一层 -->
+            <ScrollView
                 android:id="@+id/historyBody"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
                 android:visibility="gone">
 
                 <LinearLayout
-                    android:id="@+id/historyList"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical" />
+                    android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/historyEmpty"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="24dp"
-                    android:layout_marginTop="12dp"
-                    android:layout_marginEnd="24dp"
-                    android:text="@string/history_empty"
-                    android:textAppearance="@style/TextAppearance.FlashSearch.Caption"
-                    android:visibility="gone" />
-            </LinearLayout>
+                    <LinearLayout
+                        android:id="@+id/historyList"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical" />
+
+                    <TextView
+                        android:id="@+id/historyEmpty"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="24dp"
+                        android:layout_marginTop="12dp"
+                        android:layout_marginEnd="24dp"
+                        android:text="@string/history_empty"
+                        android:textAppearance="@style/TextAppearance.FlashSearch.Caption"
+                        android:visibility="gone" />
+                </LinearLayout>
+            </ScrollView>
         </LinearLayout>
 
         <com.google.android.material.button.MaterialButton
@@ -289,4 +308,5 @@
             android:layout_marginTop="14dp"
             android:textAppearance="@style/TextAppearance.FlashSearch.Label" />
     </LinearLayout>
-</androidx.core.widget.NestedScrollView>
+    </androidx.core.widget.NestedScrollView>
+</LinearLayout>
