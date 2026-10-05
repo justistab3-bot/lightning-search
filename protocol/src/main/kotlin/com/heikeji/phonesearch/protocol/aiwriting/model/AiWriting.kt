@@ -50,10 +50,19 @@ data class AiArticle(
     val sid: String,
     val sessionId: String,
     val paragraphs: List<AiParagraph>,
+    /**
+     * 正文首段如果是 markdown 标题（`# xxx`），抽出来放这里，并从 [paragraphs] 里移除。
+     *
+     * 服务端有时会把标题当成正文第一段返回，直接显示会出现字面的 `#`。
+     */
+    val heading: String = "",
 ) {
     val text: String get() = paragraphs.joinToString("\n") { it.content }
 
     val isEmpty: Boolean get() = paragraphs.none { it.content.isNotBlank() }
+
+    /** 正文之外要单独显示的标题：优先用抽出来的 markdown 标题。 */
+    val displayTitle: String get() = heading.ifEmpty { title }
 }
 
 /** 提纲节点（思路写作的产物）。 */

@@ -52,6 +52,15 @@ object AiWritingRequest {
 
     const val DEFAULT_GRADE = 6
 
+    /**
+     * 服务端对 `gradeId` 几乎不敏感（实测二年级与高三生成的水平、字数都差不多），
+     * 但 `describe` 是会被采纳的写作要求，所以把年级折进去，让选择真正起点作用。
+     */
+    fun gradeHint(gradeId: Int): String {
+        val label = GRADES.firstOrNull { it.first == gradeId }?.second ?: return ""
+        return "写作要求：符合${label}学生的认知水平和语言风格。"
+    }
+
     /** query 里的 `queryType` 固定用枚举值 5（原实现如此）。 */
     private const val QUERY_TYPE_ENUM = "5"
 
@@ -129,7 +138,7 @@ object AiWritingRequest {
         json.addProperty("sessionId", "")
         json.add("session", JsonObject())
         json.addProperty("title", title)
-        json.addProperty("describe", "")
+        json.addProperty("describe", gradeHint(gradeId))
         json.addProperty("sid", "")
         json.addProperty("language", language.code)
         json.addProperty("queryType", queryType)
@@ -155,7 +164,7 @@ object AiWritingRequest {
         params["move"] = ""
         params["title"] = title
         params["wordCount"] = wordCount
-        params["describe"] = ""
+        params["describe"] = gradeHint(gradeId)
         params["voiceDescribe"] = ""
         params["entityStr"] = ""
         params["language"] = language.queryName
@@ -188,7 +197,7 @@ object AiWritingRequest {
         params["move"] = ""
         params["title"] = title
         params["wordCount"] = wordCount
-        params["describe"] = ""
+        params["describe"] = gradeHint(gradeId)
         params["entityStr"] = ""
         params["entityContent"] = ""
         params["language"] = language.queryName

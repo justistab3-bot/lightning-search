@@ -40,10 +40,11 @@ data class EssayUiState(
     val article: AiArticle? = null,
     val failed: Boolean = false,
 ) {
-    enum class Stage { IDLE, DETECTING, OUTLINING, WRITING, DONE }
+    enum class Stage { IDLE, DETECTING, OUTLINING, WRITING, REWRITING, DONE }
 
     val running: Boolean
-        get() = stage == Stage.DETECTING || stage == Stage.OUTLINING || stage == Stage.WRITING
+        get() = stage == Stage.DETECTING || stage == Stage.OUTLINING ||
+            stage == Stage.WRITING || stage == Stage.REWRITING
 
     val done: Boolean get() = stage == Stage.DONE
 
@@ -78,6 +79,11 @@ class EssayViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun onModeChanged(mode: WritingMode) {
+        if (mode == _state.value.mode) return
+        // 换模式/语言后旧结果不再适用：取消在跑的生成并清空
+        job?.cancel()
+        job = null
+
         val language = if (mode == WritingMode.ENGLISH) {
             EssayLanguage.ENGLISH
         } else {
@@ -90,11 +96,24 @@ class EssayViewModel(application: Application) : AndroidViewModel(application) {
             // 切换语言时字数档位不通用，回到该语言的默认值
             wordCount = wordCounts.firstOrNull { it == _state.value.wordCount }
                 ?: AiWritingRequest.defaultWordCount(language),
+            text = "",
+            outline = "",
+            article = null,
+            queryType = "",
+            stage = EssayUiState.Stage.IDLE,
+            failed = false,
         )
     }
 
     fun onWordCountChanged(wordCount: String) {
-        _state.value = _state.value.copy(wordCount = wordCount)
+        // 目标字数变了，旧结果不再对得上，一并清掉
+        _state.value = _state.value.copy(
+            wordCount = wordCount,
+            text = "",
+            article = null,
+            stage = EssayUiState.Stage.IDLE,
+            failed = false,
+        )
     }
 
     fun onGradeChanged(gradeId: Int) {
@@ -156,41 +175,72 @@ class EssayViewModel(application: Application) : AndroidViewModel(application) {
         val language = snapshot.language
         val wordCount = snapshot.wordCount
         val gradeId = snapshot.gradeId
+        val target = wordCount.takeWhile { it.isDigit() }.toIntOrNull() ?: 0
 
         // 1. 文体识别（仅中文，失败不致命）
-        var queryType = ""
-        if (language == EssayLanguage.CHINESE) {
-            queryType = withContext(Dispatchers.IO) {
+        val queryType = if (language == EssayLanguage.CHINESE) {
+            val detected = withContext(Dispatchers.IO) {
                 client.detectQueryType(cuid, title, gradeId)
             } ?: DEFAULT_QUERY_TYPE
-            _state.value = _state.value.copy(queryType = queryType)
+            _state.value = _state.value.copy(queryType = detected)
+            detected
         } else {
             // 英语作文没有文体概念
-            queryType = DEFAULT_QUERY_TYPE
+            DEFAULT_QUERY_TYPE
         }
 
-        // 2. 准备
-        val prepared = withContext(Dispatchers.IO) {
-            client.prepare(
-                cuid = cuid,
-                mode = mode,
-                language = language,
-                title = title,
-                wordCount = wordCount,
-                gradeId = gradeId,
-                queryType = queryType,
-                writeDate = System.currentTimeMillis() / 1000,
+        // 2 + 3. 准备 + 流式生成。
+        //
+        // 服务端有时会明显少写（要 800 只给 500 出头），而且重试是有效手段，
+        // 所以达不到目标就再写一次，保留更长的那篇。上限 MAX_ATTEMPTS 次。
+        var bestText = ""
+        var bestArticle: AiArticle? = null
+        var bestCount = -1
+
+        for (attempt in 1..MAX_ATTEMPTS) {
+            _state.value = _state.value.copy(
+                stage = if (attempt == 1) {
+                    EssayUiState.Stage.WRITING
+                } else {
+                    EssayUiState.Stage.REWRITING
+                },
+                text = "",
+                article = null,
             )
+
+            val prepared = withContext(Dispatchers.IO) {
+                client.prepare(
+                    cuid = cuid,
+                    mode = mode,
+                    language = language,
+                    title = title,
+                    wordCount = wordCount,
+                    gradeId = gradeId,
+                    queryType = queryType,
+                    writeDate = System.currentTimeMillis() / 1000,
+                )
+            }
+
+            streamInto(title, wordCount, gradeId, mode, language, prepared)
+
+            // 收尾通知（失败无所谓）
+            withContext(Dispatchers.IO) { client.acknowledge(cuid, prepared.sid) }
+
+            val article = _state.value.article
+            val count = article?.wordCount ?: _state.value.text.length
+            if (count > bestCount) {
+                bestCount = count
+                bestText = _state.value.text
+                bestArticle = article
+            }
+            if (target <= 0 || bestCount >= target * MIN_RATIO) break
         }
 
-        // 3. 流式生成
-        _state.value = _state.value.copy(stage = EssayUiState.Stage.WRITING)
-        streamInto(title, wordCount, gradeId, mode, language, prepared)
-
-        _state.value = _state.value.copy(stage = EssayUiState.Stage.DONE)
-
-        // 收尾通知（失败无所谓）
-        withContext(Dispatchers.IO) { client.acknowledge(cuid, prepared.sid) }
+        _state.value = _state.value.copy(
+            stage = EssayUiState.Stage.DONE,
+            text = bestText,
+            article = bestArticle,
+        )
     }
 
     /**
@@ -266,5 +316,11 @@ class EssayViewModel(application: Application) : AndroidViewModel(application) {
     private companion object {
         /** 文体识别失败时的兜底。 */
         const val DEFAULT_QUERY_TYPE = "记叙文"
+
+        /** 达到目标字数的这个比例就算合格，不再重写。 */
+        const val MIN_RATIO = 0.85
+
+        /** 最多生成几次（含首次）。 */
+        const val MAX_ATTEMPTS = 2
     }
 }

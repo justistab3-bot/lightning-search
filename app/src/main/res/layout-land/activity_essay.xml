@@ -314,6 +314,14 @@
                 android:layout_weight="1">
 
                 <TextView
+                    android:id="@+id/resultTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Title"
+                    android:visibility="gone" />
+
+                <TextView
                     android:id="@+id/resultText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

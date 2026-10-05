@@ -133,7 +133,9 @@
     <string name="essay_status_detecting">正在识别文体…</string>
     <string name="essay_status_outlining">正在列提纲…</string>
     <string name="essay_status_writing">正在写作…</string>
-    <string name="essay_status_done_format">已完成 · %1$s · %2$d 字</string>
+    <string name="essay_status_rewriting">字数不太够，正在重写一篇…</string>
+    <string name="essay_status_done_format">已完成 · %1$s · %2$d 字 / 目标 %3$s</string>
+    <string name="essay_status_short">生成的字数比目标少不少，再点一次「开始写」会重新生成一篇</string>
     <string name="essay_action_copy">复制全文</string>
     <string name="essay_copied">已复制到剪贴板 ✅</string>
     <string name="essay_action_regenerate">重新生成</string>

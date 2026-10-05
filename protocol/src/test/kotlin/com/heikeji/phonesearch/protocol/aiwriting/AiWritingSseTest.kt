@@ -2,6 +2,7 @@ package com.heikeji.phonesearch.protocol.aiwriting
 
 import com.heikeji.phonesearch.protocol.aiwriting.model.AiWritingEvent
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -230,5 +231,74 @@ class AiWritingSseTest {
             .filterIsInstance<AiWritingEvent.Delta>()
         // 英语的片段是单词，比中文的 1-2 字长
         assertTrue("英语片段应长于单个字母", deltas.any { it.text.length > 2 })
+    }
+
+    // ------------------------------------------------------------------ markdown 标题
+
+    @Test
+    fun `leading markdown heading is lifted out of the body`() {
+        val article = AiWritingEventParser.parse(
+            SseEvent(
+                "1",
+                "msg",
+                """{"more":0,"title":"为什么这世界上有黑与白","session":{"selected":[""" +
+                    """{"paragraph_id":"a","content":"# 为什么这世界上有黑与白"},""" +
+                    """{"paragraph_id":"b","content":"昨天上美术课，老师让我们画我的家。"}]}}""",
+            ),
+        ).filterIsInstance<AiWritingEvent.Finished>().single().article
+
+        assertEquals("为什么这世界上有黑与白", article.heading)
+        assertEquals("为什么这世界上有黑与白", article.displayTitle)
+        assertEquals("标题应从正文里移除", 1, article.paragraphs.size)
+        assertFalse("正文不应再带 #", article.text.contains("#"))
+    }
+
+    @Test
+    fun `heading of any level is recognized`() {
+        for (marker in listOf("#", "##", "###", "######")) {
+            val article = AiWritingEventParser.parse(
+                SseEvent(
+                    "1",
+                    "msg",
+                    """{"more":0,"session":{"selected":[""" +
+                        """{"content":"$marker 标题"},""" +
+                        """{"content":"正文"}]}}""",
+                ),
+            ).filterIsInstance<AiWritingEvent.Finished>().single().article
+            assertEquals("$marker 未识别", "标题", article.heading)
+            assertEquals(1, article.paragraphs.size)
+        }
+    }
+
+    @Test
+    fun `ordinary first paragraph is left alone`() {
+        val article = AiWritingEventParser.parse(
+            SseEvent(
+                "1",
+                "msg",
+                """{"more":0,"title":"我的暑假","session":{"selected":[""" +
+                    """{"content":"当考试结束的铃声响起。"},""" +
+                    """{"content":"暑假开始了。"}]}}""",
+            ),
+        ).filterIsInstance<AiWritingEvent.Finished>().single().article
+
+        assertEquals("", article.heading)
+        assertEquals("没有标题时回落到 title", "我的暑假", article.displayTitle)
+        assertEquals(2, article.paragraphs.size)
+    }
+
+    @Test
+    fun `hash inside a paragraph is not treated as a heading`() {
+        val article = AiWritingEventParser.parse(
+            SseEvent(
+                "1",
+                "msg",
+                """{"more":0,"session":{"selected":[""" +
+                    """{"content":"话题 #1 是这么回事"}]}}""",
+            ),
+        ).filterIsInstance<AiWritingEvent.Finished>().single().article
+
+        assertEquals("", article.heading)
+        assertEquals(1, article.paragraphs.size)
     }
 }

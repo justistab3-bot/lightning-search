@@ -98,6 +98,12 @@ object AiWritingEventParser {
             paragraphs.add(AiParagraph(id = "", content = fallback, paraIndex = 0))
         }
 
+        // 首段可能是 markdown 标题（`# 标题`），抽出来单独显示，别把 `#` 露给用户
+        val first = paragraphs.firstOrNull()
+        val heading = first?.let { HEADING.matchEntire(it.content.trim())?.groupValues?.get(1)?.trim() }
+            .orEmpty()
+        val body = if (heading.isNotEmpty()) paragraphs.drop(1) else paragraphs
+
         return AiArticle(
             title = root.str("title"),
             queryType = root.str("queryType"),
@@ -105,9 +111,13 @@ object AiWritingEventParser {
             wordCount = root.intOr("wordCount", 0),
             sid = root.str("sid"),
             sessionId = root.str("sessionId"),
-            paragraphs = paragraphs,
+            paragraphs = body,
+            heading = heading,
         )
     }
+
+    /** `# 标题` / `## 标题` / … */
+    private val HEADING = Regex("^#{1,6}\\s*(.+)$")
 
     private fun JsonObject.str(name: String): String {
         val element = get(name) ?: return ""

@@ -51,6 +51,7 @@ class EssayActivity : AppCompatActivity() {
     private lateinit var writeFromOutlineButton: MaterialButton
     private lateinit var progress: ProgressBar
     private lateinit var statusLabel: TextView
+    private lateinit var resultTitle: TextView
     private lateinit var resultText: TextView
 
     /** 上一次渲染时的语言，用于判断是否需要重建字数档位。 */
@@ -83,6 +84,7 @@ class EssayActivity : AppCompatActivity() {
         writeFromOutlineButton = findViewById(R.id.writeFromOutlineButton)
         progress = findViewById(R.id.progress)
         statusLabel = findViewById(R.id.statusLabel)
+        resultTitle = findViewById(R.id.resultTitle)
         resultText = findViewById(R.id.resultText)
     }
 
@@ -198,6 +200,12 @@ class EssayActivity : AppCompatActivity() {
         statusLabel.text = statusText(state)
         statusLabel.visibility = if (statusLabel.text.isNullOrEmpty()) View.GONE else View.VISIBLE
 
+        // 正文标题：服务端有时把标题当正文首段返回（带 `#`），已在协议层抽出来
+        val heading = state.article?.displayTitle.orEmpty()
+        val showTitle = state.done && heading.isNotEmpty() && heading != state.title.trim()
+        resultTitle.visibility = if (showTitle) View.VISIBLE else View.GONE
+        if (showTitle) resultTitle.text = heading
+
         // 正文
         resultText.text = if (state.hasResult) {
             state.text
@@ -215,14 +223,29 @@ class EssayActivity : AppCompatActivity() {
         state.stage == EssayUiState.Stage.DETECTING -> getString(R.string.essay_status_detecting)
         state.stage == EssayUiState.Stage.OUTLINING -> getString(R.string.essay_status_outlining)
         state.stage == EssayUiState.Stage.WRITING -> getString(R.string.essay_status_writing)
-        state.stage == EssayUiState.Stage.DONE -> getString(
-            R.string.essay_status_done_format,
-            state.queryType.ifEmpty { getString(R.string.essay_title) },
-            state.article?.wordCount ?: state.text.length,
-        )
+        state.stage == EssayUiState.Stage.REWRITING -> getString(R.string.essay_status_rewriting)
+        state.stage == EssayUiState.Stage.DONE -> {
+            val actual = state.article?.wordCount ?: state.text.length
+            val base = getString(
+                R.string.essay_status_done_format,
+                state.queryType.ifEmpty { state.mode.label },
+                actual,
+                state.wordCount,
+            )
+            // 明显没写够时给一句提示，免得用户以为是自己选错了字数
+            if (actual < targetOf(state.wordCount) * 0.85) {
+                base + "\n" + getString(R.string.essay_status_short)
+            } else {
+                base
+            }
+        }
 
         else -> ""
     }
+
+    /** `"800+"` -> `800`。 */
+    private fun targetOf(wordCount: String): Int =
+        wordCount.takeWhile { it.isDigit() }.toIntOrNull() ?: 0
 
     private fun rebuildWordCountSpinner(state: EssayUiState) {
         val counts = AiWritingRequest.wordCountsOf(state.language)
