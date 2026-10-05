@@ -16,8 +16,8 @@ android {
         minSdk = 24
         targetSdk = 37
         // 每轮迭代都往上走：装到机器上后可以直接从「设置 - 应用」或首页底部确认版本。
-        versionCode = 12
-        versionName = "1.12.0"
+        versionCode = 13
+        versionName = "1.13.0"
     }
 
     buildTypes {

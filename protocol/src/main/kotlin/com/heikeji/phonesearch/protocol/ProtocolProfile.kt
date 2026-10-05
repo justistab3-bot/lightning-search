@@ -54,11 +54,14 @@ object ProtocolProfile {
     const val HOST_PASSPORT = "https://passport.kuaiduizuoye.com"
     const val HOST_RESOURCE = "https://resourceserver.zybang.com"
 
+    /** AI 作文走的是独立域名 api.kuaiduizuoye.com。 */
+    const val HOST_API_KDDZY = "https://api.kuaiduizuoye.com"
+
     /** 官方安全验证页所在主机。 */
     const val HOST_VERIFY = "https://paisou.zuoyebang.com"
 
     /** 允许发起 API 请求的主机白名单。 */
-    val API_HOSTS = setOf(HOST_KDDZY, HOST_PASSPORT, HOST_RESOURCE)
+    val API_HOSTS = setOf(HOST_KDDZY, HOST_PASSPORT, HOST_RESOURCE, HOST_API_KDDZY)
 
     /** 需要附加 cuid/KDUSS Cookie 的主机。 */
     val COOKIE_HOSTS = setOf(HOST_KDDZY, HOST_RESOURCE)
@@ -94,6 +97,15 @@ object ProtocolProfile {
     const val READ_TIMEOUT_MS = 30_000
     const val ANTISPAM_READ_TIMEOUT_MS = 20_000
     const val USER_AGENT = "WatchSearch/1.0 Android"
+
+    /**
+     * AI 作文走的是 H5 接口，用普通浏览器 UA。
+     *
+     * 实测这个头不影响结果（空值会失败），没必要伪装成 WebView。
+     */
+    const val AI_WRITING_USER_AGENT =
+        "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) " +
+            "Chrome/120.0.0.0 Mobile Safari/537.36"
     const val FORM_CONTENT_TYPE =
         "application/x-www-form-urlencoded; charset=UTF-8"
     const val MULTIPART_BOUNDARY_PREFIX = "WatchSearch"

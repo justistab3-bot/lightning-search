@@ -117,6 +117,36 @@
     <string name="update_badge">发现新版本 %1$s，点此更新</string>
     <string name="update_manual_check">检查更新</string>
 
+    <!-- AI 作文 -->
+    <string name="essay_entry">AI 作文 ✍️</string>
+    <string name="essay_thought_pending">提纲功能正在接入，先用快速写作 ✍️</string>
+    <string name="essay_title">AI 作文</string>
+    <string name="essay_mode_quick">快速写作</string>
+    <string name="essay_mode_thinking">列提纲</string>
+    <string name="essay_mode_map">导图</string>
+    <string name="essay_mode_english">英语</string>
+    <string name="essay_hint_title">输入作文标题</string>
+    <string name="essay_label_word_count">字数</string>
+    <string name="essay_label_grade">年级</string>
+    <string name="essay_action_generate">开始写 ✍️</string>
+    <string name="essay_action_stop">停止生成</string>
+    <string name="essay_status_detecting">正在识别文体…</string>
+    <string name="essay_status_outlining">正在列提纲…</string>
+    <string name="essay_status_writing">正在写作…</string>
+    <string name="essay_status_done_format">已完成 · %1$s · %2$d 字</string>
+    <string name="essay_action_copy">复制全文</string>
+    <string name="essay_copied">已复制到剪贴板 ✅</string>
+    <string name="essay_action_regenerate">重新生成</string>
+    <string name="essay_empty_title">请先输入作文标题</string>
+    <string name="essay_failed">生成失败，请重试 😵</string>
+    <string name="essay_outline_title">写作提纲</string>
+    <string name="essay_action_write_from_outline">按这个提纲写 ✍️</string>
+    <string name="essay_outline_empty">这个标题暂时没有给出提纲，可以直接生成全文</string>
+    <string name="essay_query_type_format">文体：%1$s</string>
+    <string name="essay_word_count_format">%1$s 字</string>
+    <string name="essay_empty_result">写出来的内容会显示在这里 📝</string>
+    <string name="essay_stopped">已停止生成</string>
+
     <!-- 通用 -->
     <string name="action_answer_fullscreen">答案区全屏</string>
     <string name="action_answer_exit_fullscreen">退出全屏</string>

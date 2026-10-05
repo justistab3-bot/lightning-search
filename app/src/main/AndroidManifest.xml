@@ -39,6 +39,15 @@
             android:exported="false" />
 
         <!--
+          AI 作文：不锁方向，横竖屏各有一套布局。
+          旋转时 Activity 重建，状态由 ViewModel 保留。
+        -->
+        <activity
+            android:name=".ui.essay.EssayActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!--
           相机不锁方向：方向交给 CameraX 的 targetRotation。
           configChanges 让旋转时不重建 Activity，避免相机反复重绑。
         -->

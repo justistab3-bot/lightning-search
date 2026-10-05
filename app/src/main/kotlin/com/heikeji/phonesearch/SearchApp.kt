@@ -9,6 +9,7 @@ import com.heikeji.phonesearch.account.SecureSessionStore
 import com.heikeji.phonesearch.account.SessionRepository
 import com.heikeji.phonesearch.data.HistoryStore
 import com.heikeji.phonesearch.net.ApiClient
+import com.heikeji.phonesearch.net.AiWritingClient
 import com.heikeji.phonesearch.net.DeviceIdentity
 import com.heikeji.phonesearch.net.HttpTransport
 import com.heikeji.phonesearch.net.NetworkMonitor
@@ -98,6 +99,9 @@ class AppContainer(context: Context) {
     val challenges = SearchChallengeStore()
     val searchRepository = SearchRepository(apiClient, protocol, challenges)
     val history = HistoryStore(context)
+
+    /** AI 作文（独立域名、无签名、SSE 流式）。 */
+    val aiWriting = AiWritingClient()
 
     init {
         sessions.restore()
