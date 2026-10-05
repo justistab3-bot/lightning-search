@@ -4,7 +4,6 @@ import android.util.Base64
 import com.heikeji.phonesearch.account.SessionRepository
 import com.heikeji.phonesearch.protocol.ProtocolException
 import com.heikeji.phonesearch.protocol.ProtocolProfile
-import com.heikeji.phonesearch.protocol.book.BookSearchRequest
 import com.heikeji.phonesearch.protocol.codec.UrlForm
 import com.heikeji.phonesearch.protocol.crypto.Digests
 import com.heikeji.phonesearch.protocol.crypto.Rc4
@@ -14,11 +13,8 @@ import com.heikeji.phonesearch.protocol.sign.RequestSigner
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
-import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
-import java.io.IOException
 import java.util.UUID
-import java.util.zip.GZIPInputStream
 
 /** 实名校验结果。 */
 data class IdentityResult(val age: Int, val pass: Int)
@@ -184,54 +180,6 @@ class ApiClient(
         } catch (e: JSONException) {
             throw ApiException("登录响应解密格式错误", 0, e)
         }
-    }
-
-    /**
-     * 「查看整本答案」（原生 `SearchBookSearch`，`/search/submit/booksearch`）。
-     *
-     * 加解密和 [postEncrypted] 是同一套，但响应内容是**整块**密文，
-     * 解开后可能还套了一层 gzip，所以这里不直接 `JSONObject`，把明文交回 `:protocol`。
-     *
-     * @return 解密后的 JSON 文本
-     */
-    fun searchBook(bookId: String, grade: Int, resolution: String): String {
-        protocol.ensureInitialized()
-
-        val inner = BookSearchRequest.params(bookId = bookId, grade = grade, resolution = resolution)
-        val plain = "&" + UrlForm.encodeForm(inner)
-        val cipher = Rc4.apply(plain.toByteArray(Charsets.UTF_8), protocol.responseKey())
-
-        val outer = LinkedHashMap<String, String?>()
-        outer["data"] = Base64.encodeToString(cipher, Base64.NO_WRAP)
-
-        val data = post(ProtocolProfile.HOST_KDDZY, BookSearchRequest.PATH_BOOK_SEARCH, outer)
-        val payload = data.optString("data", "")
-        if (payload.isEmpty()) throw ApiException("教材答案返回为空")
-        return unwrapBookPayload(payload)
-    }
-
-    /** base64 -> RC4 ->（可能 gzip）-> 明文。 */
-    private fun unwrapBookPayload(payload: String): String {
-        val decrypted = try {
-            Rc4.apply(Base64.decode(payload, Base64.NO_WRAP), protocol.responseKey())
-        } catch (e: IllegalArgumentException) {
-            throw ApiException("教材答案解密失败", 0, e)
-        }
-
-        // gzip 魔数 1f 8b
-        if (decrypted.size > 2 &&
-            decrypted[0] == 0x1F.toByte() &&
-            decrypted[1] == 0x8B.toByte()
-        ) {
-            return try {
-                GZIPInputStream(ByteArrayInputStream(decrypted))
-                    .bufferedReader()
-                    .use { it.readText() }
-            } catch (e: IOException) {
-                throw ApiException("教材答案解压失败", 0, e)
-            }
-        }
-        return String(decrypted, Charsets.UTF_8)
     }
 
     /** 原 P0.c.a：RC4 解密 Base64 字符串。 */

@@ -1,7 +1,5 @@
 package com.heikeji.phonesearch.protocol.model
 
-import com.heikeji.phonesearch.protocol.book.model.RelatedBookInfo
-
 /**
  * 整页搜题结果，对应原 `P0.f`。
  *
@@ -17,11 +15,6 @@ data class PageSearchResult(
     /** 定位不可用的原因；可用时为空。 */
     val positioningWarning: String,
     val blocks: List<PageQuestionBlock>,
-    /**
-     * 教材信息，用于「查看整本答案」。
-     * 服务端没给（或这页不是教辅）时为 null，入口按钮不显示。
-     */
-    val relatedBook: RelatedBookInfo? = null,
 ) {
     val isEmpty: Boolean get() = blocks.isEmpty()
 }

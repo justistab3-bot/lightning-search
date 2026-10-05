@@ -74,11 +74,6 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
-        <!-- 查看整本答案：教辅答案扫描图，左右翻页 -->
-        <activity
-            android:name=".ui.book.BookAnswerActivity"
-            android:exported="false" />
-
         <!-- 框选一道题：缩放平移 + 拖动框角 -->
         <activity
             android:name=".ui.page.SelectImageActivity"

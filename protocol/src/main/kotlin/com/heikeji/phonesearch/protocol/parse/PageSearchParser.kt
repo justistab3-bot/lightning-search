@@ -5,7 +5,6 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.heikeji.phonesearch.protocol.ProtocolException
 import com.heikeji.phonesearch.protocol.ProtocolProfile
-import com.heikeji.phonesearch.protocol.book.BookSearchParser
 import com.heikeji.phonesearch.protocol.decode.AnswerDecoder
 import com.heikeji.phonesearch.protocol.json.Json
 import com.heikeji.phonesearch.protocol.json.intOr
@@ -131,8 +130,6 @@ object PageSearchParser {
             positioningAvailable = positioning,
             positioningWarning = positioningWarning,
             blocks = blocks,
-            // 「查看整本答案」的入口依据；服务端没给就是 null
-            relatedBook = BookSearchParser.relatedBookOf(data),
         )
     }
 
