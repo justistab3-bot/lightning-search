@@ -376,34 +376,7 @@ class ApiClient(
         boundary: String,
         image: ByteArray,
         params: LinkedHashMap<String, String?>,
-    ): ByteArray {
-        val out = ByteArrayOutputStream()
-        // 图片必须是第一部分。
-        out.write(
-            (
-                "--$boundary\r\n" +
-                    "Content-Disposition: form-data; name=\"image\"; filename=\"image\"\r\n" +
-                    "Content-Type: application/octet-stream\r\n\r\n"
-                ).toByteArray(Charsets.UTF_8),
-        )
-        out.write(image)
-        out.write("\r\n".toByteArray(Charsets.UTF_8))
-
-        for ((key, value) in params) {
-            if (!key.matches(Regex("[A-Za-z0-9_]+"))) throw ProtocolException("表单字段无效")
-            out.write(
-                (
-                    "--$boundary\r\n" +
-                        "Content-Disposition: form-data; name=\"$key\"\r\n" +
-                        "Content-Type: text/plain; charset=UTF-8\r\n\r\n"
-                    ).toByteArray(Charsets.UTF_8),
-            )
-            out.write((value ?: "").toByteArray(Charsets.UTF_8))
-            out.write("\r\n".toByteArray(Charsets.UTF_8))
-        }
-        out.write("--$boundary--\r\n".toByteArray(Charsets.UTF_8))
-        return out.toByteArray()
-    }
+    ): ByteArray = Multipart.build(boundary, image, params = params)
 
     private fun normalizePhone(phone: String): String {
         val normalized = phone.replace(" ", "").trim()

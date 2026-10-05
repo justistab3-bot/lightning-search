@@ -42,6 +42,17 @@
     </LinearLayout>
 
     <!-- ============================ 气泡 ============================ -->
+    <ImageView
+        android:id="@+id/bubbleImage"
+        android:layout_width="180dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="6dp"
+        android:adjustViewBounds="true"
+        android:contentDescription="@string/chat_pick_image"
+        android:maxHeight="240dp"
+        android:scaleType="fitCenter"
+        android:visibility="gone" />
+
     <TextView
         android:id="@+id/bubbleText"
         android:layout_width="wrap_content"

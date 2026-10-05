@@ -55,14 +55,36 @@ class HistoryStore(context: Context) {
         entries.add(entry)
         entries.addAll(loadIndex())
 
-        val kept = entries.take(MAX_ENTRIES)
-        entries.drop(MAX_ENTRIES).forEach { stale ->
+        // 先按条数截断，再按总容量截断。
+        // 单条 result.json 里是整份答案 HTML，遇到带内嵌图的题目可以很大，
+        // 只限条数挡不住体积膨胀，所以两个维度都要管。
+        val kept = ArrayList<JSONObject>(MAX_ENTRIES)
+        var totalBytes = 0L
+        for (candidate in entries) {
+            if (kept.size >= MAX_ENTRIES) break
+            val id = candidate.optString("id")
+            if (id.isEmpty()) continue
+            val dir = File(root, id)
+            val size = dirSize(dir)
+            // 至少留一条，否则一道超大题会把历史清空
+            if (kept.isNotEmpty() && totalBytes + size > MAX_TOTAL_BYTES) break
+            totalBytes += size
+            kept.add(candidate)
+        }
+
+        entries.filter { it !in kept }.forEach { stale ->
             stale.optString("id").takeIf { it.isNotEmpty() }?.let { oldId ->
                 File(root, oldId).deleteRecursively()
             }
         }
         writeIndex(kept)
         bumpStats()
+    }
+
+    /** 历史占用的字节数（列表页展示用）。 */
+    fun totalBytes(): Long {
+        if (!root.exists()) return 0L
+        return root.walkBottomUp().filter { it.isFile }.sumOf { it.length() }
     }
 
     fun list(limit: Int = MAX_ENTRIES): List<HistoryEntry> =
@@ -232,6 +254,15 @@ class HistoryStore(context: Context) {
         const val QUESTION_FILE = "question.jpg"
         const val RESULT_FILE = "result.json"
         const val MAX_ENTRIES = 20
+
+        /** 历史总容量上限，超出就丢最旧的。 */
+        const val MAX_TOTAL_BYTES = 40L * 1024 * 1024
+    }
+
+    private fun dirSize(dir: File): Long {
+        if (!dir.exists()) return 0L
+        if (dir.isFile) return dir.length()
+        return dir.walkBottomUp().filter { it.isFile }.sumOf { it.length() }
     }
 }
 

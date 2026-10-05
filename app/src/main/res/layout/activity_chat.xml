@@ -158,6 +158,15 @@
             android:gravity="bottom"
             android:orientation="horizontal">
 
+            <ImageButton
+                android:id="@+id/imageButton"
+                android:layout_width="46dp"
+                android:layout_height="46dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/chat_pick_image"
+                android:padding="11dp"
+                android:src="@drawable/ic_image" />
+
             <EditText
                 android:id="@+id/input"
                 android:layout_width="0dp"

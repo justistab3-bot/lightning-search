@@ -8,8 +8,9 @@ data class StorageUsage(
     val apkBytes: Long,
     val captureBytes: Long,
     val historyBytes: Long,
+    val webViewBytes: Long,
 ) {
-    val totalBytes: Long get() = apkBytes + captureBytes + historyBytes
+    val totalBytes: Long get() = apkBytes + captureBytes + historyBytes + webViewBytes
 
     fun format(): String = formatBytes(totalBytes)
 }
@@ -42,19 +43,61 @@ object StorageCleaner {
     private const val CAPTURE_MAX_AGE_MS = 3L * 24 * 60 * 60 * 1000
 
     /**
+     * WebView 缓存上限。
+     *
+     * 答案页是 WebView，里面的答案图片来自 CDN，Chromium 会把它们缓存到
+     * `cache/WebView`。搜得越多长得越大，而且系统不一定会回收。
+     * 超了才清 —— 清了之后首次打开答案要重新下载图片。
+     */
+    const val WEBVIEW_CACHE_LIMIT_BYTES = 32L * 1024 * 1024
+
+    /**
      * 启动时扫一遍。
      *
      * @return 回收掉的字节数
      */
     fun sweep(context: Context): Long =
-        pruneUpdates(context) + pruneCaptures(context) + pruneHistoryOrphans(context)
+        pruneUpdates(context) + pruneCaptures(context) + pruneHistoryOrphans(context) +
+            trimWebViewCache(context)
 
     /** 统计当前占用。 */
     fun usage(context: Context): StorageUsage = StorageUsage(
         apkBytes = dirSize(updatesDir(context)),
         captureBytes = dirSize(capturesDir(context)),
         historyBytes = dirSize(File(context.filesDir, HISTORY_DIR)),
+        webViewBytes = webViewCacheBytes(context),
     )
+
+    /** WebView 缓存占用。 */
+    fun webViewCacheBytes(context: Context): Long = dirSize(webViewCacheDir(context))
+
+    /**
+     * WebView 缓存超限就删掉。
+     *
+     * **只在启动时调用** —— 那一刻还没有任何 WebView 实例，目录不会被 Chromium 占住。
+     * 运行中要清就走 [clearWebViewCache]（主线程 + WebView API）。
+     *
+     * @return 回收掉的字节数
+     */
+    fun trimWebViewCache(context: Context): Long {
+        val dir = webViewCacheDir(context)
+        val size = dirSize(dir)
+        if (size <= WEBVIEW_CACHE_LIMIT_BYTES) return 0L
+        dir.deleteRecursively()
+        return size
+    }
+
+    /**
+     * 运行中清 WebView 缓存。
+     *
+     * **必须在主线程调用**，且 WebView 实例也必须在主线程构造。
+     */
+    fun clearWebViewCache(webView: android.webkit.WebView?) {
+        runCatching {
+            webView?.clearCache(true)
+            android.webkit.WebStorage.getInstance().deleteAllData()
+        }
+    }
 
     /**
      * 清掉临时文件（安装包 + 相机图），保留历史记录。
@@ -176,6 +219,8 @@ object StorageCleaner {
 
     private fun capturesDir(context: Context): File = File(context.cacheDir, CAPTURES_DIR)
 
+    private fun webViewCacheDir(context: Context): File = File(context.cacheDir, WEBVIEW_DIR)
+
     private fun dirSize(dir: File): Long {
         if (!dir.exists()) return 0L
         if (dir.isFile) return dir.length()
@@ -185,6 +230,7 @@ object StorageCleaner {
     private const val UPDATES_DIR = "updates"
     private const val CAPTURES_DIR = "captures"
     private const val HISTORY_DIR = "history"
+    private const val WEBVIEW_DIR = "WebView"
     private const val INDEX_FILE = "index.json"
     private const val PART_SUFFIX = ".part"
     private const val APK_SUFFIX = ".apk"

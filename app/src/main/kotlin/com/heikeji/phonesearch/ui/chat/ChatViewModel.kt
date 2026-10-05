@@ -25,7 +25,34 @@ data class ChatBubble(
     val reasoningCostMs: Long = 0,
     val streaming: Boolean = false,
     val failed: Boolean = false,
-)
+    /** 用户发的图片（原图字节，直接展示）。 */
+    val imageBytes: ByteArray? = null,
+) {
+    // data class 带数组字段时 equals/hashCode 要显式实现，否则每次比较都不相等，
+    // RecyclerView 会白白重绑。
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is ChatBubble) return false
+        return role == other.role &&
+            text == other.text &&
+            reasoning == other.reasoning &&
+            reasoningCostMs == other.reasoningCostMs &&
+            streaming == other.streaming &&
+            failed == other.failed &&
+            (imageBytes === other.imageBytes || imageBytes?.contentEquals(other.imageBytes) == true)
+    }
+
+    override fun hashCode(): Int {
+        var result = role.hashCode()
+        result = 31 * result + text.hashCode()
+        result = 31 * result + reasoning.hashCode()
+        result = 31 * result + reasoningCostMs.hashCode()
+        result = 31 * result + streaming.hashCode()
+        result = 31 * result + failed.hashCode()
+        result = 31 * result + (imageBytes?.contentHashCode() ?: 0)
+        return result
+    }
+}
 
 data class ChatUiState(
     val connecting: Boolean = false,
@@ -85,11 +112,26 @@ class ChatViewModel(
     fun send(rawText: String) {
         val text = rawText.trim()
         if (text.isEmpty() || !_state.value.canSend) return
+        runStream(question = text, image = null, displayText = text)
+    }
 
+    /**
+     * 带图提问。
+     *
+     * @param image 已经压过的 JPEG；服务端要求 100KB 量级，调用方负责缩放
+     * @param caption 图片附带的文字，可为空
+     */
+    fun sendImage(image: ByteArray, caption: String) {
+        if (image.isEmpty() || !_state.value.canSend) return
+        val text = caption.trim()
+        runStream(question = text, image = image, displayText = text)
+    }
+
+    private fun runStream(question: String, image: ByteArray?, displayText: String) {
         val state = _state.value
         _state.value = state.copy(
             bubbles = state.bubbles +
-                ChatBubble(role = ChatRole.USER, text = text) +
+                ChatBubble(role = ChatRole.USER, text = displayText, imageBytes = image) +
                 ChatBubble(role = ChatRole.ASSISTANT, text = "", streaming = true),
             suggestions = emptyList(),
             streaming = true,
@@ -108,14 +150,7 @@ class ChatViewModel(
 
             try {
                 withContext(Dispatchers.IO) {
-                    client.ask(
-                        sessionId = sessionId,
-                        content = text,
-                        history = context,
-                        grade = grade,
-                        thinkEnabled = think,
-                        searchEnabled = search,
-                    ) { event ->
+                    val onEvent: (ChatEvent) -> Unit = { event ->
                         when (event) {
                             is ChatEvent.Started -> currentAnswerId = event.answerId
                             is ChatEvent.Delta -> {
@@ -139,6 +174,29 @@ class ChatViewModel(
                             }
                         }
                     }
+
+                    if (image == null) {
+                        client.ask(
+                            sessionId = sessionId,
+                            content = question,
+                            history = context,
+                            grade = grade,
+                            thinkEnabled = think,
+                            searchEnabled = search,
+                            onEvent = onEvent,
+                        )
+                    } else {
+                        client.askWithImage(
+                            sessionId = sessionId,
+                            jpeg = image,
+                            content = question,
+                            history = context,
+                            grade = grade,
+                            thinkEnabled = think,
+                            searchEnabled = search,
+                            onEvent = onEvent,
+                        )
+                    }
                 }
             } catch (e: CancellationException) {
                 // 用户主动停止：保留已经吐出来的内容
@@ -149,7 +207,7 @@ class ChatViewModel(
 
             // 有内容才算一轮有效对话，进上下文
             if (answer.isNotEmpty()) {
-                history.add(ChatTurn(ChatRole.USER, text, System.currentTimeMillis() / 1000))
+                history.add(ChatTurn(ChatRole.USER, question.ifEmpty { "[图片]" }, System.currentTimeMillis() / 1000))
             }
             currentAnswerId = ""
             finalizeStream(failure)

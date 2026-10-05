@@ -29,11 +29,17 @@ object ChatRequest {
     const val PATH_ASK = "/kdchat/api/ask"
     const val PATH_STOP = "/kdchat/api/stop"
 
+    /** 拍照提问（multipart：图片 + 同一批表单字段）。 */
+    const val PATH_PHOTO_ASK = "/kdchat/photo/ask"
+
     /** 前端版本号，抓包里固定 211。 */
     const val FE_VC = "211"
 
-    /** 普通对话。拍照问是 `image`，本应用暂不涉及。 */
+    /** 普通对话。 */
     const val TOOL_TYPE_NORMAL = "normal"
+
+    /** 带图提问。 */
+    const val TOOL_TYPE_IMAGE = "image"
 
     /** 建会话。 */
     fun createParams(grade: Int): Map<String, String> = linkedMapOf(
@@ -77,6 +83,46 @@ object ChatRequest {
         "content" to content,
         "feVc" to FE_VC,
         "toolType" to TOOL_TYPE_NORMAL,
+        "sessionId" to sessionId,
+        "isHitQueryRewrite" to "1",
+        "inputType" to "1",
+        "referInfo" to "",
+        "from" to "home",
+        "scene" to "",
+        "isKeyPointContent" to "0",
+        "context" to contextJson(history),
+    )
+
+    /**
+     * 带图提问的表单字段（图片本身走 multipart 的 `image` 部分）。
+     *
+     * 与纯文字的区别：
+     * - `toolType` 是 `image`；
+     * - 多一个 `imageInfo`，内容是 `{"picMD5":"<图片 md5>"}`。
+     *
+     * H5 里 `pagesearchInfo` 是**可选**的（`a.pagesearchInfo && (...)`），
+     * 所以这里不发也能用；服务端拿 `imageInfo` 自己找书页。
+     */
+    fun photoAskParams(
+        sessionId: String,
+        content: String,
+        history: List<ChatTurn>,
+        grade: Int,
+        thinkEnabled: Boolean,
+        searchEnabled: Boolean,
+        picMd5: String,
+    ): Map<String, String> = linkedMapOf(
+        "subjectId" to "",
+        "sid" to "",
+        "agentId" to "",
+        "searchEnabled" to if (searchEnabled) "1" else "0",
+        "thinkEnabled" to if (thinkEnabled) "1" else "0",
+        "isSugContent" to "0",
+        "imageInfo" to """{"picMD5":"$picMd5"}""",
+        "grade" to grade.toString(),
+        "content" to content,
+        "feVc" to FE_VC,
+        "toolType" to TOOL_TYPE_IMAGE,
         "sessionId" to sessionId,
         "isHitQueryRewrite" to "1",
         "inputType" to "1",

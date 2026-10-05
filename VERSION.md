@@ -36,6 +36,7 @@ pwsh -File tools/package-apk.ps1
 | 1.20.0 | 20 | **快问 AI**（新功能）：接入 `/kdchat` 系列接口，文字多轮对话 + **深度思考**（思考过程可折叠、显示耗时）+ **联网搜索** + 推荐问题 + 停止生成 + Markdown 渲染。SSE 协议用新加的**签名探针**实测取得（ProxyPin 不缓冲 SSE）。**修存储泄漏**：更新用的安装包从来不删，每版留一个 12 MB 的 APK 在 `files/updates/`，装过七八版就上百兆（用户实测 98 MB）——现在启动时自动回收，只留最新一个 |
 | 1.21.0 | 21 | 更新链路加固：`/releases/latest` 若拿不到 apk 附件（上传失败、或只是说明用的 release），旧逻辑直接返回 null，用户会**永远卡在「已是最新」**——现在退到 release 列表挑「版本号最高且带 apk」的那个。同时从 Gitee 删掉已回滚的 v1.16.0 / v1.17.0 / v1.18.0 三个坏版本，避免有人装到带撤销功能的包。新增 10 个更新解析测试 |
 | 1.22.0 | 22 | **修横屏闪退**：`layout-land/activity_essay.xml` 的答案区把两个 TextView 直接塞进 `ScrollView`，而它只能有一个直接子 View —— inflate 时抛 `IllegalStateException`，**一横屏打开 AI 作文就崩**。新增 `LayoutSanityTest` 静态检查布局（含 `NestedScrollView`、且不遗漏根元素），并校验竖屏/横屏 id 集合一致。**快问 AI 补横屏布局**：开关与输入压成一行。更新解析测试补上真实的 `org.json`（`testImplementation`，不进 APK） |
+| 1.23.0 | 23 | **快问 AI 支持图片**：输入框左侧加选图按钮，图片压到最长边 1280 / 质量 80 后走 `/kdchat/photo/ask`（multipart + `imageInfo{picMD5}` + `toolType=image`）。`pagesearchInfo` 在 H5 里是**可选**的（`a.pagesearchInfo && ...`），所以不发也能用。**主页横屏不再滚动**（根节点由 `NestedScrollView` 换成普通 `LinearLayout`，两栏重新分配高度）。**最近搜题默认收起**，点标题展开，展开状态记忆。**体积优化**：历史记录增加 40MB 总量上限（只限条数挡不住大题的整份 HTML），WebView 答案图缓存超 32MB 自动清；长按版本号可看存储占用并手动清理 |
 
 ## 每轮迭代的固定动作
 

@@ -298,4 +298,41 @@ class ChatEventParserTest {
         assertEquals("6", params["grade"])
         assertEquals("211", params["feVc"])
     }
+
+    // ------------------------------------------------------------------ 带图提问
+
+    @Test
+    fun `photo ask marks the tool type and carries the image md5`() {
+        val params = ChatRequest.photoAskParams(
+            sessionId = "142120914113",
+            content = "1, 2, 3, 4, 5, ",
+            history = emptyList(),
+            grade = 6,
+            thinkEnabled = false,
+            searchEnabled = false,
+            picMd5 = "4c4be24bcb6a6dc1f884ecf20198e756",
+        )
+        assertEquals("image", params["toolType"])
+        assertEquals("""{"picMD5":"4c4be24bcb6a6dc1f884ecf20198e756"}""", params["imageInfo"])
+        assertEquals("142120914113", params["sessionId"])
+        assertEquals("1, 2, 3, 4, 5, ", params["content"])
+        // pagesearchInfo 在 H5 里是可选的，不发也要能work
+        assertFalse(params.containsKey("pagesearchInfo"))
+    }
+
+    @Test
+    fun `photo ask honours the switches and keeps context`() {
+        val params = ChatRequest.photoAskParams(
+            sessionId = "1",
+            content = "",
+            history = listOf(ChatTurn(ChatRole.USER, "上一轮", 100)),
+            grade = 6,
+            thinkEnabled = true,
+            searchEnabled = true,
+            picMd5 = "abc",
+        )
+        assertEquals("1", params["thinkEnabled"])
+        assertEquals("1", params["searchEnabled"])
+        assertTrue(params["context"]!!.contains("上一轮"))
+    }
 }

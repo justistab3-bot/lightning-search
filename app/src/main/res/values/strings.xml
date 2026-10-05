@@ -175,4 +175,21 @@
     <string name="chat_search">联网搜索</string>
     <string name="chat_reasoning">思考过程</string>
     <string name="chat_reasoning_with_time">思考过程（%1$.1f 秒）</string>
+    <string name="chat_pick_image">选图片</string>
+    <string name="chat_image_hint">想问这张图的什么？（可不填）</string>
+    <string name="chat_image_failed">图片读取失败，换一张试试</string>
+    <string name="chat_image_too_large">图片太大了，换一张小一点的</string>
+
+    <!-- 存储占用 -->
+    <string name="storage_title">存储占用</string>
+    <string name="storage_hint">长按版本号可以看这里</string>
+    <string name="storage_apk">安装包缓存</string>
+    <string name="storage_capture">相机临时图</string>
+    <string name="storage_history">搜题历史</string>
+    <string name="storage_webview">网页缓存</string>
+    <string name="storage_total">合计</string>
+    <string name="storage_clear">清理临时文件</string>
+    <string name="storage_cleared">已清理 %1$s</string>
+    <string name="storage_clear_confirm">清理安装包缓存、相机临时图和网页缓存。搜题历史会保留。</string>
+    <string name="storage_ok">好</string>
 </resources>

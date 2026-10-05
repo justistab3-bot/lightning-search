@@ -13,6 +13,7 @@ import com.heikeji.phonesearch.protocol.sign.RequestSigner
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
+import java.util.UUID
 import kotlin.coroutines.cancellation.CancellationException
 
 /**
@@ -53,6 +54,43 @@ class ChatClient(
     }
 
     /**
+     * 带图提问并流式读取回答。
+     *
+     * 走 `/kdchat/photo/ask`：multipart 里第一部分是图片，其余是同一批表单字段。
+     */
+    fun askWithImage(
+        sessionId: String,
+        jpeg: ByteArray,
+        content: String,
+        history: List<ChatTurn>,
+        grade: Int,
+        thinkEnabled: Boolean,
+        searchEnabled: Boolean,
+        onEvent: (ChatEvent) -> Unit,
+    ) {
+        val params = ChatRequest.photoAskParams(
+            sessionId = sessionId,
+            content = content,
+            history = history,
+            grade = grade,
+            thinkEnabled = thinkEnabled,
+            searchEnabled = searchEnabled,
+            picMd5 = md5Hex(jpeg),
+        )
+        val merged = signedParams(params)
+        val boundary = ProtocolProfile.MULTIPART_BOUNDARY_PREFIX +
+            UUID.randomUUID().toString().replace("-", "")
+        val body = Multipart.build(boundary, jpeg, params = merged)
+
+        streamRequest(
+            path = ChatRequest.PATH_PHOTO_ASK,
+            body = body,
+            contentType = "multipart/form-data; boundary=$boundary",
+            onEvent = onEvent,
+        )
+    }
+
+    /**
      * 提问并流式读取回答。
      *
      * 阻塞执行，调用方负责放到 IO 线程；每个事件通过 [onEvent] 回调。
@@ -74,12 +112,26 @@ class ChatClient(
             thinkEnabled = thinkEnabled,
             searchEnabled = searchEnabled,
         )
-        val body = signedBody(params)
+        streamRequest(
+            path = ChatRequest.PATH_ASK,
+            body = signedBody(params),
+            contentType = ProtocolProfile.FORM_CONTENT_TYPE,
+            onEvent = onEvent,
+        )
+    }
+
+    /** 发一个流式请求并把 SSE 事件翻译出来。 */
+    private fun streamRequest(
+        path: String,
+        body: ByteArray,
+        contentType: String,
+        onEvent: (ChatEvent) -> Unit,
+    ) {
         val handle = transport.postStream(
             host = ProtocolProfile.HOST_KDDZY,
-            path = ChatRequest.PATH_ASK,
+            path = path,
             body = body,
-            contentType = ProtocolProfile.FORM_CONTENT_TYPE,
+            contentType = contentType,
             cookie = cookie(),
             readTimeoutMs = STREAM_READ_TIMEOUT_MS,
         )
@@ -152,7 +204,11 @@ class ChatClient(
      *
      * 与搜题那套一致：公共参数 -> 覆盖 identityIdV2/occupationType/nt -> 签名 -> 补 `sign`/`_t_`/`kakorrhaphiophobia`。
      */
-    private fun signedBody(params: Map<String, String>): ByteArray {
+    private fun signedBody(params: Map<String, String>): ByteArray =
+        UrlForm.encodeForm(signedParams(params)).toByteArray(Charsets.UTF_8)
+
+    /** 同上，但返回参数表本身（multipart 需要）。 */
+    private fun signedParams(params: Map<String, String>): LinkedHashMap<String, String?> {
         protocol.ensureInitialized()
 
         val merged = LinkedHashMap<String, String?>()
@@ -178,7 +234,18 @@ class ChatClient(
         merged["_t_"] = tSeconds.toString()
         merged["kakorrhaphiophobia"] = uptime.toString()
 
-        return UrlForm.encodeForm(merged).toByteArray(Charsets.UTF_8)
+        return merged
+    }
+
+    /** 图片的 md5（小写 hex），服务端用它去比对是否见过同一张图。 */
+    private fun md5Hex(bytes: ByteArray): String {
+        val digest = java.security.MessageDigest.getInstance("MD5").digest(bytes)
+        val out = StringBuilder(digest.size * 2)
+        for (byte in digest) {
+            val value = byte.toInt() and 0xFF
+            out.append(HEX[value ushr 4]).append(HEX[value and 0x0F])
+        }
+        return out.toString()
     }
 
     private fun cookie(): String? {
@@ -193,5 +260,7 @@ class ChatClient(
     private companion object {
         /** SSE 是长连接，用较长的**单次读**超时（不是总时长）。 */
         const val STREAM_READ_TIMEOUT_MS = 90_000
+
+        val HEX = "0123456789abcdef".toCharArray()
     }
 }

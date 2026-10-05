@@ -1,84 +1,87 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  横屏首页：左右两栏，左栏问候 + 主操作 + 统计，右栏最近搜题。
-  ID 必须与竖屏布局完全一致。
+  横屏首页：**整页不滚动**，所有功能一屏展示完。
+
+  布局意图：
+  - 根节点是普通 LinearLayout，不是 NestedScrollView —— 横屏下滑动很别扭，
+    而且一旦能滚就说明内容溢出了，属于设计没做完。
+  - 两栏分担高度：左栏「问候 + 主操作」，右栏「统计 + 最近搜题 + 底部信息」，
+    这样比原来「左栏堆四块、右栏只有一块」更均衡，也不容易顶破高度。
+  - 最近搜题默认收起，展开时也不会把页面撑出屏幕（右栏顶部，向下展开）。
+  - 各处 padding / 字号都收紧了一档，横屏高度通常只有 320–360dp。
+
+  ID 必须与 layout/activity_home.xml 完全一致，LayoutSanityTest 会检查。
 -->
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?android:attr/colorBackground"
-    android:fillViewport="true">
+    android:baselineAligned="false"
+    android:orientation="horizontal"
+    android:paddingBottom="8dp">
 
+    <!-- ============================ 左栏：问候 + 主操作 ============================ -->
     <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:baselineAligned="false"
-        android:orientation="horizontal"
-        android:paddingBottom="16dp">
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:paddingStart="20dp"
+        android:paddingEnd="8dp">
 
-        <!-- 左栏 -->
         <LinearLayout
-            android:layout_width="0dp"
+            android:id="@+id/header"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:paddingTop="6dp"
+            android:paddingBottom="8dp">
+
+            <TextView
+                android:id="@+id/dateLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.FlashSearch.Label" />
+
+            <TextView
+                android:id="@+id/greeting"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Title" />
+
+            <TextView
+                android:id="@+id/tagline"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="@string/brand_tagline"
+                android:textAppearance="@style/TextAppearance.FlashSearch.Caption" />
+        </LinearLayout>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/heroCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="@color/ivory"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/border_cream"
+            app:strokeWidth="1dp">
 
             <LinearLayout
-                android:id="@+id/header"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:paddingStart="24dp"
-                android:paddingTop="8dp"
-                android:paddingEnd="24dp"
-                android:paddingBottom="16dp">
+                android:padding="14dp">
 
-                <TextView
-                    android:id="@+id/dateLabel"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="@style/TextAppearance.FlashSearch.Label" />
-
-                <TextView
-                    android:id="@+id/greeting"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Display" />
-
-                <TextView
-                    android:id="@+id/tagline"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="@string/brand_tagline"
-                    android:textAppearance="@style/TextAppearance.FlashSearch.Body" />
-            </LinearLayout>
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/heroCard"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="24dp"
-                android:layout_marginEnd="24dp"
-                app:cardBackgroundColor="@color/ivory"
-                app:cardCornerRadius="24dp"
-                app:cardElevation="2dp"
-                app:strokeColor="@color/border_cream"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="18dp">
                 <com.google.android.material.button.MaterialButtonToggleGroup
                     android:id="@+id/modeGroup"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="14dp"
+                    android:layout_marginBottom="10dp"
                     app:selectionRequired="true"
                     app:singleSelection="true">
 
@@ -88,7 +91,11 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="@string/mode_single" />
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:minWidth="0dp"
+                        android:text="@string/mode_single"
+                        android:textSize="13sp" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/modePage"
@@ -96,178 +103,240 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="@string/mode_page" />
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:minWidth="0dp"
+                        android:text="@string/mode_page"
+                        android:textSize="13sp" />
                 </com.google.android.material.button.MaterialButtonToggleGroup>
-<com.google.android.material.button.MaterialButton
-                        android:id="@+id/takePhotoButton"
-                        style="@style/Widget.FlashSearch.PrimaryButton"
-                        android:layout_width="match_parent"
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/takePhotoButton"
+                    style="@style/Widget.FlashSearch.PrimaryButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="13dp"
+                    android:paddingBottom="13dp"
+                    android:text="@string/action_take_photo"
+                    app:icon="@drawable/ic_camera" />
+
+                <TextView
+                    android:id="@+id/systemCameraHint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:gravity="center"
+                    android:text="@string/hint_long_press_system_camera"
+                    android:textAppearance="@style/TextAppearance.FlashSearch.Label" />
+
+                <TextView
+                    android:id="@+id/modeHint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:maxLines="2"
+                    android:text="@string/home_tip"
+                    android:textAppearance="@style/TextAppearance.FlashSearch.Caption" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/essayButton"
+                        style="@style/Widget.FlashSearch.SecondaryButton"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="@string/action_take_photo"
-                        app:icon="@drawable/ic_camera" />
+                        android:layout_weight="1"
+                        android:paddingTop="11dp"
+                        android:paddingBottom="11dp"
+                        android:text="@string/essay_entry" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/chatButton"
+                        style="@style/Widget.FlashSearch.SecondaryButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:paddingTop="11dp"
+                        android:paddingBottom="11dp"
+                        android:text="@string/chat_entry" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
+
+    <!-- ============================ 右栏：统计 + 最近搜题 + 底部 ============================ -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:paddingStart="8dp"
+        android:paddingEnd="20dp">
+
+        <LinearLayout
+            android:id="@+id/statsRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:orientation="horizontal">
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                app:cardBackgroundColor="@color/ivory"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/border_cream"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="12dp"
+                    android:paddingTop="10dp"
+                    android:paddingEnd="12dp"
+                    android:paddingBottom="10dp">
+
                     <TextView
-                        android:id="@+id/systemCameraHint"
-                        android:layout_width="match_parent"
+                        android:id="@+id/todayCount"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:gravity="center"
-                        android:text="@string/hint_long_press_system_camera"
+                        android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Section" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:text="@string/stats_today"
                         android:textAppearance="@style/TextAppearance.FlashSearch.Label" />
-
-                    <TextView
-                        android:id="@+id/modeHint"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:text="@string/home_tip"
-                        android:textAppearance="@style/TextAppearance.FlashSearch.Caption" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="14dp"
-                        android:orientation="horizontal">
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/essayButton"
-                            style="@style/Widget.FlashSearch.SecondaryButton"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="@string/essay_entry" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/chatButton"
-                            style="@style/Widget.FlashSearch.SecondaryButton"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="10dp"
-                            android:layout_weight="1"
-                            android:text="@string/chat_entry" />
-                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <LinearLayout
-                android:id="@+id/statsRow"
-                android:layout_width="match_parent"
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="20dp"
-                android:layout_marginTop="12dp"
-                android:layout_marginEnd="10dp"
-                android:orientation="horizontal">
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                app:cardBackgroundColor="@color/ivory"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/border_cream"
+                app:strokeWidth="1dp">
 
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="0dp"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    app:cardBackgroundColor="@color/ivory"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp"
-                    app:strokeColor="@color/border_cream"
-                    app:strokeWidth="1dp">
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="12dp"
+                    android:paddingTop="10dp"
+                    android:paddingEnd="12dp"
+                    android:paddingBottom="10dp">
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
+                    <TextView
+                        android:id="@+id/totalCount"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="14dp">
+                        android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Section" />
 
-                        <TextView
-                            android:id="@+id/todayCount"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Title" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/stats_today"
-                            android:textAppearance="@style/TextAppearance.FlashSearch.Label" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
-                    android:layout_weight="1"
-                    app:cardBackgroundColor="@color/ivory"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp"
-                    app:strokeColor="@color/border_cream"
-                    app:strokeWidth="1dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
+                    <TextView
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="14dp">
-
-                        <TextView
-                            android:id="@+id/totalCount"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Title" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/stats_total"
-                            android:textAppearance="@style/TextAppearance.FlashSearch.Label" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-            </LinearLayout>
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/logoutButton"
-                style="@style/Widget.FlashSearch.TextButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="20dp"
-                android:layout_marginTop="8dp"
-                android:text="@string/action_logout" />
-            <TextView
-                android:id="@+id/versionLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginTop="14dp"
-                android:textAppearance="@style/TextAppearance.FlashSearch.Label" />
+                        android:layout_marginStart="6dp"
+                        android:text="@string/stats_total"
+                        android:textAppearance="@style/TextAppearance.FlashSearch.Label" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
 
-        <!-- 右栏：最近搜题 -->
+        <!-- 最近搜题：默认收起 -->
         <LinearLayout
             android:id="@+id/historySection"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
             android:layout_marginTop="8dp"
             android:layout_weight="1"
             android:orientation="vertical">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:text="@string/history_title"
-                android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Title" />
-
             <LinearLayout
-                android:id="@+id/historyList"
+                android:id="@+id/historyToggle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical" />
+                android:background="?attr/selectableItemBackground"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingTop="6dp"
+                android:paddingBottom="6dp">
 
-            <TextView
-                android:id="@+id/historyEmpty"
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/history_title"
+                    android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Section" />
+
+                <ImageView
+                    android:id="@+id/historyChevron"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:contentDescription="@string/history_title"
+                    android:src="@drawable/ic_chevron_down" />
+            </LinearLayout>
+
+            <ScrollView
+                android:id="@+id/historyBody"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:layout_marginTop="10dp"
-                android:layout_marginEnd="24dp"
-                android:text="@string/history_empty"
-                android:textAppearance="@style/TextAppearance.FlashSearch.Caption"
-                android:visibility="gone" />
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:id="@+id/historyList"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical" />
+
+                    <TextView
+                        android:id="@+id/historyEmpty"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/history_empty"
+                        android:textAppearance="@style/TextAppearance.FlashSearch.Caption"
+                        android:visibility="gone" />
+                </LinearLayout>
+            </ScrollView>
         </LinearLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/logoutButton"
+            style="@style/Widget.FlashSearch.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:minWidth="0dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:text="@string/action_logout" />
+
+        <TextView
+            android:id="@+id/versionLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:textAppearance="@style/TextAppearance.FlashSearch.Label" />
     </LinearLayout>
-</androidx.core.widget.NestedScrollView>
+</LinearLayout>

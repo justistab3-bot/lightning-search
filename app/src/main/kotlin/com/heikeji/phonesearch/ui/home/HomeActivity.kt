@@ -18,6 +18,8 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.heikeji.phonesearch.R
 import com.heikeji.phonesearch.appContainer
+import com.heikeji.phonesearch.data.StorageCleaner
+import com.heikeji.phonesearch.data.formatBytes
 import com.heikeji.phonesearch.data.relativeTime
 import com.heikeji.phonesearch.data.todayLabel
 import com.heikeji.phonesearch.databinding.ActivityHomeBinding
@@ -173,6 +175,7 @@ class HomeActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         bindStats()
+        setupHistoryToggle()
         bindHistory()
         if (!entrancePlayed) {
             entrancePlayed = true
@@ -237,14 +240,94 @@ class HomeActivity : AppCompatActivity() {
         binding.versionLabel.text = appVersionLabel()
         // 点版本号 = 手动检查更新
         binding.versionLabel.setOnClickListener { checkUpdate(silent = false) }
+        binding.versionLabel.setOnLongClickListener {
+            showStorageDialog()
+            true
+        }
     }
 
     /** 首页底部显示版本号，方便确认装的是哪一轮构建。 */
-    private fun appVersionLabel(): String {
-        val name = runCatching {
+    // ------------------------------------------------------------------ 存储占用
+
+    /**
+     * 长按版本号看存储占用，并能一键清掉临时文件。
+     *
+     * 应用体积是「用着用着变大」的：安装包缓存、相机原图、WebView 缓存的答案图
+     * 都会积累。这里让用户能看见是哪些在占地方。
+     */
+    private fun showStorageDialog() {
+        lifecycleScope.launch {
+            val usage = withContext(Dispatchers.IO) { StorageCleaner.usage(this@HomeActivity) }
+            val rows = listOf(
+                getString(R.string.storage_apk) to usage.apkBytes,
+                getString(R.string.storage_capture) to usage.captureBytes,
+                getString(R.string.storage_webview) to usage.webViewBytes,
+                getString(R.string.storage_history) to usage.historyBytes,
+            )
+            val message = buildString {
+                for ((label, bytes) in rows) {
+                    append(label).append("：").append(formatBytes(bytes)).append('\n')
+                }
+                append('\n').append(getString(R.string.storage_total))
+                    .append("：").append(usage.format())
+            }
+
+            androidx.appcompat.app.AlertDialog.Builder(this@HomeActivity)
+                .setTitle(R.string.storage_title)
+                .setMessage(message)
+                .setPositiveButton(R.string.storage_clear) { _, _ -> clearTransient() }
+                .setNegativeButton(R.string.storage_ok, null)
+                .show()
+        }
+    }
+
+    private fun clearTransient() {
+        lifecycleScope.launch {
+            val freed = withContext(Dispatchers.IO) {
+                val bytes = StorageCleaner.clearTransient(this@HomeActivity)
+                // WebView 缓存要在主线程用 API 清
+                withContext(Dispatchers.Main) {
+                    runCatching {
+                        val webView = android.webkit.WebView(this@HomeActivity)
+                        StorageCleaner.clearWebViewCache(webView)
+                        webView.destroy()
+                    }
+                }
+                bytes + StorageCleaner.webViewCacheBytes(this@HomeActivity)
+            }
+            binding.root.showMessage(getString(R.string.storage_cleared, formatBytes(freed)))
+        }
+    }
+
+    private fun appVersionLabel(): String {        val name = runCatching {
             packageManager.getPackageInfo(packageName, 0).versionName
         }.getOrNull().orEmpty()
         return if (name.isBlank()) "" else "v$name"
+    }
+
+    /**
+     * 最近搜题默认收起。
+     *
+     * 首页本来就长，历史一多就把「统计 / 退出」顶到屏幕外面去；
+     * 横屏更是必须收起，否则一屏放不下。展开状态记在偏好里，下次进来保持。
+     */
+    private fun setupHistoryToggle() {
+        val prefs = getSharedPreferences(PREFS_HOME, MODE_PRIVATE)
+        var expanded = prefs.getBoolean(KEY_HISTORY_EXPANDED, false)
+
+        fun render() {
+            binding.historyBody.visibility = if (expanded) View.VISIBLE else View.GONE
+            binding.historyChevron.setImageResource(
+                if (expanded) R.drawable.ic_chevron_down else R.drawable.ic_chevron_right,
+            )
+        }
+
+        binding.historyToggle.setOnClickListener {
+            expanded = !expanded
+            prefs.edit().putBoolean(KEY_HISTORY_EXPANDED, expanded).apply()
+            render()
+        }
+        render()
     }
 
     private fun bindStats() {
@@ -346,5 +429,7 @@ class HomeActivity : AppCompatActivity() {
 
     private companion object {
         const val HISTORY_PREVIEW = 6
+        const val PREFS_HOME = "home_ui"
+        const val KEY_HISTORY_EXPANDED = "historyExpanded"
     }
 }
