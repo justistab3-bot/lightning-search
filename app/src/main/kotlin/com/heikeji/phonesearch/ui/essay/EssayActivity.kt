@@ -41,6 +41,11 @@ class EssayActivity : AppCompatActivity() {
 
     private lateinit var backButton: ImageButton
     private lateinit var copyButton: MaterialButton
+    private lateinit var fullscreenButton: MaterialButton
+
+    /** 配置区（竖屏是配置卡片，横屏是左栏）。全屏时整块隐藏，把版面全给正文。 */
+    private lateinit var configArea: View
+    private var fullscreen = false
     private lateinit var modeGroup: MaterialButtonToggleGroup
     private lateinit var titleInput: EditText
     private lateinit var queryTypeLabel: TextView
@@ -82,6 +87,8 @@ class EssayActivity : AppCompatActivity() {
     private fun bindViews() {
         backButton = findViewById(R.id.backButton)
         copyButton = findViewById(R.id.copyButton)
+        fullscreenButton = findViewById(R.id.fullscreenButton)
+        configArea = findViewById(R.id.configArea)
         modeGroup = findViewById(R.id.modeGroup)
         titleInput = findViewById(R.id.titleInput)
         queryTypeLabel = findViewById(R.id.queryTypeLabel)
@@ -167,6 +174,27 @@ class EssayActivity : AppCompatActivity() {
 
     // ------------------------------------------------------------------ 正文字号
 
+    /**
+     * 全屏看正文。
+     *
+     * 横屏本来左右分栏，正文只占一半宽；正文长的时候读起来很挤。
+     * 点一下把配置区收掉，正文吃满整个版面。
+     */
+    private fun setupFullscreen() {
+        fullscreenButton.setOnClickListener {
+            fullscreen = !fullscreen
+            renderFullscreen()
+        }
+        renderFullscreen()
+    }
+
+    private fun renderFullscreen() {
+        configArea.visibility = if (fullscreen) View.GONE else View.VISIBLE
+        fullscreenButton.text = getString(
+            if (fullscreen) R.string.essay_exit_fullscreen else R.string.essay_fullscreen,
+        )
+    }
+
     private fun setupFontControls() {
         fontSizeSp = prefs.getInt(KEY_FONT_SIZE, DEFAULT_FONT_SIZE_SP)
             .coerceIn(MIN_FONT_SIZE_SP, MAX_FONT_SIZE_SP)
@@ -197,6 +225,7 @@ class EssayActivity : AppCompatActivity() {
 
     private fun setupActions() {
         backButton.setOnClickListener { finish() }
+        setupFullscreen()
 
         titleInput.addTextChangedListener(
             object : android.text.TextWatcher {

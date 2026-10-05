@@ -153,6 +153,8 @@
     <string name="essay_word_count_format">%1$s 字</string>
     <string name="essay_empty_result">写出来的内容会显示在这里 📝</string>
     <string name="essay_stopped">已停止生成</string>
+    <string name="essay_fullscreen">全屏</string>
+    <string name="essay_exit_fullscreen">退出全屏</string>
 
     <!-- 通用 -->
     <string name="action_answer_fullscreen">答案区全屏</string>

@@ -36,6 +36,17 @@
             android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Title" />
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/fullscreenButton"
+            style="@style/Widget.FlashSearch.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="0dp"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:text="@string/essay_fullscreen"
+            android:textSize="13sp" />
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/copyButton"
             style="@style/Widget.FlashSearch.TextButton"
             android:layout_width="wrap_content"
@@ -58,7 +69,13 @@
             android:paddingEnd="20dp"
             android:paddingBottom="24dp">
 
-            <!-- 配置 -->
+            <!-- 配置（全屏时整块隐藏；包一层是为了和横屏的 configArea 同为 LinearLayout） -->
+            <LinearLayout
+                android:id="@+id/configArea"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
             <com.google.android.material.card.MaterialCardView
                 style="@style/Widget.FlashSearch.Card.Hero"
                 android:layout_width="match_parent"
@@ -242,6 +259,7 @@
                         android:text="@string/essay_action_generate" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
 
             <!-- 提纲（仅提纲模式） -->
             <com.google.android.material.card.MaterialCardView

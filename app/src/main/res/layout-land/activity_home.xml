@@ -48,7 +48,7 @@
                 android:id="@+id/dateLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textAppearance="@style/TextAppearance.FlashSearch.Label" />
+                android:textAppearance="@style/TextAppearance.FlashSearch.Body" />
 
             <TextView
                 android:id="@+id/greeting"
@@ -64,7 +64,7 @@
             android:layout_height="wrap_content"
             android:layout_marginEnd="16dp"
             android:text="@string/brand_tagline"
-            android:textAppearance="@style/TextAppearance.FlashSearch.Caption" />
+            android:textAppearance="@style/TextAppearance.FlashSearch.Body" />
 
         <TextView
             android:id="@+id/versionLabel"
@@ -313,10 +313,16 @@
                 android:src="@drawable/ic_chevron_down" />
         </LinearLayout>
 
+        <!--
+          展开时由代码把 historySection 设成 0dp + weight 1（吃剩余高度），
+          historyBody 再在里面 0dp + weight 1，这样列表**内部**滚动。
+          收起时 section 回到 wrap_content，不留空档。
+        -->
         <ScrollView
             android:id="@+id/historyBody"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:visibility="gone">
 
             <LinearLayout

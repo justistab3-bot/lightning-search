@@ -38,6 +38,7 @@ pwsh -File tools/package-apk.ps1
 | 1.22.0 | 22 | **修横屏闪退**：`layout-land/activity_essay.xml` 的答案区把两个 TextView 直接塞进 `ScrollView`，而它只能有一个直接子 View —— inflate 时抛 `IllegalStateException`，**一横屏打开 AI 作文就崩**。新增 `LayoutSanityTest` 静态检查布局（含 `NestedScrollView`、且不遗漏根元素），并校验竖屏/横屏 id 集合一致。**快问 AI 补横屏布局**：开关与输入压成一行。更新解析测试补上真实的 `org.json`（`testImplementation`，不进 APK） |
 | 1.23.0 | 23 | **快问 AI 支持图片**：输入框左侧加选图按钮，图片压到最长边 1280 / 质量 80 后走 `/kdchat/photo/ask`（multipart + `imageInfo{picMD5}` + `toolType=image`）。`pagesearchInfo` 在 H5 里是**可选**的（`a.pagesearchInfo && ...`），所以不发也能用。**主页横屏不再滚动**（根节点由 `NestedScrollView` 换成普通 `LinearLayout`，两栏重新分配高度）。**最近搜题默认收起**，点标题展开，展开状态记忆。**体积优化**：历史记录增加 40MB 总量上限（只限条数挡不住大题的整份 HTML），WebView 答案图缓存超 32MB 自动清；长按版本号可看存储占用并手动清理 |
 | 1.24.0 | 24 | **修「竖屏转横屏闪退」**：`activity_home.xml` 的 `root` 竖屏是 `NestedScrollView`、横屏是 `LinearLayout`，`historyBody` 竖屏是 `LinearLayout`、横屏是 `ScrollView` —— ViewBinding 只按一份生成字段类型，转到另一方向就 `ClassCastException`。`LayoutSanityTest` 新增「同 id 必须是同一种 View」规则，**这条规则正是靠它抓出上面两处的**。**横屏首页按横屏重新设计**（目标 16:9 宽屏，横向宽、高度只有 ~390dp）：三块功能并排居中（拍照搜题权重 4、AI 作文 2.2、快问 AI 2.2），两侧留白把内容挤到中间，不再左重右空；头部压成一行、底部一行放统计与退出；横屏历史预览从 6 条减到 3 条 |
+| 1.25.0 | 25 | **修横屏最近搜题滚不动**：`historyBody` 在横屏是 `wrap_content`，列表一长就撑到屏幕外，而根节点不可滚动 → 看着就是「滚不动」。现在展开时把 `historySection` 设为 `0dp + weight 1` 吃掉剩余高度，列表在**内部**滚动；收起时回到 `wrap_content` 不留空档。**修字体不平衡**：`dateLabel`（时间）原来用 `Label`（12sp）比 `tagline`（提示语，14sp）小一档，两边都统一到 `Body`；历史条目的时间也从 12sp 提到 13sp。**作文横屏加全屏按钮**：点一下收起配置栏，正文吃满整个版面（竖屏同样可用，收起配置卡片） |
 
 ## 每轮迭代的固定动作
 

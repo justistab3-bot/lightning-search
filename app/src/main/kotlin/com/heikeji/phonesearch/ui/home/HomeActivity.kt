@@ -14,6 +14,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import android.widget.LinearLayout
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.heikeji.phonesearch.R
@@ -320,6 +321,14 @@ class HomeActivity : AppCompatActivity() {
             binding.historyChevron.setImageResource(
                 if (expanded) R.drawable.ic_chevron_down else R.drawable.ic_chevron_right,
             )
+
+            // 横屏高度紧张：展开时让历史区吃掉剩余高度、列表在内部滚动，
+            // 否则 wrap_content 会把底部（退出）顶出屏幕，而根节点不可滚动 → 看着就是「滚不动」。
+            val params = binding.historySection.layoutParams as LinearLayout.LayoutParams
+            val wantWeight = expanded && isLandscape()
+            params.height = if (wantWeight) 0 else LinearLayout.LayoutParams.WRAP_CONTENT
+            params.weight = if (wantWeight) 1f else 0f
+            binding.historySection.layoutParams = params
         }
 
         binding.historyToggle.setOnClickListener {

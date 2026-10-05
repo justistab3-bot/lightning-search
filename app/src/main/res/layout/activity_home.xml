@@ -41,7 +41,7 @@
                 android:id="@+id/dateLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textAppearance="@style/TextAppearance.FlashSearch.Label" />
+                android:textAppearance="@style/TextAppearance.FlashSearch.Body" />
 
             <TextView
                 android:id="@+id/greeting"
