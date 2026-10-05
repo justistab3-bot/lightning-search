@@ -1,7 +1,5 @@
 package com.heikeji.phonesearch.protocol.model
 
-import com.heikeji.phonesearch.protocol.book.model.RelatedBookInfo
-
 /**
  * 单条答案结果，对应 answers.mainPageInfo 的一个元素。
  *
@@ -14,7 +12,6 @@ import com.heikeji.phonesearch.protocol.book.model.RelatedBookInfo
  *  - analysisHtml   -> subjectAnalysis 或 analysis.subjectAnalysis.content
  *  - subject        -> courseName（缺失时回退到 searchInfo.subjectName）
  *  - rawHtml        -> 整个结果是 HTML 时的原始内容，非 null 时其他字段为空
- *  - relatedBook    -> 该题关联的教材，「查看整本答案」的入口依据
  */
 data class AnswerItem(
     val index: Int,
@@ -26,14 +23,6 @@ data class AnswerItem(
     val analysisHtml: String,
     val subject: String,
     val rawHtml: String?,
-    val relatedBook: RelatedBookInfo? = null,
-    /**
-     * 解码后 JSON 的顶层字段名，逗号分隔。
-     *
-     * 只用于诊断「查看整本答案」入口不出现的问题：服务端字段位置会变，
-     * 出问题时长按标题就能看到真实结构，不用重新抓包。
-     */
-    val rawKeys: String = "",
 ) {
     val hasQuestion: Boolean get() = questionHtml.isNotBlank() || questionImages.isNotEmpty()
     val hasAnswer: Boolean get() = answerHtml.isNotBlank() || answerImages.isNotEmpty()

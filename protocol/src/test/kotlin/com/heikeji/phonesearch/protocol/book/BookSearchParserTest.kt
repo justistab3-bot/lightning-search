@@ -180,42 +180,4 @@ class BookSearchParserTest {
             ),
         )
     }
-
-    @Test
-    fun `related book is picked up from a decoded single answer`() {
-        // 这是「查看整本答案」真正的来源：解码后的单题答案根层，
-        // 和 question / answer / subjectAnalysis 平级（H5 里的 S.relatedBook）。
-        val info = BookSearchParser.relatedBookOf(
-            Json.parseObject(
-                """
-                {"question":{"content":"题干"},"answer":[{"content":"答案"}],
-                 "subjectAnalysis":"解析","courseName":"化学",
-                 "relatedBook":{"bookId":"bk9","pageId":"pg9","bookName":"高中化学 人教版"},
-                 "qid":"tid9"}
-                """.trimIndent(),
-                "bad",
-            ),
-        )!!
-        assertEquals("bk9", info.bookId)
-        assertEquals("pg9", info.pageId)
-        assertEquals("高中化学 人教版", info.bookName)
-        assertEquals("tid9", info.tid)
-    }
-
-    @Test
-    fun `book name and tid are optional`() {
-        val info = BookSearchParser.relatedBookOf(
-            Json.parseObject("""{"relatedBook":{"bookId":"bk"}}""", "bad"),
-        )!!
-        assertEquals("", info.bookName)
-        assertEquals("", info.tid)
-    }
-
-    @Test
-    fun `top level qid is used as tid when relatedBook has none`() {
-        val info = BookSearchParser.relatedBookOf(
-            Json.parseObject("""{"bookId":"bk","qid":"q1"}""", "bad"),
-        )!!
-        assertEquals("q1", info.tid)
-    }
 }

@@ -22,8 +22,6 @@ data class PageSearchResult(
      * 服务端没给（或这页不是教辅）时为 null，入口按钮不显示。
      */
     val relatedBook: RelatedBookInfo? = null,
-    /** 整页响应 `data` 的顶层字段名，逗号分隔。仅用于诊断入口不出现的问题。 */
-    val rawKeys: String = "",
 ) {
     val isEmpty: Boolean get() = blocks.isEmpty()
 }
