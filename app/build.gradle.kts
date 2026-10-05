@@ -16,8 +16,8 @@ android {
         minSdk = 24
         targetSdk = 37
         // 每轮迭代都往上走：装到机器上后可以直接从「设置 - 应用」或首页底部确认版本。
-        versionCode = 20
-        versionName = "1.20.0"
+        versionCode = 22
+        versionName = "1.22.0"
     }
 
     buildTypes {
@@ -65,4 +65,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
 
     testImplementation(libs.junit)
+    // 单元测试跑在 JVM 上，android.jar 里的 org.json 是桩实现（一调用就抛 not mocked）。
+    // 引入真实实现，让更新源的 JSON 解析能被测到。
+    testImplementation(libs.json)
 }

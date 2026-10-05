@@ -14,6 +14,7 @@ webkit = "1.14.0"
 jsoup = "1.23.2"
 gson = "2.11.0"
 junit = "4.13.2"
+json = "20250517"
 
 [libraries]
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
@@ -37,6 +38,9 @@ jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
 # 若打包 org.json:json 又会与 Android 平台的同名类冲突。
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 junit = { module = "junit:junit", version.ref = "junit" }
+# 只给单元测试用（testImplementation），不会打进 APK，所以不会和 Android 平台的
+# 同名类冲突。作用是让跑在 JVM 上的测试拿到真实的 org.json，而不是 android.jar 的桩。
+json = { module = "org.json:json", version.ref = "json" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

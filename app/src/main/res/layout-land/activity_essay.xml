@@ -363,23 +363,30 @@
                 android:layout_marginTop="10dp"
                 android:layout_weight="1">
 
-                <TextView
-                    android:id="@+id/resultTitle"
+                <!-- ScrollView 只能有一个直接子 View，标题和正文必须包一层 -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Title"
-                    android:visibility="gone" />
+                    android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/resultText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:lineSpacingMultiplier="1.7"
-                    android:text="@string/essay_empty_result"
-                    android:textAppearance="@style/TextAppearance.FlashSearch.Body"
-                    android:textColor="@color/charcoal_warm"
-                    android:textIsSelectable="true" />
+                    <TextView
+                        android:id="@+id/resultTitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Title"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/resultText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:lineSpacingMultiplier="1.7"
+                        android:text="@string/essay_empty_result"
+                        android:textAppearance="@style/TextAppearance.FlashSearch.Body"
+                        android:textColor="@color/charcoal_warm"
+                        android:textIsSelectable="true" />
+                </LinearLayout>
             </ScrollView>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>

@@ -16,6 +16,15 @@ object UpdateConfig {
     /** 最新 release；公开仓库无需令牌。 */
     const val LATEST_RELEASE_URL = "$API_BASE/releases/latest"
 
+    /**
+     * release 列表（按创建时间倒序）。
+     *
+     * 只在 [LATEST_RELEASE_URL] 拿不到可用 APK 时兜底 —— 比如某个 release 附件上传失败，
+     * 这时 `/releases/latest` 会返回它，但里面没有 apk，用户就会一直卡在「已是最新」。
+     * 有列表兜底就能跳到**更早但版本号更高**的那个（回滚过的版本也靠它跳过）。
+     */
+    const val RELEASES_URL = "$API_BASE/releases"
+
     /** release 列表页，仅在自动检查失败时作为兜底提示用。 */
     const val RELEASES_PAGE = "https://gitee.com/$OWNER/$REPO/releases"
 

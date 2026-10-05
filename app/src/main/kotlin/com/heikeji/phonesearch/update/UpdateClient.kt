@@ -14,9 +14,41 @@ import java.net.URL
  */
 object UpdateClient {
 
-    /** 查最新 release；没有可用 APK 时返回 null。 */
+    /**
+     * 查最新 release；没有可用 APK 时返回 null。
+     *
+     * 先问 `/releases/latest`。**如果它没有 apk 附件**（附件上传失败、或只是个说明用的
+     * release），就退到列表里挑**版本号最高且带 apk** 的那个 —— 否则用户会永远卡在
+     * 「已是最新」，明明新版本就在那儿却升不上去。
+     */
     fun fetchLatest(): UpdateInfo? {
-        val body = httpGetText(UpdateConfig.LATEST_RELEASE_URL) ?: return null
+        val latest = httpGetText(UpdateConfig.LATEST_RELEASE_URL)?.let { parseRelease(it) }
+        if (latest != null && latest.hasApk) return latest
+
+        // 兜底：扫列表，取版本号最高的可用项
+        val listBody = httpGetText("${UpdateConfig.RELEASES_URL}?per_page=30") ?: return latest
+        return parseReleaseList(listBody)?.takeIf { it.hasApk } ?: latest
+    }
+
+    /** 从列表 JSON 里挑出**版本号最高且带 apk** 的那个。 */
+    internal fun parseReleaseList(body: String): UpdateInfo? = try {
+        val array = org.json.JSONArray(body)
+        val all = (0 until array.length()).mapNotNull { index ->
+            array.optJSONObject(index)?.let { parseRelease(it.toString()) }
+        }
+        pickBest(all)
+    } catch (e: Exception) {
+        null
+    }
+
+    /** 版本号最高的可用项；没有带 apk 的就返回 null。 */
+    internal fun pickBest(candidates: List<UpdateInfo>): UpdateInfo? =
+        candidates
+            .filter { it.hasApk }
+            .maxWithOrNull { a, b -> Version.compare(a.versionName, b.versionName) }
+
+    /** 解析一个 release JSON；缺 tag 时返回 null，缺 apk 时 [UpdateInfo.hasApk] 为 false。 */
+    internal fun parseRelease(body: String): UpdateInfo? {
         val json = try {
             JSONObject(body)
         } catch (e: Exception) {
@@ -41,7 +73,6 @@ object UpdateClient {
                 }
             }
         }
-        if (apkUrl.isEmpty()) return null
 
         return UpdateInfo(
             versionName = tag.removePrefix("v").removePrefix("V"),
