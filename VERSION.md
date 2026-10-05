@@ -25,6 +25,7 @@ pwsh -File tools/package-apk.ps1
 | 1.9.0 | 9 | 同步「腕上搜题」1.1.1：新增**整页搜题**（`/pagesearch`）、题块与候选答案两级切换、原图缩放平移框选、EXIF 逆映射区域解码裁剪、`pageExtraInfo{sid,index,loc}` 框选精搜、完整 `SearchTask` 与 generation 校验、会话 compare-and-clear、首次使用说明 |
 | 1.10.0 | 10 | 答案页开启 JavaScript 并内置本地 **KaTeX**（`WebViewAssetLoader` + CSP 锁死脚本来源），Kotlin 渲染器降级为兜底；新增**断网全屏提示页**（自动弹出、网络恢复自动关闭） |
 | 1.11.0 | 11 | 长按「拍照搜题」直接调用系统相机（全分辨率，FileProvider 授权）；修复应用内相机选整页时误走单题裁剪流程的 bug |
+| 1.12.0 | 12 | 应用内检查更新：从 Gitee release 接口查最新版本、直链下载 APK、调系统安装器（全程不跳浏览器）；新增 7 个版本比较单测 |
 
 ## 每轮迭代的固定动作
 

@@ -5,6 +5,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- 应用内更新下载完成后调系统安装器；Android 8+ 还需用户在设置里单独授权 -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <uses-feature
         android:name="android.hardware.camera"
@@ -82,6 +84,12 @@
             android:exported="false"
             android:launchMode="singleTop"
             android:noHistory="true" />
+
+        <!-- 应用内更新：查看说明 -> 直链下载 -> 调系统安装器 -->
+        <activity
+            android:name=".update.UpdateActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
 
         <!--
           长按拍照搜题时，把目标文件交给系统相机写入。

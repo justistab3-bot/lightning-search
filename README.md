@@ -89,6 +89,30 @@ Kotlin 侧（`protocol/render/LatexRenderer`）支持分式、根式、上下标
 > **"来源可靠"不是安全属性。** 答案正文是服务端返回的 HTML、走网络传输，不属于我们自己的代码。
 > 所以 JS 开了，但这三层边界保留着——它们不影响 KaTeX 正常工作，只在内容被污染时兜底。
 
+## 应用内更新
+
+首页底部的版本号就是更新入口：点它手动检查，发现新版本会变成陶土色的「发现新版本 vX.Y.Z，点此更新」。
+每次进入首页也会静默查一次。
+
+**更新源是 Gitee**（`tab3/lightning-search`）而不是 GitHub——Gitee 的 release 附件对公开仓库是
+**匿名直链**，应用不需要内置任何令牌就能检查和下载（内置令牌等于把令牌发进每个 APK）。
+
+整个过程不打开浏览器：
+
+```
+Gitee release API  →  比对 versionName  →  直链下载 APK  →  调系统安装器
+   /releases/latest      语义化比较          filesDir/updates/     ACTION_VIEW + FileProvider
+```
+
+| 环节 | 做法 |
+|---|---|
+| 查版本 | `GET https://gitee.com/api/v5/repos/tab3/lightning-search/releases/latest`，取 `tag_name` 与 `assets[].browser_download_url` |
+| 比版本 | `update/Version` 逐段按整数比较（`1.10.0 > 1.9.0`，按字符串比会反过来），有 7 个单测 |
+| 下载 | 应用内 `HttpURLConnection` 流式下载，先写 `.part` 再改名；限制 200 MB，且小于 1 MB 视为无效 |
+| 安装 | `ACTION_VIEW` + `application/vnd.android.package-archive` + FileProvider 授权 |
+| 未知来源 | Android 8+ 需要「安装未知应用」授权，跳的是**系统设置页**（不是浏览器），授权后自动继续 |
+
+APK 落在 `filesDir/updates/`，不会被系统清缓存清掉；`file_paths.xml` 只暴露 `captures/` 与 `updates/` 两个目录。
 ## 拍照入口
 
 首页的「拍照搜题」按钮有两个入口，都遵循当前的单题 / 整页模式选择：

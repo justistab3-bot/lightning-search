@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  系统相机拍照的落盘位置。
-  只暴露 cache/captures/ 一个子目录，其余一律不对外。
+  对外暴露的目录。只这两处，其余一律不开放。
+  - captures/ 给系统相机写照片
+  - updates/  给系统安装器读下载好的 APK
 -->
 <paths>
     <cache-path
         name="system_captures"
         path="captures/" />
+    <files-path
+        name="updates"
+        path="updates/" />
 </paths>

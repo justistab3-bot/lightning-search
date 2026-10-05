@@ -12,7 +12,9 @@ import android.view.animation.DecelerateInterpolator
 import android.webkit.CookieManager
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.heikeji.phonesearch.R
 import com.heikeji.phonesearch.appContainer
@@ -29,6 +31,13 @@ import com.heikeji.phonesearch.ui.common.dp
 import com.heikeji.phonesearch.ui.common.showMessage
 import com.heikeji.phonesearch.ui.login.LoginActivity
 import com.heikeji.phonesearch.ui.result.ResultActivity
+import com.heikeji.phonesearch.update.UpdateActivity
+import com.heikeji.phonesearch.update.UpdateClient
+import com.heikeji.phonesearch.update.UpdateInfo
+import com.heikeji.phonesearch.update.Version
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.UUID
 
@@ -161,7 +170,53 @@ class HomeActivity : AppCompatActivity() {
             entrancePlayed = true
             playEntrance()
         }
+        // 每次进入首页静默查一次；有更新就把底部版本号变成可点的提示
+        if (!updateChecked) {
+            updateChecked = true
+            checkUpdate(silent = true)
+        }
     }
+
+    // ------------------------------------------------------------------ 应用内更新
+
+    private var updateChecked = false
+    private var availableUpdate: UpdateInfo? = null
+
+    /**
+     * 从 Gitee 的 release 接口查最新版本。
+     *
+     * @param silent 自动检查时不弹「已是最新」的提示，避免每次进首页都打扰
+     */
+    private fun checkUpdate(silent: Boolean) {
+        lifecycleScope.launch {
+            val current = currentVersionName()
+            val latest = withContext(Dispatchers.IO) {
+                runCatching { UpdateClient.fetchLatest() }.getOrNull()
+            }
+            val newer = latest?.takeIf { it.hasApk && Version.isNewer(it.versionName, current) }
+
+            if (newer != null) {
+                availableUpdate = newer
+                binding.versionLabel.text = getString(R.string.update_badge, newer.versionName)
+                binding.versionLabel.setTextColor(
+                    ContextCompat.getColor(this@HomeActivity, R.color.terracotta),
+                )
+                binding.versionLabel.setOnClickListener { openUpdate(newer) }
+            } else if (!silent) {
+                binding.root.showMessage(
+                    getString(R.string.update_up_to_date, current),
+                )
+            }
+        }
+    }
+
+    private fun openUpdate(info: UpdateInfo) {
+        startActivity(UpdateActivity.newIntent(this, info))
+    }
+
+    private fun currentVersionName(): String = runCatching {
+        packageManager.getPackageInfo(packageName, 0).versionName
+    }.getOrNull().orEmpty()
 
     /**
      * 问候语只按时段来，不拼账号信息——服务端返回的 uname 就是手机号，不该出现在界面上。
@@ -172,6 +227,8 @@ class HomeActivity : AppCompatActivity() {
         binding.greeting.text = greeting.title
         binding.tagline.text = greeting.subtitle
         binding.versionLabel.text = appVersionLabel()
+        // 点版本号 = 手动检查更新
+        binding.versionLabel.setOnClickListener { checkUpdate(silent = false) }
     }
 
     /** 首页底部显示版本号，方便确认装的是哪一轮构建。 */
