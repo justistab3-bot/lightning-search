@@ -153,16 +153,33 @@ object BookSearchParser {
         return null
     }
 
+    /** 诊断用：把各处找到的原始 bookId 原样报出来，不做校验。 */
+    fun rawBookIds(data: JsonObject): String {
+        val parts = ArrayList<String>(3)
+        for (scope in listOf(data, data.objOrNull("answers"))) {
+            if (scope == null) continue
+            val nested = scope.objOrNull("relatedBook").strOrEmpty("bookId")
+            parts.add("relatedBook.bookId='$nested'")
+            parts.add("bookId='${scope.strOrEmpty("bookId")}'")
+        }
+        return parts.joinToString("  ")
+    }
+
     private fun relatedBookIn(scope: JsonObject): RelatedBookInfo? {
         val related = scope.objOrNull("relatedBook")
-        val bookId = related.strOrEmpty("bookId").ifEmpty { scope.strOrEmpty("bookId") }
-        val pageId = related.strOrEmpty("pageId").ifEmpty { scope.strOrEmpty("pageId") }
-        if (bookId.isEmpty() && pageId.isEmpty()) return null
+        // 只认 relatedBook.bookId。
+        // 顶层 bookId 在答案 JSON 里另有含义（不是教材 id），拿它兜底会让每道题都误报。
+        val bookId = related.strOrEmpty("bookId")
+        if (!isBookId(bookId)) return null
         return RelatedBookInfo(
-            bookId = bookId,
-            pageId = pageId,
-            bookName = related.strOrEmpty("bookName").ifEmpty { scope.strOrEmpty("bookName") },
+            bookId = bookId.lowercase(),
+            pageId = related.strOrEmpty("pageId").ifEmpty { scope.strOrEmpty("pageId") },
+            bookName = related.strOrEmpty("bookName"),
             tid = related.strOrEmpty("tid").ifEmpty { scope.strOrEmpty("qid") },
         )
     }
+
+    /** 教材 id 是 32 位十六进制。 */
+    private fun isBookId(value: String): Boolean =
+        value.length == 32 && value.all { it.isDigit() || it in 'a'..'f' || it in 'A'..'F' }
 }

@@ -136,17 +136,21 @@ class BookSearchParserTest {
         assertEquals(0, result.pages.single().width)
     }
 
-    // ------------------------------------------------------------------ 整页响应里的教材信息
+    // ------------------------------------------------------------------ 教材信息（入口依据）
+
+    /** 真实教材 id 是 32 位十六进制。 */
+    private val book = "d7430b88505289473a20eb5f37025cfd"
+    private val otherBook = "b26a10b224d62a7650ccbbcfdf9ef782"
 
     @Test
     fun `related book is read from the data level`() {
         val info = BookSearchParser.relatedBookOf(
             Json.parseObject(
-                """{"sid":"s","relatedBook":{"bookId":"bk1","pageId":"pg1"}}""",
+                """{"sid":"s","relatedBook":{"bookId":"$book","pageId":"pg1"}}""",
                 "bad",
             ),
         )!!
-        assertEquals("bk1", info.bookId)
+        assertEquals(book, info.bookId)
         assertEquals("pg1", info.pageId)
         assertTrue(info.isUsable)
     }
@@ -155,30 +159,11 @@ class BookSearchParserTest {
     fun `related book falls back to the answers level`() {
         val info = BookSearchParser.relatedBookOf(
             Json.parseObject(
-                """{"sid":"s","answers":{"relatedBook":{"bookId":"bk2"}}}""",
+                """{"sid":"s","answers":{"relatedBook":{"bookId":"$otherBook"}}}""",
                 "bad",
             ),
         )!!
-        assertEquals("bk2", info.bookId)
-    }
-
-    @Test
-    fun `top level bookId is accepted when relatedBook is absent`() {
-        val info = BookSearchParser.relatedBookOf(
-            Json.parseObject("""{"bookId":"bk3","pageId":"pg3"}""", "bad"),
-        )!!
-        assertEquals("bk3", info.bookId)
-        assertEquals("pg3", info.pageId)
-    }
-
-    @Test
-    fun `related book is null when the server sends nothing usable`() {
-        assertNull(BookSearchParser.relatedBookOf(Json.parseObject("""{"sid":"s"}""", "bad")))
-        assertNull(
-            BookSearchParser.relatedBookOf(
-                Json.parseObject("""{"relatedBook":{"bookId":"","pageId":""}}""", "bad"),
-            ),
-        )
+        assertEquals(otherBook, info.bookId)
     }
 
     @Test
@@ -190,32 +175,100 @@ class BookSearchParserTest {
                 """
                 {"question":{"content":"题干"},"answer":[{"content":"答案"}],
                  "subjectAnalysis":"解析","courseName":"化学",
-                 "relatedBook":{"bookId":"bk9","pageId":"pg9","bookName":"高中化学 人教版"},
+                 "relatedBook":{"bookId":"$book","pageId":"pg9","bookName":"高中化学 人教版"},
                  "qid":"tid9"}
                 """.trimIndent(),
                 "bad",
             ),
         )!!
-        assertEquals("bk9", info.bookId)
+        assertEquals(book, info.bookId)
         assertEquals("pg9", info.pageId)
         assertEquals("高中化学 人教版", info.bookName)
         assertEquals("tid9", info.tid)
     }
 
     @Test
-    fun `book name and tid are optional`() {
+    fun `related book is also found on the first answer element`() {
         val info = BookSearchParser.relatedBookOf(
-            Json.parseObject("""{"relatedBook":{"bookId":"bk"}}""", "bad"),
+            Json.parseObject(
+                """{"question":{},"answer":[{"relatedBook":{"bookId":"$book"}}]}""",
+                "bad",
+            ),
         )!!
-        assertEquals("", info.bookName)
-        assertEquals("", info.tid)
+        assertEquals(book, info.bookId)
     }
 
     @Test
-    fun `top level qid is used as tid when relatedBook has none`() {
+    fun `book name is optional`() {
         val info = BookSearchParser.relatedBookOf(
-            Json.parseObject("""{"bookId":"bk","qid":"q1"}""", "bad"),
+            Json.parseObject("""{"relatedBook":{"bookId":"$book"}}""", "bad"),
+        )!!
+        assertEquals("", info.bookName)
+    }
+
+    @Test
+    fun `qid on the answer root is used as tid`() {
+        val info = BookSearchParser.relatedBookOf(
+            Json.parseObject(
+                """{"relatedBook":{"bookId":"$book"},"qid":"q1"}""",
+                "bad",
+            ),
         )!!
         assertEquals("q1", info.tid)
+    }
+
+    @Test
+    fun `uppercase book id is normalized`() {
+        val info = BookSearchParser.relatedBookOf(
+            Json.parseObject("""{"relatedBook":{"bookId":"${book.uppercase()}"}}""", "bad"),
+        )!!
+        assertEquals(book, info.bookId)
+    }
+
+    // 这几条是「所有题都误报入口」的回归保护：
+    // 顶层 bookId / pageId 在答案 JSON 里另有含义，不能拿来当教材 id。
+
+    @Test
+    fun `top level bookId alone is not a textbook id`() {
+        assertNull(
+            BookSearchParser.relatedBookOf(
+                Json.parseObject("""{"bookId":"$book","pageId":"pg"}""", "bad"),
+            ),
+        )
+    }
+
+    @Test
+    fun `pageId alone does not trigger the entry`() {
+        assertNull(
+            BookSearchParser.relatedBookOf(
+                Json.parseObject("""{"relatedBook":{"pageId":"pg1"}}""", "bad"),
+            ),
+        )
+    }
+
+    @Test
+    fun `short placeholder ids are rejected`() {
+        for (placeholder in listOf("", "0", "bk1", "12345", "d7430b88505289473a20eb5f37025cf")) {
+            assertNull(
+                "占位值 '$placeholder' 不该当成教材 id",
+                BookSearchParser.relatedBookOf(
+                    Json.parseObject("""{"relatedBook":{"bookId":"$placeholder"}}""", "bad"),
+                ),
+            )
+        }
+    }
+
+    @Test
+    fun `related book is null when the server sends nothing usable`() {
+        assertNull(BookSearchParser.relatedBookOf(Json.parseObject("""{"sid":"s"}""", "bad")))
+    }
+
+    @Test
+    fun `rawBookIds reports the unvalidated values for diagnostics`() {
+        val text = BookSearchParser.rawBookIds(
+            Json.parseObject("""{"bookId":"loose","relatedBook":{"bookId":"nested"}}""", "bad"),
+        )
+        assertTrue(text.contains("relatedBook.bookId='nested'"))
+        assertTrue(text.contains("bookId='loose'"))
     }
 }
