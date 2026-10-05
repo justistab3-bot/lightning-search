@@ -22,7 +22,12 @@ dependencies {
 }
 
 tasks.withType<Test>().configureEach {
+    // 网络探针（probe 包）默认跳过，靠 -DchatProbe=1 显式开启；
+    // 开启时才把 stdout 打出来，平时保持安静。
+    val probe = System.getProperty("chatProbe")
+    systemProperty("chatProbe", probe ?: "")
     testLogging {
         events("passed", "skipped", "failed")
+        showStandardStreams = probe == "1"
     }
 }
