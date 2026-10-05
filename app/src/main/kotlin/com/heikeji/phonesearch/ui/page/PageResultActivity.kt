@@ -25,7 +25,9 @@ import com.heikeji.phonesearch.ui.book.BookAnswerActivity
 import com.heikeji.phonesearch.image.OriginalImageHandle
 import com.heikeji.phonesearch.image.QuestionImageProcessor
 import com.heikeji.phonesearch.protocol.ProtocolProfile
+import com.heikeji.phonesearch.protocol.book.model.RelatedBookInfo
 import com.heikeji.phonesearch.protocol.model.PageQuestionBlock
+import com.heikeji.phonesearch.protocol.model.PageSearchResult
 import com.heikeji.phonesearch.protocol.model.SearchMode
 import com.heikeji.phonesearch.protocol.render.AnswerPageRenderer
 import com.heikeji.phonesearch.ui.common.PageNumberView
@@ -207,9 +209,9 @@ class PageResultActivity : AppCompatActivity(), AnswerImageHost {
             return
         }
 
-        // 「查看整本答案」：只有服务端给了教材信息才显示
-        val relatedBook = result.relatedBook
-        if (relatedBook != null && relatedBook.isUsable && relatedBook.bookId.isNotEmpty()) {
+        // 「查看整本答案」：教材信息挂在单题答案里（H5 的 S.relatedBook），页面级没有就往下找
+        val relatedBook = result.relatedBook ?: firstRelatedBook(result)
+        if (relatedBook != null && relatedBook.bookId.isNotEmpty()) {
             binding.bookButton.visibility = View.VISIBLE
             binding.bookButton.isEnabled = !state.loading
             binding.bookButton.setOnClickListener {
@@ -220,6 +222,12 @@ class PageResultActivity : AppCompatActivity(), AnswerImageHost {
         } else {
             binding.bookButton.visibility = View.GONE
             binding.bookButton.setOnClickListener(null)
+        }
+
+        // 长按标题看响应结构（诊断入口不出现用）
+        binding.headerTitle.setOnLongClickListener {
+            showDiagnostics(result)
+            true
         }
 
         binding.subjectBadge.subject = result.subject
@@ -234,8 +242,40 @@ class PageResultActivity : AppCompatActivity(), AnswerImageHost {
         renderCandidates(state)
     }
 
-    private fun renderBlocks(state: PageUiState) {
-        if (binding.blockRow.childCount != state.blocks.size) {
+    /** 页面级没有教材信息时，从各题的答案里找第一个可用的。 */
+    private fun firstRelatedBook(result: PageSearchResult): RelatedBookInfo? {
+        for (block in result.blocks) {
+            for (candidate in block.candidates) {
+                val info = candidate.relatedBook
+                if (info != null && info.bookId.isNotEmpty()) return info
+            }
+        }
+        return null
+    }
+
+    /**
+     * 诊断：长按标题看服务端实际返回了哪些字段。
+     *
+     * 「查看整本答案」的教材信息位置在不同版本里飘过，入口不出现时用它定位，
+     * 比重新抓包快得多（抓包拿到的是密文，解不开）。
+     */
+    private fun showDiagnostics(result: PageSearchResult) {
+        val first = result.blocks.firstOrNull()?.candidates?.firstOrNull()
+        val text = buildString {
+            append("data 字段：\n").append(result.rawKeys.ifEmpty { "(空)" }).append("\n\n")
+            append("答案字段：\n").append(first?.rawKeys?.ifEmpty { "(空)" } ?: "(无答案)").append("\n\n")
+            append("data.relatedBook：").append(result.relatedBook?.bookId ?: "无").append('\n')
+            append("答案.relatedBook：").append(first?.relatedBook?.bookId ?: "无").append('\n')
+            append("block 数：").append(result.blocks.size)
+        }
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("整页响应结构")
+            .setMessage(text)
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
+    }
+
+    private fun renderBlocks(state: PageUiState) {        if (binding.blockRow.childCount != state.blocks.size) {
             binding.blockRow.removeAllViews()
             state.blocks.forEachIndexed { position, block ->
                 binding.blockRow.addView(createBlockChip(block, position))

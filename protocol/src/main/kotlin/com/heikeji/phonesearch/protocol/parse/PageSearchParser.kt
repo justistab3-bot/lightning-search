@@ -133,6 +133,7 @@ object PageSearchParser {
             blocks = blocks,
             // 「查看整本答案」的入口依据；服务端没给就是 null
             relatedBook = BookSearchParser.relatedBookOf(data),
+            rawKeys = data.keySet().joinToString(","),
         )
     }
 

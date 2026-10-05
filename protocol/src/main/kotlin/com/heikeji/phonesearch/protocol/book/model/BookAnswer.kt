@@ -43,12 +43,16 @@ data class BookAnswerPage(
     val fullUrl: String get() = origin.ifEmpty { thumbnail }
 }
 
-/** 整页搜题结果里与教材相关的信息，用来发起「查看整本答案」。 */
+/** 题目关联的教材信息，用来发起「查看整本答案」。 */
 data class RelatedBookInfo(
     /** 教材 id，`pagebookinfo` / `booksearch` 的入参。 */
     val bookId: String,
     /** 当前页 id。 */
-    val pageId: String,
+    val pageId: String = "",
+    /** 书名，界面直接显示。 */
+    val bookName: String = "",
+    /** 题目 id，`pagebookinfo` 的 `fromEtid` 用它。 */
+    val tid: String = "",
 ) {
     val isUsable: Boolean get() = bookId.isNotEmpty() || pageId.isNotEmpty()
 }

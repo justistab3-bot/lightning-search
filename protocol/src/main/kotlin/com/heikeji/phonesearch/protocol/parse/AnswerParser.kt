@@ -2,6 +2,7 @@ package com.heikeji.phonesearch.protocol.parse
 
 import com.google.gson.JsonObject
 import com.heikeji.phonesearch.protocol.ProtocolException
+import com.heikeji.phonesearch.protocol.book.BookSearchParser
 import com.heikeji.phonesearch.protocol.json.Json
 import com.heikeji.phonesearch.protocol.json.arrOrNull
 import com.heikeji.phonesearch.protocol.json.objOrNull
@@ -87,6 +88,9 @@ object AnswerParser {
             analysisHtml = analysisHtml,
             subject = courseName.ifEmpty { subjectName },
             rawHtml = null,
+            // 教材信息就挂在这一层（H5 里的 S.relatedBook）
+            relatedBook = BookSearchParser.relatedBookOf(root),
+            rawKeys = root.keySet().joinToString(","),
         )
     }
 

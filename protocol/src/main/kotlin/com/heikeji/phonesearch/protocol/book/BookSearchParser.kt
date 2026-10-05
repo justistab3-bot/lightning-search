@@ -128,21 +128,41 @@ object BookSearchParser {
     // ------------------------------------------------------------------ 整页搜题里的教材信息
 
     /**
-     * 从整页搜题响应里挖出教材 id。
+     * 从任意一层 JSON 里挖出教材信息。
      *
-     * H5 用的是 `relatedBook.bookId || bookId`，但字段层级在不同版本里变过，
-     * 所以这里按 `data` -> `data.answers` 两层都找一遍，找不到就返回 null（按钮不显示）。
+     * 这个字段的位置在不同版本里飘过，实测已知有三处：
+     * - 解码后的**单题答案** JSON 根层（H5 用的就是这里，`S.relatedBook`）
+     * - 整页响应的 `data.relatedBook`
+     * - 整页响应的 `data.answers.relatedBook`
+     *
+     * 所以按「答案 -> data -> answers」顺序都找一遍，找不到就返回 null（按钮不显示）。
      */
     fun relatedBookOf(data: JsonObject): RelatedBookInfo? {
-        for (scope in listOf(data, data.objOrNull("answers"))) {
-            if (scope == null) continue
-            val related = scope.objOrNull("relatedBook")
-            val bookId = related.strOrEmpty("bookId").ifEmpty { scope.strOrEmpty("bookId") }
-            val pageId = related.strOrEmpty("pageId").ifEmpty { scope.strOrEmpty("pageId") }
-            if (bookId.isNotEmpty() || pageId.isNotEmpty()) {
-                return RelatedBookInfo(bookId = bookId, pageId = pageId)
+        val scopes = ArrayList<JsonObject>(3)
+        scopes.add(data)
+        data.objOrNull("answers")?.let { scopes.add(it) }
+        // 解码后的单题答案里 answer 是数组，字段也可能挂在第一条上
+        data.arrOrNull("answer")?.let { array ->
+            if (array.size() > 0 && array.get(0).isJsonObject) {
+                scopes.add(array.get(0).asJsonObject)
             }
         }
+        for (scope in scopes) {
+            relatedBookIn(scope)?.let { return it }
+        }
         return null
+    }
+
+    private fun relatedBookIn(scope: JsonObject): RelatedBookInfo? {
+        val related = scope.objOrNull("relatedBook")
+        val bookId = related.strOrEmpty("bookId").ifEmpty { scope.strOrEmpty("bookId") }
+        val pageId = related.strOrEmpty("pageId").ifEmpty { scope.strOrEmpty("pageId") }
+        if (bookId.isEmpty() && pageId.isEmpty()) return null
+        return RelatedBookInfo(
+            bookId = bookId,
+            pageId = pageId,
+            bookName = related.strOrEmpty("bookName").ifEmpty { scope.strOrEmpty("bookName") },
+            tid = related.strOrEmpty("tid").ifEmpty { scope.strOrEmpty("qid") },
+        )
     }
 }
