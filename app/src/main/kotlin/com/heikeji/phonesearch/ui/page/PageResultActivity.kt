@@ -263,10 +263,9 @@ class PageResultActivity : AppCompatActivity(), AnswerImageHost {
         val first = result.blocks.firstOrNull()?.candidates?.firstOrNull()
         val text = buildString {
             append("data 字段：\n").append(result.rawKeys.ifEmpty { "(空)" }).append("\n\n")
-            append("答案字段（含原始 bookId）：\n")
-                .append(first?.rawKeys?.ifEmpty { "(空)" } ?: "(无答案)").append("\n\n")
-            append("采纳的 data.relatedBook：").append(result.relatedBook?.bookId ?: "无").append('\n')
-            append("采纳的答案.relatedBook：").append(first?.relatedBook?.bookId ?: "无").append('\n')
+            append("答案字段：\n").append(first?.rawKeys?.ifEmpty { "(空)" } ?: "(无答案)").append("\n\n")
+            append("data.relatedBook：").append(result.relatedBook?.bookId ?: "无").append('\n')
+            append("答案.relatedBook：").append(first?.relatedBook?.bookId ?: "无").append('\n')
             append("block 数：").append(result.blocks.size)
         }
         androidx.appcompat.app.AlertDialog.Builder(this)

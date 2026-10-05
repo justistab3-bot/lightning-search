@@ -145,10 +145,7 @@ class BookAnswerActivity : AppCompatActivity() {
                 pager.setCurrentItem(state.index, false)
             }
         }
-        if (state.failed) {
-            // 展示真实错误，方便定位（用户可以长按复制）
-            errorText.text = state.error.ifEmpty { getString(R.string.book_answer_failed) }
-        }
+        if (state.failed) errorText.text = getString(R.string.book_answer_failed)
     }
 
     // ------------------------------------------------------------------ 列表

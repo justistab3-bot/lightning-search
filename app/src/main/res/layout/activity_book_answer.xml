@@ -98,8 +98,7 @@
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:text="@string/book_answer_failed"
-                android:textAppearance="@style/TextAppearance.FlashSearch.Body"
-                android:textIsSelectable="true" />
+                android:textAppearance="@style/TextAppearance.FlashSearch.Body" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/retryButton"

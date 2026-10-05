@@ -20,8 +20,6 @@ import kotlinx.coroutines.withContext
 data class BookUiState(
     val loading: Boolean = false,
     val failed: Boolean = false,
-    /** 失败原因，直接展示给用户，便于定位（不再吞掉真实错误）。 */
-    val error: String = "",
     val title: String = "",
     val subtitle: String = "",
     val pages: List<BookAnswerPage> = emptyList(),
@@ -48,7 +46,7 @@ class BookAnswerViewModel(application: Application) : AndroidViewModel(applicati
     /** @param grade 用户年级；没有就传 0，服务端按未知处理 */
     fun load(bookId: String, grade: Int) {
         if (bookId.isEmpty()) {
-            _state.value = BookUiState(failed = true, error = "没有拿到教材 id")
+            _state.value = BookUiState(failed = true)
             return
         }
         job?.cancel()
@@ -66,10 +64,7 @@ class BookAnswerViewModel(application: Application) : AndroidViewModel(applicati
                 }
 
                 _state.value = if (result.pages.isEmpty()) {
-                    BookUiState(
-                        failed = true,
-                        error = "接口通了，但这本书没有答案页（bookId=$bookId）",
-                    )
+                    BookUiState(failed = true)
                 } else {
                     BookUiState(
                         loading = false,
@@ -82,10 +77,7 @@ class BookAnswerViewModel(application: Application) : AndroidViewModel(applicati
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _state.value = BookUiState(
-                    failed = true,
-                    error = e.message ?: e.javaClass.simpleName,
-                )
+                _state.value = BookUiState(failed = true)
             }
         }
     }

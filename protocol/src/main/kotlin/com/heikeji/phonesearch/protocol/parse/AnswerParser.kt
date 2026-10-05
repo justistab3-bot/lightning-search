@@ -90,7 +90,7 @@ object AnswerParser {
             rawHtml = null,
             // 教材信息就挂在这一层（H5 里的 S.relatedBook）
             relatedBook = BookSearchParser.relatedBookOf(root),
-            rawKeys = root.keySet().joinToString(",") + " | " + BookSearchParser.rawBookIds(root),
+            rawKeys = root.keySet().joinToString(","),
         )
     }
 
