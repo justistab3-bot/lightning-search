@@ -19,10 +19,9 @@ import androidx.core.content.ContextCompat
 import com.heikeji.phonesearch.R
 import com.heikeji.phonesearch.databinding.ActivityCameraBinding
 import com.heikeji.phonesearch.protocol.model.SearchMode
+import com.heikeji.phonesearch.ui.common.SearchEntry
 import com.heikeji.phonesearch.ui.common.applySystemBarPadding
 import com.heikeji.phonesearch.ui.common.showMessage
-import com.heikeji.phonesearch.ui.crop.CropActivity
-import com.heikeji.phonesearch.ui.page.PageResultActivity
 import java.io.File
 import java.util.UUID
 import kotlin.math.max
@@ -236,10 +235,13 @@ class CameraActivity : AppCompatActivity() {
             object : ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
                     binding.progress.visibility = View.GONE
+                    // 整页模式不做裁剪：需要保留整页分辨率给服务端定位题框。
+                    // 路由与长按系统相机共用 SearchEntry，避免两条入口判断走偏。
                     startActivity(
-                        CropActivity.newIntent(
+                        SearchEntry.intentFor(
                             context = this@CameraActivity,
                             capturePath = file.absolutePath,
+                            mode = sourceMode,
                             extraRotation = previewRotation,
                         ),
                     )

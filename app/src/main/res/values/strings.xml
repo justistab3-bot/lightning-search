@@ -95,6 +95,10 @@
     <string name="no_network_retry">重新检测</string>
     <string name="no_network_settings">打开网络设置</string>
     <string name="no_network_still_offline">还是没有连上，再检查一下网络开关吧</string>
+    <!-- 系统相机 -->
+    <string name="hint_long_press_system_camera">长按可用系统相机</string>
+    <string name="system_camera_unavailable">没有找到可用的系统相机应用</string>
+    <string name="system_camera_failed">系统相机没有返回照片，请重试</string>
 
     <!-- 通用 -->
     <string name="action_answer_fullscreen">答案区全屏</string>

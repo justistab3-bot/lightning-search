@@ -82,6 +82,20 @@
             android:exported="false"
             android:launchMode="singleTop"
             android:noHistory="true" />
+
+        <!--
+          长按拍照搜题时，把目标文件交给系统相机写入。
+          只暴露 cache/captures/，exported=false，且只授予单次 URI 权限。
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 
 </manifest>

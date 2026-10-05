@@ -95,6 +95,14 @@
                     android:layout_height="wrap_content"
                     android:text="@string/action_take_photo"
                     app:icon="@drawable/ic_camera" />
+                <TextView
+                    android:id="@+id/systemCameraHint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:gravity="center"
+                    android:text="@string/hint_long_press_system_camera"
+                    android:textAppearance="@style/TextAppearance.FlashSearch.Label" />
 
                 <TextView
                     android:id="@+id/modeHint"

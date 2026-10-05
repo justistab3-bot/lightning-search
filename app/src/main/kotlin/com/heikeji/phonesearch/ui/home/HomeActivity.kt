@@ -1,13 +1,18 @@
 package com.heikeji.phonesearch.ui.home
 
+import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
+import android.provider.MediaStore
 import android.view.View
 import android.view.animation.DecelerateInterpolator
 import android.webkit.CookieManager
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.heikeji.phonesearch.R
 import com.heikeji.phonesearch.appContainer
@@ -18,11 +23,14 @@ import com.heikeji.phonesearch.databinding.ItemHistoryBinding
 import com.heikeji.phonesearch.protocol.model.SearchMode
 import com.heikeji.phonesearch.ui.camera.CameraActivity
 import com.heikeji.phonesearch.ui.common.Greetings
+import com.heikeji.phonesearch.ui.common.SearchEntry
 import com.heikeji.phonesearch.ui.common.applySystemBarPadding
 import com.heikeji.phonesearch.ui.common.dp
+import com.heikeji.phonesearch.ui.common.showMessage
 import com.heikeji.phonesearch.ui.login.LoginActivity
 import com.heikeji.phonesearch.ui.result.ResultActivity
 import java.io.File
+import java.util.UUID
 
 /**
  * 首页：时段问候 + 主操作 + 搜题统计 + 最近搜题。
@@ -69,13 +77,79 @@ class HomeActivity : AppCompatActivity() {
             )
         }
         binding.modeHint.setText(R.string.mode_hint_single)
+
+        // 单击：应用内相机；长按：直接调系统相机
         binding.takePhotoButton.setOnClickListener {
-            val mode = if (binding.modeGroup.checkedButtonId == R.id.modePage) {
-                SearchMode.PAGE
-            } else {
-                SearchMode.SINGLE
-            }
-            startActivity(CameraActivity.newIntent(this, mode))
+            startActivity(CameraActivity.newIntent(this, currentMode()))
+        }
+        binding.takePhotoButton.setOnLongClickListener {
+            launchSystemCamera()
+            true
+        }
+    }
+
+    private fun currentMode(): SearchMode =
+        if (binding.modeGroup.checkedButtonId == R.id.modePage) SearchMode.PAGE else SearchMode.SINGLE
+
+    // ------------------------------------------------------------------ 系统相机
+
+    private var pendingCaptureFile: File? = null
+
+    private val systemCameraLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult(),
+    ) { result ->
+        val file = pendingCaptureFile
+        pendingCaptureFile = null
+
+        if (result.resultCode != Activity.RESULT_OK || file == null) {
+            file?.delete()
+            return@registerForActivityResult
+        }
+        if (!file.isFile || file.length() == 0L) {
+            file.delete()
+            binding.root.showMessage(getString(R.string.system_camera_failed))
+            return@registerForActivityResult
+        }
+        startActivity(
+            SearchEntry.intentFor(this, file.absolutePath, currentMode(), extraRotation = 0),
+        )
+    }
+
+    /**
+     * 长按拍照搜题 -> 系统相机。
+     *
+     * 自己指定输出文件并用 FileProvider 授权，这样拿到的是**全分辨率**照片，
+     * 而不是 `EXTRA_OUTPUT` 缺失时系统回传的缩略图。
+     *
+     * 系统相机自己会按 EXIF 记录方向，所以这里不做额外旋转（`extraRotation = 0`）。
+     */
+    private fun launchSystemCamera() {
+        val dir = File(cacheDir, "captures").apply { mkdirs() }
+        val file = File(dir, "system-${UUID.randomUUID()}.jpg")
+
+        val uri = try {
+            FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
+        } catch (e: IllegalArgumentException) {
+            binding.root.showMessage(getString(R.string.system_camera_failed))
+            return
+        }
+
+        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE).apply {
+            putExtra(MediaStore.EXTRA_OUTPUT, uri)
+            addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        if (intent.resolveActivity(packageManager) == null) {
+            binding.root.showMessage(getString(R.string.system_camera_unavailable))
+            return
+        }
+
+        pendingCaptureFile = file
+        try {
+            systemCameraLauncher.launch(intent)
+        } catch (e: ActivityNotFoundException) {
+            pendingCaptureFile = null
+            file.delete()
+            binding.root.showMessage(getString(R.string.system_camera_unavailable))
         }
     }
 

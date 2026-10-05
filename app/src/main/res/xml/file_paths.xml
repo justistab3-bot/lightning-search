@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  系统相机拍照的落盘位置。
+  只暴露 cache/captures/ 一个子目录，其余一律不对外。
+-->
+<paths>
+    <cache-path
+        name="system_captures"
+        path="captures/" />
+</paths>
