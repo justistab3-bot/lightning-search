@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingTop="6dp"
+    android:paddingBottom="6dp">
+
+    <!-- ============================ 思考过程（可折叠） ============================ -->
+    <LinearLayout
+        android:id="@+id/reasoningBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="32dp"
+        android:layout_marginBottom="6dp"
+        android:background="@drawable/bg_reasoning"
+        android:orientation="vertical"
+        android:paddingStart="12dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="10dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/reasoningHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackground"
+            android:drawablePadding="6dp"
+            android:textAppearance="@style/TextAppearance.FlashSearch.Label"
+            android:textColor="@color/stone_gray" />
+
+        <TextView
+            android:id="@+id/reasoningText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:lineSpacingMultiplier="1.45"
+            android:textColor="@color/stone_gray"
+            android:textSize="13sp"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <!-- ============================ 气泡 ============================ -->
+    <TextView
+        android:id="@+id/bubbleText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:lineSpacingMultiplier="1.55"
+        android:paddingStart="14dp"
+        android:paddingTop="11dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="11dp"
+        android:textColor="@color/near_black"
+        android:textSize="15sp"
+        android:textIsSelectable="true" />
+
+    <ProgressBar
+        android:id="@+id/bubbleProgress"
+        style="?android:attr/progressBarStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:layout_marginStart="6dp"
+        android:visibility="gone" />
+</LinearLayout>

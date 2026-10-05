@@ -47,6 +47,12 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
+        <!-- 快问 AI：流式对话，键盘顶起输入区 -->
+        <activity
+            android:name=".ui.chat.ChatActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
         <!--
           相机不锁方向：方向交给 CameraX 的 targetRotation。
           configChanges 让旋转时不重建 Activity，避免相机反复重绑。

@@ -8,8 +8,10 @@ import android.os.Bundle
 import com.heikeji.phonesearch.account.SecureSessionStore
 import com.heikeji.phonesearch.account.SessionRepository
 import com.heikeji.phonesearch.data.HistoryStore
+import com.heikeji.phonesearch.data.StorageCleaner
 import com.heikeji.phonesearch.net.ApiClient
 import com.heikeji.phonesearch.net.AiWritingClient
+import com.heikeji.phonesearch.net.ChatClient
 import com.heikeji.phonesearch.net.DeviceIdentity
 import com.heikeji.phonesearch.net.HttpTransport
 import com.heikeji.phonesearch.net.NetworkMonitor
@@ -35,6 +37,9 @@ class SearchApp : Application() {
         super.onCreate()
         container = AppContainer(this)
         container.network.start()
+
+        // 磁盘回收：清掉陈旧安装包与相机临时图（后台做，不挡启动）
+        scope.launch(Dispatchers.IO) { StorageCleaner.sweep(this@SearchApp) }
 
         registerActivityLifecycleCallbacks(ActivityTracker())
         observeConnectivity()
@@ -102,6 +107,9 @@ class AppContainer(context: Context) {
 
     /** AI 作文（独立域名、无签名、SSE 流式）。 */
     val aiWriting = AiWritingClient()
+
+    /** 快问 AI（同域名、走通用签名、SSE 流式）。 */
+    val chat = ChatClient(identity, protocol, sessions, transport)
 
     init {
         sessions.restore()

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 思考过程块：比正文浅一档的暖底，无描边，视觉上退到后面 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/parchment" />
+    <corners android:radius="10dp" />
+</shape>

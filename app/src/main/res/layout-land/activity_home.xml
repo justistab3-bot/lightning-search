@@ -122,13 +122,29 @@
                         android:text="@string/home_tip"
                         android:textAppearance="@style/TextAppearance.FlashSearch.Caption" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/essayButton"
-                        style="@style/Widget.FlashSearch.SecondaryButton"
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="14dp"
-                        android:text="@string/essay_entry" />
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/essayButton"
+                            style="@style/Widget.FlashSearch.SecondaryButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/essay_entry" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/chatButton"
+                            style="@style/Widget.FlashSearch.SecondaryButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="10dp"
+                            android:layout_weight="1"
+                            android:text="@string/chat_entry" />
+                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

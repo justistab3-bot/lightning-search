@@ -1,6 +1,9 @@
 package com.heikeji.phonesearch.protocol.probe
 
 import com.heikeji.phonesearch.protocol.ProtocolProfile
+import com.heikeji.phonesearch.protocol.aiwriting.SseParser
+import com.heikeji.phonesearch.protocol.chat.ChatEventParser
+import com.heikeji.phonesearch.protocol.chat.model.ChatEvent
 import com.heikeji.phonesearch.protocol.codec.UrlForm
 import com.heikeji.phonesearch.protocol.crypto.Digests
 import com.heikeji.phonesearch.protocol.crypto.ResponseKey
@@ -108,6 +111,73 @@ class ChatProbeTest {
         java.io.File("build/chat-probe-frames.txt").writeText(frames.joinToString("\n"))
 
         assertTrue("应当至少收到一帧", frames.isNotEmpty())
+    }
+
+    /**
+     * 多轮上下文验证。
+     *
+     * `context` 的拼法是从 H5 代码推的（只带已回答过的用户提问），没实测过。
+     * 这里先告诉它一个名字，再问「我叫什么」——答对就说明上下文生效。
+     */
+    @Test
+    fun `probe multi-turn context`() {
+        assumeTrue("需要 -DchatProbe=1 才运行", System.getProperty("chatProbe") == "1")
+
+        val cuid = UUID.randomUUID().toString().replace("-", "").uppercase() + "|0"
+        val signA = SignA.build(cuid, SignA.random10())
+        val signB = bootstrap(cuid, signA)
+        val digest = Digests.md5Lower(SignA.parseDeviceSecret(cuid, signA, signB))
+
+        val sessionId = Regex("\"sessionId\"\\s*:\\s*\"?(\\d+)")
+            .find(post("/kdchat/api/create", common(cuid) + mapOf("appId" to "scancode", "grade" to "6"), cuid, digest))
+            ?.groupValues?.get(1)
+        println("=== 多轮测试 sessionId=$sessionId ===")
+        if (sessionId == null) return
+
+        val base = common(cuid) + mapOf(
+            "subjectId" to "", "sid" to "", "agentId" to "",
+            "searchEnabled" to "0", "thinkEnabled" to "0", "isSugContent" to "0", "sugType" to "0",
+            "grade" to "6", "feVc" to "211", "toolType" to "normal", "sessionId" to sessionId,
+            "isHitQueryRewrite" to "1", "inputType" to "1", "referInfo" to "", "from" to "home",
+            "scene" to "", "isKeyPointContent" to "0",
+        )
+
+        // 第一轮：告知名字
+        val first = ask(cuid, digest, base + mapOf("content" to "我叫小明，请记住", "context" to "[]"))
+        println("第一轮回答：${textOf(first)}")
+        println("--- 第一轮原始帧（前 14 行）---")
+        first.take(14).forEach { println("  $it") }
+        println("--- 第一轮 event: 分布 ---")
+        first.filter { it.startsWith("event:") }.groupingBy { it }.eachCount().forEach { (k, v) -> println("  $k x$v") }
+        println("--- 第一轮 source 分布 ---")
+        first.filter { it.startsWith("data:") }.groupingBy { Regex("\"source\":\"([^\"]*)\"").find(it)?.groupValues?.get(1) ?: "?" }
+            .eachCount().forEach { (k, v) -> println("  $k x$v") }
+
+        // 第二轮：带上一轮的问题做 context
+        val contextJson = """[{"toolType":"normal","role":"user","content":"我叫小明，请记住","time":${System.currentTimeMillis() / 1000},"intent":[],"isCard":"0"}]"""
+        val second = ask(cuid, digest, base + mapOf("content" to "我叫什么名字？", "context" to contextJson))
+        val secondText = textOf(second)
+        println("第二轮回答：$secondText")
+        println(if (secondText.contains("小明")) ">>> 上下文生效 ✅" else ">>> 上下文可能没生效 ⚠️")
+    }
+
+    /** 用**真正的解析器**跑一遍，顺便端到端验证实现。 */
+    private fun textOf(frames: List<String>): String {
+        val parser = SseParser()
+        val out = StringBuilder()
+        fun absorb(event: com.heikeji.phonesearch.protocol.aiwriting.SseEvent?) {
+            if (event == null) return
+            for (parsed in ChatEventParser.parse(event)) {
+                when (parsed) {
+                    is ChatEvent.Delta -> out.append(parsed.text)
+                    is ChatEvent.Command -> out.append(parsed.text)
+                    else -> Unit
+                }
+            }
+        }
+        for (line in frames) absorb(parser.feed(line))
+        absorb(parser.finish())
+        return out.toString()
     }
 
     // ------------------------------------------------------------------ 内部
@@ -266,14 +336,14 @@ class ChatProbeTest {
                     println("读取中断：${e.javaClass.simpleName} ${e.message}")
                     break
                 } ?: break
-                if (line.isEmpty()) {
-                    // 连续空行说明流已经静默，主动收工
-                    if (++emptyRun > 200) break
-                    continue
-                }
-                emptyRun = 0
+                // 空行必须保留：SSE 靠它触发事件派发
                 frames.add(line)
-                if (frames.size > 400) break
+                if (line.isEmpty()) {
+                    if (++emptyRun > 200) break
+                } else {
+                    emptyRun = 0
+                }
+                if (frames.size > 2000) break
             }
             frames
         } finally {

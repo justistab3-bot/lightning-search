@@ -29,6 +29,7 @@ import com.heikeji.phonesearch.ui.common.SearchEntry
 import com.heikeji.phonesearch.ui.common.applySystemBarPadding
 import com.heikeji.phonesearch.ui.common.dp
 import com.heikeji.phonesearch.ui.common.showMessage
+import com.heikeji.phonesearch.ui.chat.ChatActivity
 import com.heikeji.phonesearch.ui.essay.EssayActivity
 import com.heikeji.phonesearch.ui.login.LoginActivity
 import com.heikeji.phonesearch.ui.result.ResultActivity
@@ -71,6 +72,9 @@ class HomeActivity : AppCompatActivity() {
         setupModeToggle()
         binding.essayButton.setOnClickListener {
             startActivity(Intent(this, EssayActivity::class.java))
+        }
+        binding.chatButton.setOnClickListener {
+            startActivity(ChatActivity.newIntent(this))
         }
         binding.logoutButton.setOnClickListener { confirmLogout() }
     }

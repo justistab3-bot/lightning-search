@@ -160,4 +160,19 @@
     <string name="camera_rotate_format">预览已旋转 %1$d°</string>
     <string name="action_close">关闭</string>
     <string name="error_image_failed">图片处理失败，请重新拍摄</string>
+
+    <!-- 快问 AI -->
+    <string name="chat_title">快问 AI</string>
+    <string name="chat_entry">快问 AI</string>
+    <string name="chat_entry_hint">问什么都能聊</string>
+    <string name="chat_clear">清空</string>
+    <string name="chat_greeting">有什么想问的？</string>
+    <string name="chat_greeting_hint">学习、生活、奇思妙想都可以</string>
+    <string name="chat_hint">说点什么…</string>
+    <string name="chat_send">发送</string>
+    <string name="chat_stop">停止</string>
+    <string name="chat_think">深度思考</string>
+    <string name="chat_search">联网搜索</string>
+    <string name="chat_reasoning">思考过程</string>
+    <string name="chat_reasoning_with_time">思考过程（%1$.1f 秒）</string>
 </resources>

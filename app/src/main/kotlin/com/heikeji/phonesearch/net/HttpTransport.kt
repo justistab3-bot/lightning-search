@@ -18,6 +18,27 @@ data class HttpResult(
 )
 
 /**
+ * 一个打开的流式响应。
+ *
+ * 调用方逐行读 [reader]，结束时必须 [close]（会断开连接）。
+ */
+class StreamHandle internal constructor(
+    private val connection: HttpURLConnection,
+    val statusCode: Int,
+    val reader: java.io.BufferedReader,
+) : java.io.Closeable {
+
+    override fun close() {
+        try {
+            reader.close()
+        } catch (e: Exception) {
+            // 收尾动作，忽略
+        }
+        connection.disconnect()
+    }
+}
+
+/**
  * 底层 HTTP（对应原 P0.c.f 里 HttpURLConnection 的使用方式）。
  *
  * 硬性约束：
@@ -65,8 +86,57 @@ class HttpTransport {
         }
     }
 
-    /** 用于官方验证页的 HTML 抓取。 */
-    fun getHtml(
+    /**
+     * 流式 POST，用于 `text/event-stream`。
+     *
+     * 与 [post] 的区别：**不缓冲**，把连接和 reader 交给调用方边读边处理，
+     * 读完必须 [StreamHandle.close]。
+     */
+    fun postStream(
+        host: String,
+        path: String,
+        body: ByteArray,
+        contentType: String,
+        cookie: String?,
+        readTimeoutMs: Int,
+        accept: String = "text/event-stream",
+        userAgent: String = ProtocolProfile.USER_AGENT,
+    ): StreamHandle {
+        validate(host, path)
+        val connection = open(host + path)
+        return try {
+            connection.requestMethod = "POST"
+            connection.readTimeout = readTimeoutMs
+            connection.doOutput = true
+            connection.setRequestProperty("Accept", accept)
+            // SSE 不能压缩，否则解不出来
+            connection.setRequestProperty("Accept-Encoding", "identity")
+            connection.setRequestProperty("Cache-Control", "no-cache")
+            connection.setRequestProperty("Pragma", "no-cache")
+            connection.setRequestProperty("User-Agent", userAgent)
+            connection.setRequestProperty("X-Wap-Proxy-Cookie", "none")
+            connection.setRequestProperty("Content-Type", contentType)
+            if (!cookie.isNullOrEmpty()) {
+                connection.setRequestProperty("Cookie", cookie)
+            }
+            connection.setFixedLengthStreamingMode(body.size)
+            connection.outputStream.use { it.write(body) }
+
+            val status = connection.responseCode
+            val stream: InputStream? =
+                if (status >= 400) connection.errorStream else connection.inputStream
+            StreamHandle(
+                connection = connection,
+                statusCode = status,
+                reader = (stream ?: InputStream.nullInputStream()).bufferedReader(),
+            )
+        } catch (e: Exception) {
+            connection.disconnect()
+            throw e
+        }
+    }
+
+    /** 用于官方验证页的 HTML 抓取。 */    fun getHtml(
         url: String,
         readTimeoutMs: Int,
         maxBytes: Int,

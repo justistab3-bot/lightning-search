@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 用户气泡：陶土淡染底，右对齐。整套设计里唯一的高信号色只用在主操作和这里 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/warm_sand" />
+    <corners
+        android:bottomLeftRadius="14dp"
+        android:bottomRightRadius="4dp"
+        android:topLeftRadius="14dp"
+        android:topRightRadius="14dp" />
+</shape>
