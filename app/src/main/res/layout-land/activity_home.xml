@@ -1,19 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  横屏首页 —— **为横屏单独设计**，不是把竖屏改一改。
+  横屏首页 · **紧凑版**（横屏默认）。
 
-  目标设备约 1000×450dp（小米平板横屏），特点：很宽、很矮。
-  竖屏那套「一列往下堆」在这里必然溢出，所以结构完全不同：
+  ## 为什么紧凑版是默认，而不是给矮屏开小灶
 
-  1. **三块功能并排**，而不是左一坨右一坨 —— 横屏的视觉重心应该在中间。
-     两侧留白（weight 0.6）把内容挤到中间，避免大屏上元素贴着边框拉得很散。
-  2. **主操作在正中**（拍照搜题），两个次要入口（AI 作文 / 快问 AI）分列两侧，
-     权重 4 : 2.2 : 2.2 —— 拍照是主路径，给最大的卡片。
-  3. 头部压成一行（问候在左、版本号在右），底部一行放统计 / 最近搜题 / 退出。
-  4. **整页不滚动**：根节点是普通 LinearLayout。
+  Android 的尺寸限定符（w / h / sw）**全部是「最小值」**，没有「最大高度」这种限定符。
+  实测词典笔的配置是 `sw254dp-w960dp-h254dp-normal-long-land`：
+  它既不是 `small`（实际是 `normal`），`h280dp` 也匹配不上（254 < 280）。
+  也就是说，**没有限定符能把「矮屏」单独圈出来**。
 
-  ID 与类型必须与 layout/activity_home.xml 完全一致（ViewBinding 会按其中一份生成字段，
-  不一致就是「竖屏转横屏闪退」）。LayoutSanityTest 检查 id 集合与视图类型两条规则。
+  所以反过来做：**把能在最矮屏幕上正常工作的版本作为横屏默认**，
+  用 `layout-h340dp-land`（可用高度 ≥ 340dp）给常规手机/平板横屏提供宽敞版。
+  这是 Android 官方推荐的「先保证最小尺寸可用，再向上增强」。
+
+  - 矮屏（词典笔 254dp、小手机横屏 320dp）→ 用这一份
+  - 常规横屏（可用高度 ≥ 340dp）→ 用 layout-h340dp-land 的三卡片宽敞版
+
+  ## 这一份的设计
+
+  本机实测 960×254dp。原先那份宽敞版在这里会崩：主操作行只剩 112dp，
+  拍照按钮被压到 20dp、两条提示文字直接变成 0dp（完全不可见）。
+
+  所以把纵向堆叠改成横向铺开：
+
+  1. 问候与版本压成一行（原来占 51dp，现在约 40dp）。
+  2. 三块功能不再各占一张高卡片，而是**并排一行**：左边「单题/整页 + 拍照搜题」
+     合成一条，右边两个次要入口各留一个按钮。
+  3. 文案能省就省 —— 按钮本身已经写了「AI 作文 ✍️」「快问 AI」，
+     卡片里的标题和描述在这块屏幕上属于奢侈品，去掉。
+  4. 最近搜题仍然默认收起，展开时吃掉中间剩余高度、列表内部滚动。
+
+  **ID 与类型必须和 layout/activity_home.xml 完全一致** —— ViewBinding 只按其中一份
+  生成字段类型，不一致就是转屏闪退。LayoutSanityTest 检查 id 集合与视图类型两条规则。
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -22,9 +40,9 @@
     android:layout_height="match_parent"
     android:background="?android:attr/colorBackground"
     android:orientation="vertical"
-    android:paddingBottom="6dp">
+    android:paddingBottom="4dp">
 
-    <!-- ============================ 头部：问候 + 版本 ============================ -->
+    <!-- ======================= 一行：问候 + 标语 + 版本 ======================= -->
     <LinearLayout
         android:id="@+id/header"
         android:layout_width="match_parent"
@@ -32,39 +50,40 @@
         android:baselineAligned="false"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="28dp"
-        android:paddingTop="8dp"
-        android:paddingEnd="28dp"
-        android:paddingBottom="10dp">
+        android:paddingStart="20dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="4dp">
 
-        <LinearLayout
-            android:layout_width="0dp"
+        <TextView
+            android:id="@+id/dateLabel"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:textAppearance="@style/TextAppearance.FlashSearch.Label"
+            android:textSize="13sp" />
 
-            <TextView
-                android:id="@+id/dateLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textAppearance="@style/TextAppearance.FlashSearch.Body" />
+        <TextView
+            android:id="@+id/greeting"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Title"
+            android:textSize="16sp" />
 
-            <TextView
-                android:id="@+id/greeting"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="14dp"
-                android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Title" />
-        </LinearLayout>
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
 
         <TextView
             android:id="@+id/tagline"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="16dp"
+            android:layout_marginEnd="12dp"
+            android:maxLines="1"
             android:text="@string/brand_tagline"
-            android:textAppearance="@style/TextAppearance.FlashSearch.Body" />
+            android:textAppearance="@style/TextAppearance.FlashSearch.Label"
+            android:textSize="12sp" />
 
         <TextView
             android:id="@+id/versionLabel"
@@ -75,34 +94,34 @@
             android:paddingTop="4dp"
             android:paddingEnd="8dp"
             android:paddingBottom="4dp"
-            android:textAppearance="@style/TextAppearance.FlashSearch.Label" />
+            android:textAppearance="@style/TextAppearance.FlashSearch.Label"
+            android:textSize="12sp" />
     </LinearLayout>
 
-    <!-- ============================ 主体：三块功能并排，居中 ============================ -->
+    <!-- ======================= 一行：全部功能 ======================= -->
+    <!--
+      weight=2（而不是 1）：展开「最近搜题」时 historySection 会被代码设成 weight=1，
+      如果这里也是 1，两者五五分，主操作行只剩 ~85dp，卡片又会被压扁。
+      2 : 1 让主操作拿三分之二（~113dp），刚好装得下「模式+拍照」48dp 加两行小字。
+    -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_weight="2"
         android:baselineAligned="false"
-        android:gravity="center"
+        android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="16dp"
         android:paddingEnd="16dp">
 
-        <!-- 左右留白：把三块内容挤到中间，大屏上才不会贴着边框 -->
-        <Space
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_weight="0.6" />
-
-        <!-- 主操作：拍照搜题 -->
+        <!-- 主操作：模式 + 拍照，合成一条，不再上下堆 -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/heroCard"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="4"
+            android:layout_weight="3.2"
             app:cardBackgroundColor="@color/ivory"
-            app:cardCornerRadius="20dp"
+            app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
             app:strokeColor="@color/border_cream"
             app:strokeWidth="1dp">
@@ -111,80 +130,101 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:paddingStart="12dp"
+                android:paddingTop="10dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="10dp">
 
-                <com.google.android.material.button.MaterialButtonToggleGroup
-                    android:id="@+id/modeGroup"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    app:selectionRequired="true"
-                    app:singleSelection="true">
+                    android:baselineAligned="false"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButtonToggleGroup
+                        android:id="@+id/modeGroup"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:selectionRequired="true"
+                        app:singleSelection="true">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/modeSingle"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:minWidth="0dp"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp"
+                            android:text="@string/mode_single"
+                            android:textSize="13sp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/modePage"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:minWidth="0dp"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp"
+                            android:text="@string/mode_page"
+                            android:textSize="13sp" />
+                    </com.google.android.material.button.MaterialButtonToggleGroup>
 
                     <com.google.android.material.button.MaterialButton
-                        android:id="@+id/modeSingle"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:id="@+id/takePhotoButton"
+                        style="@style/Widget.FlashSearch.PrimaryButton"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
                         android:layout_weight="1"
                         android:insetTop="0dp"
                         android:insetBottom="0dp"
-                        android:minWidth="0dp"
-                        android:text="@string/mode_single"
-                        android:textSize="13sp" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/modePage"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:insetTop="0dp"
-                        android:insetBottom="0dp"
-                        android:minWidth="0dp"
-                        android:text="@string/mode_page"
-                        android:textSize="13sp" />
-                </com.google.android.material.button.MaterialButtonToggleGroup>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/takePhotoButton"
-                    style="@style/Widget.FlashSearch.PrimaryButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:paddingTop="15dp"
-                    android:paddingBottom="15dp"
-                    android:text="@string/action_take_photo"
-                    app:icon="@drawable/ic_camera" />
+                        android:paddingTop="12dp"
+                        android:paddingBottom="12dp"
+                        android:text="@string/action_take_photo"
+                        app:icon="@drawable/ic_camera" />
+                </LinearLayout>
 
                 <TextView
                     android:id="@+id/systemCameraHint"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="6dp"
+                    android:ellipsize="end"
                     android:gravity="center"
+                    android:maxLines="1"
                     android:text="@string/hint_long_press_system_camera"
-                    android:textAppearance="@style/TextAppearance.FlashSearch.Label" />
+                    android:textAppearance="@style/TextAppearance.FlashSearch.Label"
+                    android:textSize="11sp" />
 
                 <TextView
                     android:id="@+id/modeHint"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="2dp"
+                    android:ellipsize="end"
                     android:gravity="center"
-                    android:maxLines="2"
+                    android:maxLines="1"
                     android:text="@string/home_tip"
-                    android:textAppearance="@style/TextAppearance.FlashSearch.Caption" />
+                    android:textAppearance="@style/TextAppearance.FlashSearch.Caption"
+                    android:textSize="11sp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- 次要入口：AI 作文 -->
+        <!-- 次要入口：AI 作文（按钮自带名称，去掉卡片里的标题与描述） -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:layout_weight="2.2"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1.3"
             app:cardBackgroundColor="@color/ivory"
-            app:cardCornerRadius="20dp"
+            app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
             app:strokeColor="@color/border_cream"
             app:strokeWidth="1dp">
@@ -192,36 +232,18 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center_horizontal"
+                android:gravity="center"
                 android:orientation="vertical"
-                android:paddingStart="14dp"
-                android:paddingTop="18dp"
-                android:paddingEnd="14dp"
-                android:paddingBottom="18dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:text="@string/essay_entry_hint"
-                    android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Section" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:gravity="center"
-                    android:maxLines="2"
-                    android:text="@string/essay_entry_desc"
-                    android:textAppearance="@style/TextAppearance.FlashSearch.Caption" />
+                android:padding="12dp">
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/essayButton"
                     style="@style/Widget.FlashSearch.SecondaryButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:text="@string/essay_entry" />
+                    android:maxLines="2"
+                    android:text="@string/essay_entry"
+                    android:textSize="13sp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -229,10 +251,10 @@
         <com.google.android.material.card.MaterialCardView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:layout_weight="2.2"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1.3"
             app:cardBackgroundColor="@color/ivory"
-            app:cardCornerRadius="20dp"
+            app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
             app:strokeColor="@color/border_cream"
             app:strokeWidth="1dp">
@@ -240,53 +262,30 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center_horizontal"
+                android:gravity="center"
                 android:orientation="vertical"
-                android:paddingStart="14dp"
-                android:paddingTop="18dp"
-                android:paddingEnd="14dp"
-                android:paddingBottom="18dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:text="@string/chat_entry_hint"
-                    android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Section" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:gravity="center"
-                    android:maxLines="2"
-                    android:text="@string/chat_entry_desc"
-                    android:textAppearance="@style/TextAppearance.FlashSearch.Caption" />
+                android:padding="12dp">
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/chatButton"
                     style="@style/Widget.FlashSearch.SecondaryButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:text="@string/chat_entry" />
+                    android:maxLines="2"
+                    android:text="@string/chat_entry"
+                    android:textSize="13sp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
-
-        <Space
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_weight="0.6" />
     </LinearLayout>
 
-    <!-- ============================ 最近搜题（收起，向下展开） ============================ -->
+    <!-- ======================= 最近搜题（收起，展开时内部滚动） ======================= -->
     <LinearLayout
         android:id="@+id/historySection"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingStart="28dp"
-        android:paddingEnd="28dp">
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp">
 
         <LinearLayout
             android:id="@+id/historyToggle"
@@ -295,29 +294,25 @@
             android:background="?attr/selectableItemBackground"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingTop="4dp"
-            android:paddingBottom="4dp">
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/history_title"
-                android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Section" />
+                android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Section"
+                android:textSize="13sp" />
 
             <ImageView
                 android:id="@+id/historyChevron"
-                android:layout_width="18dp"
-                android:layout_height="18dp"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
                 android:layout_marginStart="6dp"
                 android:contentDescription="@string/history_title"
                 android:src="@drawable/ic_chevron_down" />
         </LinearLayout>
 
-        <!--
-          展开时由代码把 historySection 设成 0dp + weight 1（吃剩余高度），
-          historyBody 再在里面 0dp + weight 1，这样列表**内部**滚动。
-          收起时 section 回到 wrap_content，不留空档。
-        -->
         <ScrollView
             android:id="@+id/historyBody"
             android:layout_width="match_parent"
@@ -340,58 +335,64 @@
                     android:id="@+id/historyEmpty"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="6dp"
                     android:text="@string/history_empty"
                     android:textAppearance="@style/TextAppearance.FlashSearch.Caption"
+                    android:textSize="12sp"
                     android:visibility="gone" />
             </LinearLayout>
         </ScrollView>
     </LinearLayout>
 
-    <!-- ============================ 底部：统计 + 退出 ============================ -->
+    <!-- ======================= 一行：统计 + 退出 ======================= -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:baselineAligned="false"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="28dp"
+        android:paddingStart="20dp"
         android:paddingTop="2dp"
-        android:paddingEnd="28dp">
+        android:paddingEnd="20dp">
 
         <LinearLayout
             android:id="@+id/statsRow"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:gravity="center_vertical"
             android:orientation="horizontal">
 
             <TextView
                 android:id="@+id/todayCount"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Section" />
+                android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Section"
+                android:textSize="14sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="5dp"
                 android:text="@string/stats_today"
-                android:textAppearance="@style/TextAppearance.FlashSearch.Label" />
+                android:textAppearance="@style/TextAppearance.FlashSearch.Label"
+                android:textSize="12sp" />
 
             <TextView
                 android:id="@+id/totalCount"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="18dp"
-                android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Section" />
+                android:layout_marginStart="16dp"
+                android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Section"
+                android:textSize="14sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="5dp"
                 android:text="@string/stats_total"
-                android:textAppearance="@style/TextAppearance.FlashSearch.Label" />
+                android:textAppearance="@style/TextAppearance.FlashSearch.Label"
+                android:textSize="12sp" />
         </LinearLayout>
 
         <com.google.android.material.button.MaterialButton
@@ -399,9 +400,12 @@
             style="@style/Widget.FlashSearch.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
             android:minWidth="0dp"
             android:paddingTop="4dp"
             android:paddingBottom="4dp"
-            android:text="@string/action_logout" />
+            android:text="@string/action_logout"
+            android:textSize="13sp" />
     </LinearLayout>
 </LinearLayout>

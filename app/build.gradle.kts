@@ -31,8 +31,8 @@ android {
         minSdk = 21
         targetSdk = 37
         // 每轮迭代都往上走：装到机器上后可以直接从「设置 - 应用」或首页底部确认版本。
-        versionCode = 27
-        versionName = "1.27.0"
+        versionCode = 28
+        versionName = "1.28.0"
 
         buildConfigField("String", "UMENG_APPKEY", "\"$umengAppKey\"")
     }
