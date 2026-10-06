@@ -34,10 +34,15 @@
         android:theme="@style/Theme.FlashSearch"
         android:usesCleartextTraffic="false">
 
+        <!--
+          启动入口是首页，不是登录页。
+          登录已经改成可选项（实测搜题不需要账号），入口在首页的设置里。
+          之前这里是 LoginActivity 当 LAUNCHER，导致新装设备点图标直接进登录页，
+          连首次引导都走不到 —— 匿名模式等于没生效。
+        -->
         <activity
-            android:name=".ui.login.LoginActivity"
-            android:exported="true"
-            android:windowSoftInputMode="adjustResize">
+            android:name=".ui.home.HomeActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -45,8 +50,9 @@
         </activity>
 
         <activity
-            android:name=".ui.home.HomeActivity"
-            android:exported="false" />
+            android:name=".ui.login.LoginActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
 
         <!--
           AI 作文：不锁方向，横竖屏各有一套布局。

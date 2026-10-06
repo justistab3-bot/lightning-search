@@ -64,30 +64,28 @@
             android:text="@string/onboard_account_body"
             android:textAppearance="@style/TextAppearance.FlashSearch.Body" />
 
-        <LinearLayout
+        <!--
+          匿名是默认路径，所以「先不登录」给主按钮、全宽、更高；
+          「登录账号」降为次要的文字按钮。想登的人找得到，不想登的人一步就能进去。
+        -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/skipButton"
+            style="@style/Widget.FlashSearch.PrimaryButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:baselineAligned="false"
-            android:orientation="horizontal">
+            android:layout_marginTop="20dp"
+            android:paddingTop="18dp"
+            android:paddingBottom="18dp"
+            android:text="@string/onboard_skip"
+            android:textSize="17sp" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/loginButton"
-                style="@style/Widget.FlashSearch.SecondaryButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/onboard_login" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/skipButton"
-                style="@style/Widget.FlashSearch.PrimaryButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:layout_weight="1"
-                android:text="@string/onboard_skip" />
-        </LinearLayout>
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/loginButton"
+            style="@style/Widget.FlashSearch.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="@string/onboard_login" />
 
         <!-- 设置入口提示：用户不知道长按版本号能开设置 -->
         <TextView
