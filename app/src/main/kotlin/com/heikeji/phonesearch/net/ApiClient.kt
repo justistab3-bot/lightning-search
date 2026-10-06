@@ -83,7 +83,11 @@ class ApiClient(
      * - [SearchMode.PAGE]：整页搜题，`referer=home`，`imgCorrection=0`，**不发送 pageExtraInfo**
      * - [SearchMode.CROP_SINGLE]：框选重搜，`referer=3`，携带 `{wholeSearchSid,index,loc}`
      *
-     * 若 data 含非空 validatedInfo，抛 [SearchChallengeException]，由上层走官方验证页后重试。
+     * 若 data 含非空 validatedInfo **且没有可用答案**，抛 [SearchChallengeException]，
+     * 由上层走官方验证页后重试。
+     *
+     * 注意 validatedInfo 单独出现时**不算**被拦 —— 服务器会在成功响应里一并下发它，
+     * 此时答案已经拿到了，应当正常展示（官方 APP 就是这么做的）。
      */
     fun searchRaw(
         jpeg: ByteArray,
@@ -126,12 +130,26 @@ class ApiClient(
             ProtocolProfile.PATH_SEARCH
         }
         val data = post(ProtocolProfile.HOST_KDDZY, path, params, jpeg, null)
+        // validatedInfo 只是「本次命中了风控规则」的**提示**，不代表搜题失败。
+        // 实测（抓包对比）：服务器在同一次成功响应里既返回完整答案
+        // （answers.count=4、locs、locInfo 一应俱全），又带上 validatedInfo。
+        // 官方 APP 拿到同样的字段照样把答案显示出来。
+        //
+        // 原来的写法是「只要非空就抛 SearchChallengeException」，等于把已经拿到的
+        // 答案扔掉、跳去反抓取验证页 —— 而那个页面写着「需要登录」，
+        // 于是匿名搜题看起来像被强制登录了。
+        // 只有**确实没有答案**时才算真被拦。
         val validatedInfo = data.optString("validatedInfo", "")
-        if (validatedInfo.isNotEmpty()) {
+        if (validatedInfo.isNotEmpty() && !hasUsableAnswer(data)) {
             throw SearchChallengeException(validatedInfo, data.optString("sid", ""))
         }
         return data
     }
+
+
+    /** 响应里有没有可用答案。判定逻辑见 [SearchAnswers.hasUsableAnswer]。 */
+    private fun hasUsableAnswer(data: JSONObject): Boolean =
+        SearchAnswers.hasUsableAnswer(data)
 
     // ------------------------------------------------------------------ 实名
 
@@ -382,5 +400,32 @@ class ApiClient(
         val normalized = phone.replace(" ", "").trim()
         if (!normalized.matches(Regex("1[0-9]{10}"))) throw ApiException("请输入11位手机号")
         return normalized
+    }
+}
+
+/**
+ * 「这次搜题到底有没有拿到答案」的判定。
+ *
+ * 单独放在对象里是为了能被单元测试直接覆盖 —— 这条规则踩过真实的坑：
+ * 服务器在**成功响应**里既返回完整答案、又带上 `validatedInfo`，
+ * 而旧逻辑「只要 validatedInfo 非空就当被拦」会把答案扔掉、跳去验证页。
+ *
+ * 判据是**有没有答案**，不是有没有 validatedInfo。
+ */
+internal object SearchAnswers {
+
+    /**
+     * 单题与整页的载荷结构不同（单题 answers.count + tids；整页还有 locs/locInfo），
+     * 但都以 `answers.count > 0` 为准；另外兜一层题块数组。
+     */
+    fun hasUsableAnswer(data: JSONObject): Boolean {
+        val answers = data.optJSONObject("answers")
+        if (answers != null && answers.optInt("count", 0) > 0) return true
+        val blocks = data.optJSONArray("blocks") ?: data.optJSONArray("blockList")
+        if (blocks != null && blocks.length() > 0) return true
+        // 整页搜题把结果放在 wholeSearchInfo / pageInfo 里
+        val pageInfo = data.optJSONObject("wholeSearchInfo") ?: data.optJSONObject("pageInfo")
+        if (pageInfo != null && pageInfo.length() > 0) return true
+        return false
     }
 }
