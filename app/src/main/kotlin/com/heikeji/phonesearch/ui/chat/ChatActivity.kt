@@ -31,6 +31,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.heikeji.phonesearch.data.UserPrefs
+import java.io.File
 
 /**
  * 快问 AI 对话页。
@@ -87,6 +88,38 @@ class ChatActivity : AppCompatActivity() {
 
         observe()
         viewModel.start()
+        launchAiSolveIfRequested()
+    }
+
+    /** AI 解题模式：读图压图后自动开讲（会话由 start() 先建好）。 */
+    private fun launchAiSolveIfRequested() {
+        val path = intent.getStringExtra(EXTRA_AI_IMAGE_PATH) ?: return
+        val subject = intent.getStringExtra(EXTRA_AI_SUBJECT).orEmpty()
+        binding.headerTitle.text = if (subject.isNotEmpty()) {
+            getString(R.string.ai_solve_title, subject)
+        } else {
+            getString(R.string.ai_solve_title_plain)
+        }
+        lifecycleScope.launch {
+            val bytes = withContext(Dispatchers.IO) {
+                // 内部缓存路径直接读文件，不经过 FileProvider（provider 只暴露 captures/updates）
+                loadShrunkFile(path)
+            }
+            if (bytes == null) {
+                binding.root.showMessage(getString(R.string.chat_image_failed))
+                return@launch
+            }
+            viewModel.startAiSolve(
+                AiSolveContext(
+                    image = bytes,
+                    sid = intent.getStringExtra(EXTRA_AI_SID).orEmpty(),
+                    subjectId = intent.getStringExtra(EXTRA_AI_SUBJECT_ID).orEmpty(),
+                    etid = intent.getStringExtra(EXTRA_AI_ETID).orEmpty(),
+                    pid = intent.getStringExtra(EXTRA_AI_PID).orEmpty(),
+                    subject = subject,
+                ),
+            )
+        }
     }
 
     private fun submit() {
@@ -122,10 +155,19 @@ class ChatActivity : AppCompatActivity() {
      * 服务端那张样图约 100KB；这里按最长边 1280、质量 80 压，通常落在 100–300KB。
      * 压不下去（超大图）就返回 null，宁可提示也不发一个几十兆的包。
      */
-    private fun loadShrunk(uri: android.net.Uri): ByteArray? {
+    private fun loadShrunk(uri: android.net.Uri): ByteArray? =
+        loadShrunk { contentResolver.openInputStream(uri) }
+
+    /** 直接读本地文件并压缩（内部缓存路径不经过 FileProvider）。 */
+    private fun loadShrunkFile(path: String): ByteArray? = loadShrunk {
+        val file = File(path)
+        if (file.isFile) file.inputStream() else null
+    }
+
+    private fun loadShrunk(openStream: () -> java.io.InputStream?): ByteArray? {
         return try {
             val bounds = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            contentResolver.openInputStream(uri)?.use {
+            openStream()?.use {
                 android.graphics.BitmapFactory.decodeStream(it, null, bounds)
             }
             if (bounds.outWidth < 1 || bounds.outHeight < 1) return null
@@ -133,7 +175,7 @@ class ChatActivity : AppCompatActivity() {
             var sample = 1
             while (maxOf(bounds.outWidth, bounds.outHeight) / sample > MAX_IMAGE_EDGE) sample *= 2
 
-            val bitmap = contentResolver.openInputStream(uri)?.use { stream ->
+            val bitmap = openStream()?.use { stream ->
                 android.graphics.BitmapFactory.decodeStream(
                     stream,
                     null,
@@ -262,8 +304,12 @@ class ChatActivity : AppCompatActivity() {
 
             item.bubbleText.text = if (isUser) {
                 bubble.text
+            } else if (bubble.streaming) {
+                // 流式期间显示纯文本：markdown/公式的整段重排版只在结束后做一次，
+                // 否则逐字刷新会卡死主线程（AI 讲解答案很长，卡顿非常明显）。
+                bubble.text
             } else {
-                ChatMarkdown.render(bubble.text)
+                ChatMarkdown.render(bubble.text, item.bubbleText)
             }
             item.bubbleText.isVisible = bubble.text.isNotEmpty()
 
@@ -330,6 +376,35 @@ class ChatActivity : AppCompatActivity() {
         /** 压缩后仍超过这个大小就不发（服务端样图约 100KB）。 */
         private const val MAX_IMAGE_BYTES = 2 * 1024 * 1024
 
+        private const val EXTRA_AI_IMAGE_PATH = "ai_image_path"
+        private const val EXTRA_AI_SID = "ai_sid"
+        private const val EXTRA_AI_SUBJECT_ID = "ai_subject_id"
+        private const val EXTRA_AI_ETID = "ai_etid"
+        private const val EXTRA_AI_PID = "ai_pid"
+        private const val EXTRA_AI_SUBJECT = "ai_subject"
+
         fun newIntent(context: Context): Intent = Intent(context, ChatActivity::class.java)
+
+        /**
+         * AI 解题入口：带搜题结果上下文进来，自动开讲并可继续追问。
+         *
+         * @param imagePath 题目图片的本地路径（由结果页缓存）
+         */
+        fun aiSolveIntent(
+            context: Context,
+            imagePath: String,
+            sid: String,
+            subjectId: String,
+            etid: String,
+            pid: String,
+            subject: String,
+        ): Intent = Intent(context, ChatActivity::class.java).apply {
+            putExtra(EXTRA_AI_IMAGE_PATH, imagePath)
+            putExtra(EXTRA_AI_SID, sid)
+            putExtra(EXTRA_AI_SUBJECT_ID, subjectId)
+            putExtra(EXTRA_AI_ETID, etid)
+            putExtra(EXTRA_AI_PID, pid)
+            putExtra(EXTRA_AI_SUBJECT, subject)
+        }
     }
 }

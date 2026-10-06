@@ -24,6 +24,8 @@ desugar = "2.1.5"
 umengCommon = "9.9.10"
 umengAsms = "1.8.7.2"
 umengApm = "2.1.0"
+# LaTeX 公式渲染（AI 讲解输出含 $$..$$/$..$ 公式）。纯 Java + 资源字体，minSdk 无要求。
+jlatexmathAndroid = "0.2.0"
 
 [libraries]
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
@@ -57,6 +59,7 @@ desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref 
 umeng-common = { module = "com.umeng.umsdk:common", version.ref = "umengCommon" }
 umeng-asms = { module = "com.umeng.umsdk:asms", version.ref = "umengAsms" }
 umeng-apm = { module = "com.umeng.umsdk:apm", version.ref = "umengApm" }
+jlatexmath-android = { module = "ru.noties:jlatexmath-android", version.ref = "jlatexmathAndroid" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

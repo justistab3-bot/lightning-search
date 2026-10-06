@@ -48,6 +48,12 @@
     <string name="result_empty">没有匹配到答案，换一张更清晰的图片试试 🙈</string>
     <string name="image_load_failed">图片加载失败 😢</string>
 
+    <!-- AI 解题 -->
+    <string name="action_ai_solve">AI 解题</string>
+    <string name="ai_solve_title">AI 解题 · %1$s</string>
+    <string name="ai_solve_title_plain">AI 解题</string>
+    <string name="ai_solve_prepare_failed">题目图片准备失败，请重试</string>
+
     <!-- 登录 -->
     <string name="login_title">登录闪电搜题 ⚡</string>
     <string name="login_tab_sms">短信登录</string>

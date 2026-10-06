@@ -35,6 +35,7 @@ object AnswerParser {
         index: Int,
         subjectName: String = "",
         sid: String = "",
+        tid: String = "",
     ): AnswerItem {
         val title = "结果 $index"
         val lower = decoded.lowercase()
@@ -49,6 +50,7 @@ object AnswerParser {
                 analysisHtml = "",
                 subject = subjectName,
                 rawHtml = decoded,
+                tid = tid,
             )
         }
 
@@ -87,6 +89,7 @@ object AnswerParser {
             analysisHtml = analysisHtml,
             subject = courseName.ifEmpty { subjectName },
             rawHtml = null,
+            tid = tid,
         )
     }
 

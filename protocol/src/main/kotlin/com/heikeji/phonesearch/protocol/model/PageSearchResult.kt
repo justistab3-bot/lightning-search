@@ -15,6 +15,10 @@ data class PageSearchResult(
     /** 定位不可用的原因；可用时为空。 */
     val positioningWarning: String,
     val blocks: List<PageQuestionBlock>,
+    /** 科目 ID（searchInfo.subjectId），AI 解题用。 */
+    val subjectId: Int = 0,
+    /** 图片 pid（picture.pid），AI 解题用。 */
+    val pid: String = "",
 ) {
     val isEmpty: Boolean get() = blocks.isEmpty()
 }

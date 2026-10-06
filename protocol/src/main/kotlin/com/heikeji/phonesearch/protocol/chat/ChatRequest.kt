@@ -41,6 +41,12 @@ object ChatRequest {
     /** 带图提问。 */
     const val TOOL_TYPE_IMAGE = "image"
 
+    /** AI 解题的固定提问语（官方 ai-pure-page 实测）。 */
+    const val AI_SOLVE_PROMPT = "小对，帮我讲解一下"
+
+    /** AI 解题来源标识（官方抓包 from=wholesearch）。 */
+    const val FROM_WHOLESEARCH = "wholesearch"
+
     /** 建会话。 */
     fun createParams(grade: Int): Map<String, String> = linkedMapOf(
         "appId" to "scancode",
@@ -131,6 +137,54 @@ object ChatRequest {
         "scene" to "",
         "isKeyPointContent" to "0",
         "context" to contextJson(history),
+    )
+
+    /**
+     * AI 解题（每道题的「AI 讲解」）参数，官方 ai-pure-page 抓包对齐。
+     *
+     * 与 [photoAskParams] 的关键区别：带**搜题结果上下文**
+     * （sid / subjectId / picSearchInfo.etid / pid），服务端据此讲对应那道题。
+     *
+     * @param sid 搜题响应里的 sid
+     * @param subjectId 科目 ID
+     * @param etid 该题的加密题目编号（answers.tids[i]）
+     * @param pid 图片 pid（picture.pid）
+     * @param pvalLabel 官方抓包为 1
+     */
+    fun aiSolveParams(
+        sessionId: String,
+        grade: Int,
+        picMd5: String,
+        subjectId: String,
+        sid: String,
+        etid: String,
+        pid: String,
+        pvalLabel: Int = 1,
+    ): Map<String, String> = linkedMapOf(
+        "subjectId" to subjectId,
+        "sid" to sid,
+        "agentId" to "",
+        "searchEnabled" to "0",
+        "thinkEnabled" to "0",
+        "isSugContent" to "0",
+        "passthrough" to "",
+        "matchType" to "2",
+        "questionGrade" to "50",
+        "imageInfo" to """{"picMD5":"$picMd5"}""",
+        "picSearchInfo" to
+            """{"etid":"$etid","answerSrc":0,"answerContent":"","pvalNLabel":0,"pvalLabel":$pvalLabel,"pid":"$pid"}""",
+        "grade" to grade.toString(),
+        "content" to AI_SOLVE_PROMPT,
+        "feVc" to FE_VC,
+        "toolType" to TOOL_TYPE_IMAGE,
+        "sessionId" to sessionId,
+        "isHitQueryRewrite" to "1",
+        "inputType" to "1",
+        "referInfo" to "",
+        "from" to FROM_WHOLESEARCH,
+        "scene" to "",
+        "isKeyPointContent" to "0",
+        "context" to "[]",
     )
 
     /**

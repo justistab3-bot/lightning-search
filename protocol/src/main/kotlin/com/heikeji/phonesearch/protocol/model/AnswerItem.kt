@@ -23,6 +23,8 @@ data class AnswerItem(
     val analysisHtml: String,
     val subject: String,
     val rawHtml: String?,
+    /** 该题的加密题目编号（answers.tids[i]），AI 解题用（官方叫 etid）。 */
+    val tid: String = "",
 ) {
     val hasQuestion: Boolean get() = questionHtml.isNotBlank() || questionImages.isNotEmpty()
     val hasAnswer: Boolean get() = answerHtml.isNotBlank() || answerImages.isNotEmpty()

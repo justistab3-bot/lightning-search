@@ -9,6 +9,10 @@ data class SearchResult(
     val items: List<AnswerItem>,
     val sid: String = "",
     val subject: String = "",
+    /** 科目 ID（searchInfo.subjectId），AI 解题用。 */
+    val subjectId: Int = 0,
+    /** 图片 pid（picture.pid），AI 解题用。 */
+    val pid: String = "",
 ) {
     val isEmpty: Boolean get() = items.isEmpty()
     val pageCount: Int get() = items.size

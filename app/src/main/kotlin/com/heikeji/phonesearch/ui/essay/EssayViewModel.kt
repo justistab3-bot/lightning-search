@@ -74,6 +74,10 @@ class EssayViewModel(application: Application) : AndroidViewModel(application) {
 
     private var job: Job? = null
 
+    /** 流式节流：攒下的增量文本与上次发布时间（对齐聊天的节流策略）。 */
+    private var pendingText = ""
+    private var lastDeltaPublishAt = 0L
+
     // ------------------------------------------------------------------ 用户输入
 
     fun onTitleChanged(title: String) {
@@ -313,11 +317,22 @@ class EssayViewModel(application: Application) : AndroidViewModel(application) {
                 for (event in channel) {
                     when (event) {
                         is AiWritingEvent.Delta -> {
-                            _state.value = _state.value.copy(text = _state.value.text + event.text)
+                            // 节流发布：逐字更新会每次都重排整个 TextView + 滚动，
+                            // 长作文下 UI 明显卡顿、生成显得特别慢。
+                            pendingText += event.text
+                            val now = android.os.SystemClock.uptimeMillis()
+                            if (now - lastDeltaPublishAt >= STREAM_PUBLISH_INTERVAL_MS) {
+                                lastDeltaPublishAt = now
+                                _state.value = _state.value.copy(
+                                    text = _state.value.text + pendingText,
+                                )
+                                pendingText = ""
+                            }
                         }
 
                         is AiWritingEvent.Finished -> {
-                            // 权威结果：用分段正文覆盖流式拼接的结果
+                            // 权威结果：用分段正文覆盖流式拼接的结果（顺带冲掉节流攒着的尾巴）
+                            pendingText = ""
                             _state.value = _state.value.copy(
                                 text = event.article.text,
                                 article = event.article,
@@ -334,6 +349,12 @@ class EssayViewModel(application: Application) : AndroidViewModel(application) {
             } finally {
                 producer.cancel()
             }
+
+            // 兜底：流结束但没收到 Finished（异常中断）时，把节流攒下的内容补上
+            if (pendingText.isNotEmpty()) {
+                _state.value = _state.value.copy(text = _state.value.text + pendingText)
+                pendingText = ""
+            }
         }
 
         // 一个字符都没收到，按失败处理
@@ -345,6 +366,9 @@ class EssayViewModel(application: Application) : AndroidViewModel(application) {
     private companion object {
         /** 文体识别失败时的兜底。 */
         const val DEFAULT_QUERY_TYPE = "记叙文"
+
+        /** 流式发布的节流间隔：逐字刷新会拖垮长作文的 UI。 */
+        const val STREAM_PUBLISH_INTERVAL_MS = 120L
 
         /** 达到目标字数的这个比例就算合格，不再重写。 */
         const val MIN_RATIO = 0.85

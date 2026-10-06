@@ -1,5 +1,6 @@
 package com.heikeji.phonesearch.net
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
 import android.net.ConnectivityManager
@@ -146,7 +147,8 @@ class DeviceIdentity(context: Context) {
         json.put("imei1", "")
         json.put("imei2", "")
         json.put("oaid", "")
-        json.put("sn", runCatching { Build.getSerial() }.getOrDefault(""))
+        // 序列号：无权限时返回 "unknown"（官方同样如此）；缺失时留空。
+        json.put("sn", serialOrEmpty())
         json.put(
             "androidId",
             runCatching {
@@ -190,8 +192,18 @@ class DeviceIdentity(context: Context) {
         return Base64NoWrap.encode(encrypted)
     }
 
-    private fun totalMemoryGb(): Long = runCatching {
-        val info = android.app.ActivityManager.MemoryInfo()
+    /** 设备序列号：拿不到时返回 "unknown"（官方 DeviceIdHelper 同语义）。 */
+    @SuppressLint("MissingPermission", "HardwareIds")
+    private fun serialOrEmpty(): String = runCatching {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Build.getSerial()
+        } else {
+            @Suppress("DEPRECATION")
+            Build.SERIAL
+        }
+    }.getOrDefault("")
+
+    private fun totalMemoryGb(): Long = runCatching {        val info = android.app.ActivityManager.MemoryInfo()
         (appContext.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager)
             .getMemoryInfo(info)
         info.totalMem / (1024L * 1024L * 1024L)

@@ -41,6 +41,7 @@ import com.heikeji.phonesearch.ui.verification.VerificationActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.heikeji.phonesearch.ui.chat.ChatActivity
 import java.io.File
 import java.util.UUID
 import com.heikeji.phonesearch.data.UserPrefs
@@ -101,6 +102,7 @@ class PageResultActivity : AppCompatActivity(), AnswerImageHost {
         binding.backButton.setOnClickListener { finish() }
         binding.cropButton.setOnClickListener { openSelection() }
         binding.pagePhoto.setOnClickListener { openSelection() }
+        binding.aiSolveButton.setOnClickListener { launchAiSolve() }
 
         if (viewModel.originalHandle != null) {
             // 配置变更后重建：句柄在 ViewModel 里，直接接着渲染
@@ -216,6 +218,46 @@ class PageResultActivity : AppCompatActivity(), AnswerImageHost {
         renderBlocks(state)
         renderStatus(state)
         renderCandidates(state)
+        updateAiSolveButton(state)
+    }
+
+    // ------------------------------------------------------------------ AI 解题
+
+    /** 按钮作用于当前题块的当前候选；etid 缺失时隐藏。 */
+    private fun updateAiSolveButton(state: PageUiState) {
+        val candidate = state.selectedCandidate
+        val usable = candidate != null && candidate.tid.isNotEmpty() &&
+            state.result != null && !state.loading
+        binding.aiSolveButton.visibility = if (usable) View.VISIBLE else View.GONE
+    }
+
+    private fun launchAiSolve() {
+        val state = viewModel.state.value
+        val candidate = state.selectedCandidate ?: return
+        if (candidate.tid.isEmpty()) return
+        val result = state.result ?: return
+        val handle = viewModel.originalHandle ?: return
+
+        val dir = File(cacheDir, "ai-solve").apply { mkdirs() }
+        val file = File(dir, "question-${UUID.randomUUID()}.jpg")
+        try {
+            file.writeBytes(handle.uploadJpeg)
+        } catch (e: Exception) {
+            binding.root.showMessage(getString(R.string.ai_solve_prepare_failed))
+            return
+        }
+
+        startActivity(
+            ChatActivity.aiSolveIntent(
+                context = this,
+                imagePath = file.absolutePath,
+                sid = result.sid,
+                subjectId = result.subjectId.toString(),
+                etid = candidate.tid,
+                pid = result.pid,
+                subject = candidate.subject.ifEmpty { result.subject },
+            ),
+        )
     }
 
     private fun renderBlocks(state: PageUiState) {

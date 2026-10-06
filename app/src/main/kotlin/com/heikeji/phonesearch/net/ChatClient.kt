@@ -120,6 +120,46 @@ class ChatClient(
         )
     }
 
+    /**
+     * AI 解题：带搜题结果上下文（sid/subjectId/etid/pid）讲解指定题目。
+     *
+     * 官方走 `/kdchat/api/ask`（multipart，与纯文字 ask 同端点、带图片），
+     * 响应 SSE。参数见 [ChatRequest.aiSolveParams]（ai-pure-page 抓包对齐）。
+     */
+    fun askAiSolve(
+        sessionId: String,
+        jpeg: ByteArray,
+        grade: Int,
+        subjectId: String,
+        sid: String,
+        etid: String,
+        pid: String,
+        pvalLabel: Int = 1,
+        onEvent: (ChatEvent) -> Unit,
+    ) {
+        val params = ChatRequest.aiSolveParams(
+            sessionId = sessionId,
+            grade = grade,
+            picMd5 = md5Hex(jpeg),
+            subjectId = subjectId,
+            sid = sid,
+            etid = etid,
+            pid = pid,
+            pvalLabel = pvalLabel,
+        )
+        val merged = signedParams(params)
+        val boundary = ProtocolProfile.MULTIPART_BOUNDARY_PREFIX +
+            UUID.randomUUID().toString().replace("-", "")
+        val body = Multipart.build(boundary, jpeg, params = merged)
+
+        streamRequest(
+            path = ChatRequest.PATH_ASK,
+            body = body,
+            contentType = "multipart/form-data; boundary=$boundary",
+            onEvent = onEvent,
+        )
+    }
+
     /** 发一个流式请求并把 SSE 事件翻译出来。 */
     private fun streamRequest(
         path: String,
@@ -217,7 +257,8 @@ class ChatClient(
             if (!merged.containsKey(key)) merged[key] = value
         }
         val session = sessions.current()
-        merged["identityIdV2"] = (session?.identityIdV2 ?: 0).toString()
+        // 官方手机客户端匿名状态也发 identityIdV2=1；登录后以会话里的值为准。
+        merged["identityIdV2"] = (session?.identityIdV2 ?: 1).toString()
         merged["occupationType"] = (session?.occupationType ?: 0).toString()
         merged["nt"] = identity.networkType()
 

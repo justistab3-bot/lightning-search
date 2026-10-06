@@ -160,8 +160,11 @@ class SearchRepository(
         val encode = data.optInt("encode", 0)
         val encryption = answers.optInt("encryption", 0)
         val gzip = answers.optInt("gzip", 0) == 1
-        val subject = data.optJSONObject("searchInfo")?.optString("subjectName", "").orEmpty()
+        val searchInfo = data.optJSONObject("searchInfo")
+        val subject = searchInfo?.optString("subjectName", "").orEmpty()
+        val subjectId = searchInfo?.optInt("subjectId", 0) ?: 0
         val sid = data.optString("sid", "")
+        val pid = data.optJSONObject("picture")?.optString("pid", "").orEmpty()
         val responseKey = protocol.responseKey()
 
         val items = ArrayList<AnswerItem>()
@@ -177,12 +180,18 @@ class SearchRepository(
             } catch (e: ProtocolException) {
                 throw ApiException("第 ${index + 1} 条答案：${e.message}", 0, e)
             }
-            items.add(AnswerParser.parse(decoded, items.size + 1, subject, sid))
+            items.add(AnswerParser.parse(decoded, items.size + 1, subject, sid, tid))
         }
 
         if (items.isEmpty() && (tids?.length() ?: 0) > 0) {
             throw ApiException("已匹配题目，但服务未返回可显示的答案内容")
         }
-        return SearchResult(items = items, sid = sid, subject = subject)
+        return SearchResult(
+            items = items,
+            sid = sid,
+            subject = subject,
+            subjectId = subjectId,
+            pid = pid,
+        )
     }
 }

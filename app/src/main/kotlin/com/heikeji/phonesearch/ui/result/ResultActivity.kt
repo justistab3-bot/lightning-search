@@ -24,6 +24,7 @@ import com.heikeji.phonesearch.data.UserPrefs
 import com.heikeji.phonesearch.databinding.ActivitySearchResultBinding
 import com.heikeji.phonesearch.protocol.model.SearchResult
 import com.heikeji.phonesearch.protocol.render.AnswerPageRenderer
+import com.heikeji.phonesearch.ui.chat.ChatActivity
 import com.heikeji.phonesearch.ui.common.PageNumberView
 import com.heikeji.phonesearch.ui.common.SubjectStyle
 import com.heikeji.phonesearch.ui.common.applySystemBarPadding
@@ -32,6 +33,7 @@ import com.heikeji.phonesearch.ui.login.LoginActivity
 import com.heikeji.phonesearch.ui.verification.VerificationActivity
 import kotlinx.coroutines.launch
 import java.io.File
+import java.util.UUID
 import kotlin.math.abs
 
 /**
@@ -146,6 +148,7 @@ class ResultActivity : AppCompatActivity(), AnswerScrollHost, AnswerImageHost {
         binding.pager.visibility = View.INVISIBLE
         binding.cancelButton.setOnClickListener { viewModel.cancel() }
         binding.retryButton.setOnClickListener { retryAction?.invoke() }
+        binding.aiSolveButton.setOnClickListener { launchAiSolve() }
     }
 
     private fun setupPhoto() {
@@ -217,12 +220,55 @@ class ResultActivity : AppCompatActivity(), AnswerScrollHost, AnswerImageHost {
         binding.loadingState.visibility = View.VISIBLE
         binding.messageState.visibility = View.GONE
         binding.pager.visibility = View.INVISIBLE
+        binding.aiSolveButton.visibility = View.GONE
+    }
+
+    // ------------------------------------------------------------------ AI 解题
+
+    /**
+     * AI 解题按钮：作用于当前页那道题。
+     *
+     * 官方每道题的「AI 讲解」带搜题上下文（sid/subjectId/etid/pid）走
+     * `/kdchat/api/ask`；etid 缺失（该题没带题目编号）时按钮隐藏。
+     */
+    private fun updateAiSolveButton() {
+        val current = result?.items?.getOrNull(binding.pager.currentItem)
+        val usable = current != null && current.tid.isNotEmpty() && jpegBytes.isNotEmpty()
+        binding.aiSolveButton.visibility = if (usable) View.VISIBLE else View.GONE
+    }
+
+    private fun launchAiSolve() {
+        val item = result?.items?.getOrNull(binding.pager.currentItem)
+        if (item == null || item.tid.isEmpty()) return
+        val searchResult = result ?: return
+
+        val dir = File(cacheDir, "ai-solve").apply { mkdirs() }
+        val file = File(dir, "question-${UUID.randomUUID()}.jpg")
+        try {
+            file.writeBytes(jpegBytes)
+        } catch (e: Exception) {
+            showMessage(getString(R.string.ai_solve_prepare_failed), null)
+            return
+        }
+
+        startActivity(
+            ChatActivity.aiSolveIntent(
+                context = this,
+                imagePath = file.absolutePath,
+                sid = searchResult.sid,
+                subjectId = searchResult.subjectId.toString(),
+                etid = item.tid,
+                pid = searchResult.pid,
+                subject = item.subject.ifEmpty { searchResult.subject },
+            ),
+        )
     }
 
     private fun showMessage(message: String, onRetry: (() -> Unit)?) {
         binding.loadingState.visibility = View.GONE
         binding.messageState.visibility = View.VISIBLE
         binding.pager.visibility = View.INVISIBLE
+        binding.aiSolveButton.visibility = View.GONE
         binding.messageText.text = message
         retryAction = onRetry
         binding.retryButton.visibility = if (onRetry == null) View.GONE else View.VISIBLE
@@ -259,12 +305,14 @@ class ResultActivity : AppCompatActivity(), AnswerScrollHost, AnswerImageHost {
         binding.pager.visibility = View.VISIBLE
         hasMultiplePages = pages.size > 1
         updateIndicatorVisibility()
+        updateAiSolveButton()
 
         pageCallback?.let { binding.pager.unregisterOnPageChangeCallback(it) }
         val callback = object : ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(position: Int) {
                 scrollAccumulator = 0
                 updateHeader(position)
+                updateAiSolveButton()
             }
         }
         pageCallback = callback

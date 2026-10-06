@@ -74,11 +74,14 @@ object PageSearchParser {
         val angles = answers.arrayOrNull("angles")
 
         val sid = data.strOrEmpty("sid")
-        val subject = data.objOrNull("searchInfo").strOrEmpty("subjectName")
+        val searchInfo = data.objOrNull("searchInfo")
+        val subject = searchInfo.strOrEmpty("subjectName")
+        val subjectId = searchInfo.intOr("subjectId", 0)
 
         val picture = data.objOrNull("picture")
         val pictureWidth = picture.intOr("width", 0)
         val pictureHeight = picture.intOr("height", 0)
+        val pid = picture.strOrEmpty("pid")
         val rotateAngle = data.intOr("rotateAngle", 0)
         val dealInfo = picture.objOrNull("dealInfo")
 
@@ -130,6 +133,8 @@ object PageSearchParser {
             positioningAvailable = positioning,
             positioningWarning = positioningWarning,
             blocks = blocks,
+            subjectId = subjectId,
+            pid = pid,
         )
     }
 
@@ -167,7 +172,7 @@ object PageSearchParser {
                     gzip = gzip,
                     responseKey = responseKey,
                 )
-                candidates.addAll(candidatesOf(decoded, subject, sid))
+                candidates.addAll(candidatesOf(decoded, subject, sid, tids.stringAt(index)))
             } catch (e: ProtocolException) {
                 warning = e.message ?: PageWarnings.NO_ANSWER
             }
@@ -239,7 +244,12 @@ object PageSearchParser {
      * 解码后的内容可能是三种形态：单个答案 JSON、完整 HTML、或候选数组。
      * 数组时每项独立解析成一个候选。
      */
-    private fun candidatesOf(decoded: String, subject: String, sid: String): List<AnswerItem> {
+    private fun candidatesOf(
+        decoded: String,
+        subject: String,
+        sid: String,
+        tid: String,
+    ): List<AnswerItem> {
         val trimmed = decoded.trim()
         if (trimmed.startsWith("[")) {
             val array = Json.tryParseArray(trimmed)
@@ -249,14 +259,14 @@ object PageSearchParser {
                     val text = array.stringAt(i)
                     if (text.isEmpty()) continue
                     val item = runCatching {
-                        AnswerParser.parse(text, parsed.size + 1, subject, sid)
+                        AnswerParser.parse(text, parsed.size + 1, subject, sid, tid)
                     }.getOrNull() ?: continue
                     parsed.add(item)
                 }
                 if (parsed.isNotEmpty()) return parsed
             }
         }
-        return listOf(AnswerParser.parse(trimmed, 1, subject, sid))
+        return listOf(AnswerParser.parse(trimmed, 1, subject, sid, tid))
     }
 
     // ------------------------------------------------------------------ 辅助

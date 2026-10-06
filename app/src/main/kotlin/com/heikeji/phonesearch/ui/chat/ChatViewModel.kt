@@ -69,6 +69,22 @@ data class ChatUiState(
     val isEmpty: Boolean get() = bubbles.isEmpty() && !connecting
 }
 
+/**
+ * AI 解题的输入上下文：搜题结果里某一道题的关联信息。
+ *
+ * 官方 ai-pure-page 抓包对齐：`/kdchat/api/ask` 带图 multipart +
+ * sid/subjectId/picSearchInfo(etid,pid)，服务端据此讲解对应那道题。
+ */
+data class AiSolveContext(
+    val image: ByteArray,
+    val sid: String,
+    val subjectId: String,
+    val etid: String,
+    val pid: String,
+    val subject: String,
+    val pvalLabel: Int = 1,
+)
+
 class ChatViewModel(
     private val client: ChatClient,
     private val grade: Int,
@@ -84,6 +100,9 @@ class ChatViewModel(
     private var currentAnswerId: String = ""
     private var streamJob: Job? = null
 
+    /** AI 解题排队：会话建好前先存着，建好后自动开讲。 */
+    private var pendingAiSolve: AiSolveContext? = null
+
     fun start() {
         if (sessionId.isNotEmpty() || _state.value.connecting) return
         _state.value = _state.value.copy(connecting = true)
@@ -91,7 +110,6 @@ class ChatViewModel(
             try {
                 val id = withContext(Dispatchers.IO) { client.createSession(grade) }
                 sessionId = id
-                _state.value = _state.value.copy(connecting = false)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -101,12 +119,31 @@ class ChatViewModel(
                 )
                 return@launch
             }
+            // AI 解题入口排队中：建完会话直接开讲，不走推荐问题。
+            val ai = pendingAiSolve
+            if (ai != null) {
+                pendingAiSolve = null
+                _state.value = _state.value.copy(connecting = false)
+                runAiSolve(ai)
+                return@launch
+            }
+            _state.value = _state.value.copy(connecting = false)
             // 推荐问题失败不影响对话
             val suggestions = withContext(Dispatchers.IO) {
                 runCatching { client.guide(grade) }.getOrDefault(emptyList())
             }
             _state.value = _state.value.copy(suggestions = suggestions)
         }
+    }
+
+    /** AI 解题入口：会话就绪则直接开讲，否则等 [start] 建好会话后自动开讲。 */
+    fun startAiSolve(context: AiSolveContext) {
+        if (sessionId.isNotEmpty()) {
+            runAiSolve(context)
+            return
+        }
+        pendingAiSolve = context
+        start()
     }
 
     fun send(rawText: String) {
@@ -210,7 +247,88 @@ class ChatViewModel(
                 history.add(ChatTurn(ChatRole.USER, question.ifEmpty { "[图片]" }, System.currentTimeMillis() / 1000))
             }
             currentAnswerId = ""
-            finalizeStream(failure)
+            finalizeStream(failure, answer, reasoning, costMs)
+        }
+    }
+
+    /**
+     * AI 解题流：带搜题结果上下文（sid/subjectId/etid/pid）讲解指定题目。
+     *
+     * 与 [runStream] 的区别：走 [ChatClient.askAiSolve]（官方 ai-pure-page 链路）。
+     * 会话是本页专属的，讲完之后用户还能继续追问。
+     */
+    private fun runAiSolve(ctx: AiSolveContext) {
+        val state = _state.value
+        _state.value = state.copy(
+            bubbles = state.bubbles +
+                ChatBubble(role = ChatRole.USER, text = ctx.subject, imageBytes = ctx.image) +
+                ChatBubble(role = ChatRole.ASSISTANT, text = "", streaming = true),
+            suggestions = emptyList(),
+            streaming = true,
+            message = null,
+        )
+
+        streamJob = viewModelScope.launch {
+            var answer = ""
+            var reasoning = ""
+            var costMs = 0L
+            var failure: String? = null
+
+            try {
+                withContext(Dispatchers.IO) {
+                    val onEvent: (ChatEvent) -> Unit = { event ->
+                        when (event) {
+                            is ChatEvent.Started -> currentAnswerId = event.answerId
+                            is ChatEvent.Delta -> {
+                                answer += event.text
+                                reasoning += event.reasoning
+                                if (event.reasoningCostMs > 0) costMs = event.reasoningCostMs
+                                updateStreaming(answer, reasoning, costMs)
+                            }
+
+                            ChatEvent.Closed -> Unit
+                            is ChatEvent.Command -> if (event.text.isNotEmpty()) {
+                                answer += event.text
+                                updateStreaming(answer, reasoning, costMs)
+                            }
+
+                            is ChatEvent.Failed -> failure = event.message
+                            is ChatEvent.Revoked -> failure = "回答被撤回：${event.reason}"
+                            is ChatEvent.Refreshed -> if (event.sessionId.isNotEmpty()) {
+                                sessionId = event.sessionId
+                            }
+                        }
+                    }
+
+                    client.askAiSolve(
+                        sessionId = sessionId,
+                        jpeg = ctx.image,
+                        grade = grade,
+                        subjectId = ctx.subjectId,
+                        sid = ctx.sid,
+                        etid = ctx.etid,
+                        pid = ctx.pid,
+                        pvalLabel = ctx.pvalLabel,
+                        onEvent = onEvent,
+                    )
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                failure = e.message ?: "网络异常"
+            }
+
+            if (answer.isNotEmpty()) {
+                history.add(
+                    ChatTurn(
+                        ChatRole.USER,
+                        "[图片] ${ctx.subject}".trim(),
+                        System.currentTimeMillis() / 1000,
+                    ),
+                )
+            }
+            currentAnswerId = ""
+            finalizeStream(failure, answer, reasoning, costMs)
         }
     }
 
@@ -228,15 +346,29 @@ class ChatViewModel(
         }
     }
 
-    /** 把正在流的那条定格，并可选地报错。 */
-    private fun finalizeStream(failure: String?) {
+    /**
+     * 把正在流的那条定格，并可选地报错。
+     *
+     * [finalText] 等传入最终累积值：节流发布可能漏掉最后 ~120ms 的内容，
+     * 定格时必须用完整文本覆盖一次。
+     */
+    private fun finalizeStream(
+        failure: String?,
+        finalText: String? = null,
+        finalReasoning: String? = null,
+        finalCostMs: Long? = null,
+    ) {
         val bubbles = _state.value.bubbles.toMutableList()
         val last = bubbles.lastIndex
         if (last >= 0 && bubbles[last].role == ChatRole.ASSISTANT) {
             val bubble = bubbles[last]
+            val text = finalText ?: bubble.text
             bubbles[last] = bubble.copy(
+                text = text,
+                reasoning = finalReasoning ?: bubble.reasoning,
+                reasoningCostMs = finalCostMs ?: bubble.reasoningCostMs,
                 streaming = false,
-                failed = failure != null && bubble.text.isEmpty(),
+                failed = failure != null && text.isEmpty(),
             )
         }
         _state.value = _state.value.copy(
@@ -271,8 +403,14 @@ class ChatViewModel(
         if (_state.value.message != null) _state.value = _state.value.copy(message = null)
     }
 
-    /** 流式过程中只改最后一个气泡，避免整列表重建。 */
+    /** 流式期间只按这个间隔发布一次状态，避免逐字刷新卡 UI。 */
+    private var lastStreamPublishAt = 0L
+
+    /** 流式期间只改最后一个气泡，避免整列表重建。 */
     private fun updateStreaming(text: String, reasoning: String, costMs: Long) {
+        val now = android.os.SystemClock.uptimeMillis()
+        if (now - lastStreamPublishAt < STREAM_PUBLISH_INTERVAL_MS) return
+        lastStreamPublishAt = now
         val bubbles = _state.value.bubbles.toMutableList()
         val last = bubbles.lastIndex
         if (last < 0) return
@@ -285,6 +423,9 @@ class ChatViewModel(
     }
 
     companion object {
+        /** 流式发布的节流间隔：AI 答案很长，逐字刷新会把主线程压垮。 */
+        private const val STREAM_PUBLISH_INTERVAL_MS = 120L
+
         fun factory(app: SearchApp, grade: Int): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
