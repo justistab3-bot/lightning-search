@@ -30,6 +30,7 @@ import com.heikeji.phonesearch.ui.common.showMessage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.heikeji.phonesearch.data.UserPrefs
 
 /**
  * 快问 AI 对话页。
@@ -52,7 +53,10 @@ class ChatActivity : AppCompatActivity() {
         val app = application as SearchApp
         viewModel = ViewModelProvider(
             this,
-            ChatViewModel.factory(app, app.container.sessions.current()?.grade ?: 0),
+            ChatViewModel.factory(
+                app,
+                UserPrefs.effectiveGrade(this, app.container.sessions.current()?.grade),
+            ),
         )[ChatViewModel::class.java]
 
         binding.backButton.setOnClickListener { finish() }

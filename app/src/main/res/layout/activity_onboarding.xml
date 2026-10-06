@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  首次启动引导：选年级 + 账号说明。
+
+  只做一份布局、根节点是 ScrollView —— 词典笔那块屏只有 254dp 高，
+  固定布局必然溢出，可滚动就一劳永逸，也省掉一套横屏变体要维护。
+-->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?android:attr/colorBackground"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="24dp"
+        android:paddingTop="28dp"
+        android:paddingEnd="24dp"
+        android:paddingBottom="28dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/onboard_title"
+            android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Title" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/onboard_grade_hint"
+            android:textAppearance="@style/TextAppearance.FlashSearch.Body" />
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/gradeGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            app:singleSelection="true"
+            app:selectionRequired="true" />
+
+        <!-- 账号 -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="26dp"
+            android:background="@color/border_cream" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:text="@string/onboard_account_title"
+            android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Section" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/onboard_account_body"
+            android:textAppearance="@style/TextAppearance.FlashSearch.Body" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:baselineAligned="false"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/loginButton"
+                style="@style/Widget.FlashSearch.SecondaryButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/onboard_login" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/skipButton"
+                style="@style/Widget.FlashSearch.PrimaryButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:text="@string/onboard_skip" />
+        </LinearLayout>
+
+        <!-- 设置入口提示：用户不知道长按版本号能开设置 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:background="@color/warm_sand"
+            android:padding="14dp"
+            android:text="@string/onboard_settings_hint"
+            android:textAppearance="@style/TextAppearance.FlashSearch.Caption" />
+    </LinearLayout>
+</ScrollView>

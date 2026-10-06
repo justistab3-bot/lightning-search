@@ -29,6 +29,7 @@ import com.heikeji.phonesearch.protocol.aiwriting.AiWritingRequest
 import com.heikeji.phonesearch.protocol.aiwriting.EssayLanguage
 import com.heikeji.phonesearch.protocol.aiwriting.model.WritingMode
 import kotlinx.coroutines.launch
+import com.heikeji.phonesearch.data.UserPrefs
 
 /**
  * AI 作文。
@@ -132,8 +133,9 @@ class EssayActivity : AppCompatActivity() {
     private fun setupGradeSpinner() {
         val labels = AiWritingRequest.GRADES.map { it.second }
         gradeSpinner.adapter = spinnerAdapter(labels)
+        // 默认选中用户首次进入时选的年级（搜题和 AI 作文共用同一个年级）
         val defaultIndex = AiWritingRequest.GRADES
-            .indexOfFirst { it.first == AiWritingRequest.DEFAULT_GRADE }
+            .indexOfFirst { it.first == UserPrefs.effectiveGrade(this, null) }
             .coerceAtLeast(0)
         gradeSpinner.setSelection(defaultIndex)
         gradeSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {

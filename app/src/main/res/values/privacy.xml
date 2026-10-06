@@ -25,6 +25,21 @@
     <string name="settings_privacy">查看隐私政策</string>
     <string name="settings_clear">清理临时文件</string>
 
+    <!-- 首次启动引导 -->
+    <string name="onboard_title">欢迎使用闪电搜题</string>
+    <string name="onboard_grade_hint">先选一下你的年级。搜题和 AI 作文都会按这个年级来，之后可以在设置里改。</string>
+    <string name="onboard_account_title">关于账号</string>
+    <string name="onboard_account_body">不登录也能正常搜题、写作文、用快问 AI。\n\n但登录之后搜题更稳定，不容易触发风控（频繁搜题时可能要求验证）。如果只是偶尔用用，不登录完全没问题。</string>
+    <string name="onboard_login">登录账号</string>
+    <string name="onboard_skip">先不登录</string>
+    <string name="onboard_settings_hint">提示：长按首页右下角的版本号可以打开设置，年级、账号、隐私政策都在那里。</string>
+    <string name="settings_grade">年级：%1$s</string>
+    <string name="settings_login">登录账号</string>
+    <string name="settings_logout">退出登录（当前已登录 %1$s）</string>
+    <string name="settings_anonymous">当前未登录（点这里登录）</string>
+    <string name="settings_grade_pick">选择年级</string>
+    <string name="settings_grade_changed">年级已改为 %1$s</string>
+
     <string name="privacy_body">闪电搜题 隐私政策
 
 更新日期：2026 年 10 月

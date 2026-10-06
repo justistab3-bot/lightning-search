@@ -56,8 +56,11 @@
             android:name=".ui.essay.EssayActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
+        <!-- 首次启动引导：选年级 + 账号说明（登录已改为可选） -->
+        <activity
+            android:name=".ui.onboarding.OnboardingActivity"
+            android:exported="false" />
 
-        <!-- 隐私政策全文 -->
         <activity
             android:name=".ui.privacy.PrivacyActivity"
             android:exported="false" />

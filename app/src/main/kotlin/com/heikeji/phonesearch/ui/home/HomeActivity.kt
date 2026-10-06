@@ -25,6 +25,9 @@ import com.heikeji.phonesearch.data.StorageUsage
 import com.heikeji.phonesearch.data.formatBytes
 import com.heikeji.phonesearch.data.relativeTime
 import com.heikeji.phonesearch.data.todayLabel
+import com.heikeji.phonesearch.data.UserPrefs
+import com.heikeji.phonesearch.protocol.aiwriting.AiWritingRequest
+import com.heikeji.phonesearch.ui.onboarding.OnboardingActivity
 import com.heikeji.phonesearch.databinding.ActivityHomeBinding
 import com.heikeji.phonesearch.databinding.ItemHistoryBinding
 import com.heikeji.phonesearch.protocol.model.SearchMode
@@ -74,8 +77,11 @@ class HomeActivity : AppCompatActivity() {
             return
         }
 
-        if (container.sessions.current() == null) {
-            startActivity(Intent(this, LoginActivity::class.java))
+        // 首次进入：选年级 + 账号说明。
+        // **这里以前是「没登录就跳登录页」** —— 实测确认搜题/整页/快问 AI/AI 作文
+        // 都不需要账号（见 SearchProbeTest），所以那道墙去掉了，登录改成设置里的可选项。
+        if (!UserPrefs.onboarded(this)) {
+            startActivity(OnboardingActivity.newIntent(this))
             finish()
             return
         }
@@ -88,6 +94,10 @@ class HomeActivity : AppCompatActivity() {
         binding.chatButton.setOnClickListener {
             startActivity(ChatActivity.newIntent(this))
         }
+        // 没登录就没有「退出登录」这回事，按钮直接收起来。
+        // 登录入口在设置里（长按版本号），引导页也提示过。
+        binding.logoutButton.visibility =
+            if (container.sessions.current() == null) View.GONE else View.VISIBLE
         binding.logoutButton.setOnClickListener { confirmLogout() }
     }
 
@@ -298,8 +308,18 @@ class HomeActivity : AppCompatActivity() {
             val usage = withContext(Dispatchers.IO) { StorageCleaner.usage(this@HomeActivity) }
             val analyticsOn = Analytics.isEnabled(this@HomeActivity)
             val total = usage.format()
+            val session = container.sessions.current()
+            val gradeLabel = UserPrefs.gradeLabel(
+                UserPrefs.effectiveGrade(this@HomeActivity, session?.grade),
+            )
 
             val items = arrayOf(
+                getString(R.string.settings_grade, gradeLabel),
+                if (session == null) {
+                    getString(R.string.settings_anonymous)
+                } else {
+                    getString(R.string.settings_logout, session.userName.ifEmpty { "已登录" })
+                },
                 getString(
                     if (analyticsOn) R.string.settings_analytics_on else R.string.settings_analytics_off,
                 ),
@@ -312,15 +332,46 @@ class HomeActivity : AppCompatActivity() {
                 .setTitle(R.string.settings_title)
                 .setItems(items) { _, which ->
                     when (which) {
-                        0 -> toggleAnalytics(!analyticsOn)
-                        1 -> showStorageDetail(usage)
-                        2 -> startActivity(PrivacyActivity.newIntent(this@HomeActivity))
-                        3 -> clearTransient()
+                        0 -> pickGrade()
+                        1 -> if (session == null) {
+                            startActivity(Intent(this@HomeActivity, LoginActivity::class.java))
+                        } else {
+                            confirmLogout()
+                        }
+                        2 -> toggleAnalytics(!analyticsOn)
+                        3 -> showStorageDetail(usage)
+                        4 -> startActivity(PrivacyActivity.newIntent(this@HomeActivity))
+                        5 -> clearTransient()
                     }
                 }
                 .setNegativeButton(R.string.storage_ok, null)
                 .show()
         }
+    }
+
+    /**
+     * 改年级。
+     *
+     * 登录状态下这里改的是**本地年级**，不会覆盖账号里的年级 —— 请求时仍然是
+     * 「账号年级优先」（见 [UserPrefs.effectiveGrade]）。退出登录后本地的这个值就生效了。
+     */
+    private fun pickGrade() {
+        val labels = AiWritingRequest.GRADES.map { it.second }.toTypedArray()
+        val current = UserPrefs.effectiveGrade(this, container.sessions.current()?.grade)
+        val checked = AiWritingRequest.GRADES.indexOfFirst { it.first == current }
+
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(R.string.settings_grade_pick)
+            .setSingleChoiceItems(labels, checked) { dialog, which ->
+                val grade = AiWritingRequest.GRADES.getOrNull(which)?.first ?: return@setSingleChoiceItems
+                UserPrefs.setGrade(this, grade)
+                dialog.dismiss()
+                binding.root.showMessage(getString(R.string.settings_grade_changed, labels[which]))
+                // 年级变了，首页的问候语和 AI 作文的默认值都要跟着走
+                bindGreeting()
+            }
+            .setNegativeButton(R.string.action_cancel, null)
+            .show()
     }
 
     /** 统计开关。关掉后不再上报（已上报的撤不回来，隐私政策里写明了）。 */

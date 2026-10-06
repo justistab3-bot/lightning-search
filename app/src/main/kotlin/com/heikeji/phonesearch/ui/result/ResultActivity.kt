@@ -20,6 +20,7 @@ import com.google.android.material.tabs.TabLayoutMediator
 import com.heikeji.phonesearch.R
 import com.heikeji.phonesearch.appContainer
 import com.heikeji.phonesearch.data.HistoryEntry
+import com.heikeji.phonesearch.data.UserPrefs
 import com.heikeji.phonesearch.databinding.ActivitySearchResultBinding
 import com.heikeji.phonesearch.protocol.model.SearchResult
 import com.heikeji.phonesearch.protocol.render.AnswerPageRenderer
@@ -421,7 +422,13 @@ class ResultActivity : AppCompatActivity(), AnswerScrollHost, AnswerImageHost {
         loginLauncher.launch(LoginActivity.reloginIntent(this))
     }
 
-    private fun grade(): Int = appContainer.sessions.current()?.grade ?: 0
+    /**
+     * 请求用的年级：登录了用账号里的，没登录用本地选的。
+     *
+     * 原来是 `sessions.current()?.grade ?: 0` —— 不登录就传 0，识别质量会明显变差。
+     */
+    private fun grade(): Int =
+        UserPrefs.effectiveGrade(this, appContainer.sessions.current()?.grade)
 
     private fun isNightMode(): Boolean =
         (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
