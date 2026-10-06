@@ -19,7 +19,9 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.heikeji.phonesearch.R
 import com.heikeji.phonesearch.appContainer
+import com.heikeji.phonesearch.analytics.Analytics
 import com.heikeji.phonesearch.data.StorageCleaner
+import com.heikeji.phonesearch.data.StorageUsage
 import com.heikeji.phonesearch.data.formatBytes
 import com.heikeji.phonesearch.data.relativeTime
 import com.heikeji.phonesearch.data.todayLabel
@@ -34,6 +36,7 @@ import com.heikeji.phonesearch.ui.common.dp
 import com.heikeji.phonesearch.ui.common.showMessage
 import com.heikeji.phonesearch.ui.chat.ChatActivity
 import com.heikeji.phonesearch.ui.essay.EssayActivity
+import com.heikeji.phonesearch.ui.privacy.PrivacyActivity
 import com.heikeji.phonesearch.ui.login.LoginActivity
 import com.heikeji.phonesearch.ui.result.ResultActivity
 import com.heikeji.phonesearch.update.UpdateActivity
@@ -65,6 +68,12 @@ class HomeActivity : AppCompatActivity() {
         binding.header.applySystemBarPadding(top = true, bottom = false, horizontal = true)
         binding.root.applySystemBarPadding(top = false, bottom = true, horizontal = true)
 
+        // 隐私政策同意：没同意之前不做任何事，也不初始化统计 SDK
+        if (!Analytics.hasConsent(this)) {
+            showConsentDialog()
+            return
+        }
+
         if (container.sessions.current() == null) {
             startActivity(Intent(this, LoginActivity::class.java))
             finish()
@@ -80,6 +89,33 @@ class HomeActivity : AppCompatActivity() {
             startActivity(ChatActivity.newIntent(this))
         }
         binding.logoutButton.setOnClickListener { confirmLogout() }
+    }
+
+    /**
+     * 首次启动的隐私政策同意。
+     *
+     * 合规要求：**用户点「同意」之前不能初始化统计 SDK**（[Analytics.setConsent]
+     * 里做这件事）。不同意就退出应用 —— 不给「先用了再说」的模糊空间。
+     */
+    private fun showConsentDialog() {
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(R.string.privacy_consent_title)
+            .setMessage(R.string.privacy_consent_message)
+            .setCancelable(false)
+            .setPositiveButton(R.string.privacy_agree) { _, _ ->
+                Analytics.setConsent(this, granted = true)
+                recreate()
+            }
+            .setNegativeButton(R.string.privacy_disagree) { _, _ ->
+                Analytics.setConsent(this, granted = false)
+                binding.root.showMessage(getString(R.string.privacy_disagree_toast))
+                finishAffinity()
+            }
+            .setNeutralButton(R.string.privacy_action_open) { _, _ ->
+                // 点「查看」时先不落决定，回来还会再问一次
+                startActivity(PrivacyActivity.newIntent(this))
+            }
+            .show()
     }
 
     /**
@@ -242,7 +278,7 @@ class HomeActivity : AppCompatActivity() {
         // 点版本号 = 手动检查更新
         binding.versionLabel.setOnClickListener { checkUpdate(silent = false) }
         binding.versionLabel.setOnLongClickListener {
-            showStorageDialog()
+            showSettingsDialog()
             true
         }
     }
@@ -251,35 +287,72 @@ class HomeActivity : AppCompatActivity() {
     // ------------------------------------------------------------------ 存储占用
 
     /**
-     * 长按版本号看存储占用，并能一键清掉临时文件。
+     * 长按版本号打开设置。
      *
+     * 三件事：统计开关（合规要求必须能关）、存储占用明细、隐私政策入口。
      * 应用体积是「用着用着变大」的：安装包缓存、相机原图、WebView 缓存的答案图
-     * 都会积累。这里让用户能看见是哪些在占地方。
+     * 都会积累，所以这里也把明细摊开给用户看。
      */
-    private fun showStorageDialog() {
+    private fun showSettingsDialog() {
         lifecycleScope.launch {
             val usage = withContext(Dispatchers.IO) { StorageCleaner.usage(this@HomeActivity) }
-            val rows = listOf(
-                getString(R.string.storage_apk) to usage.apkBytes,
-                getString(R.string.storage_capture) to usage.captureBytes,
-                getString(R.string.storage_webview) to usage.webViewBytes,
-                getString(R.string.storage_history) to usage.historyBytes,
+            val analyticsOn = Analytics.isEnabled(this@HomeActivity)
+            val total = usage.format()
+
+            val items = arrayOf(
+                getString(
+                    if (analyticsOn) R.string.settings_analytics_on else R.string.settings_analytics_off,
+                ),
+                getString(R.string.settings_storage, total),
+                getString(R.string.settings_privacy),
+                getString(R.string.settings_clear),
             )
-            val message = buildString {
-                for ((label, bytes) in rows) {
-                    append(label).append("：").append(formatBytes(bytes)).append('\n')
-                }
-                append('\n').append(getString(R.string.storage_total))
-                    .append("：").append(usage.format())
-            }
 
             androidx.appcompat.app.AlertDialog.Builder(this@HomeActivity)
-                .setTitle(R.string.storage_title)
-                .setMessage(message)
-                .setPositiveButton(R.string.storage_clear) { _, _ -> clearTransient() }
+                .setTitle(R.string.settings_title)
+                .setItems(items) { _, which ->
+                    when (which) {
+                        0 -> toggleAnalytics(!analyticsOn)
+                        1 -> showStorageDetail(usage)
+                        2 -> startActivity(PrivacyActivity.newIntent(this@HomeActivity))
+                        3 -> clearTransient()
+                    }
+                }
                 .setNegativeButton(R.string.storage_ok, null)
                 .show()
         }
+    }
+
+    /** 统计开关。关掉后不再上报（已上报的撤不回来，隐私政策里写明了）。 */
+    private fun toggleAnalytics(enable: Boolean) {
+        Analytics.setEnabled(this, enable)
+        binding.root.showMessage(
+            getString(
+                if (enable) R.string.settings_analytics_turned_on
+                else R.string.settings_analytics_turned_off,
+            ),
+        )
+    }
+
+    private fun showStorageDetail(usage: StorageUsage) {
+        val rows = listOf(
+            getString(R.string.storage_apk) to usage.apkBytes,
+            getString(R.string.storage_capture) to usage.captureBytes,
+            getString(R.string.storage_webview) to usage.webViewBytes,
+            getString(R.string.storage_history) to usage.historyBytes,
+        )
+        val message = buildString {
+            for ((label, bytes) in rows) {
+                append(label).append("：").append(formatBytes(bytes)).append('\n')
+            }
+            append('\n').append(getString(R.string.storage_total))
+                .append("：").append(usage.format())
+        }
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(R.string.storage_title)
+            .setMessage(message)
+            .setPositiveButton(R.string.storage_ok, null)
+            .show()
     }
 
     private fun clearTransient() {

@@ -8,6 +8,16 @@
     <!-- 应用内更新下载完成后调系统安装器；Android 8+ 还需用户在设置里单独授权 -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
+    <!--
+      友盟 SDK 的清单会自动带上这两个权限，本应用用不到，显式移除：
+      - AD_ID 是广告标识符，搜题工具没有任何广告场景，留着既无意义
+        又会让应用商店和用户起疑。
+      - 只保留友盟自己的设备标识（UMID）就足够统计日活与崩溃去重。
+    -->
+    <uses-permission
+        android:name="com.google.android.gms.permission.AD_ID"
+        tools:node="remove" />
+
     <uses-feature
         android:name="android.hardware.camera"
         android:required="false" />
@@ -46,6 +56,11 @@
             android:name=".ui.essay.EssayActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
+
+        <!-- 隐私政策全文 -->
+        <activity
+            android:name=".ui.privacy.PrivacyActivity"
+            android:exported="false" />
 
         <!-- 快问 AI：流式对话，键盘顶起输入区 -->
         <activity

@@ -7,6 +7,7 @@ import android.content.Intent
 import android.os.Bundle
 import com.heikeji.phonesearch.account.SecureSessionStore
 import com.heikeji.phonesearch.account.SessionRepository
+import com.heikeji.phonesearch.analytics.Analytics
 import com.heikeji.phonesearch.data.HistoryStore
 import com.heikeji.phonesearch.data.StorageCleaner
 import com.heikeji.phonesearch.net.ApiClient
@@ -36,6 +37,9 @@ class SearchApp : Application() {
     override fun onCreate() {
         super.onCreate()
         enableTls12OnOldDevices()
+        // 友盟预初始化：不采集任何信息，但必须在 Application.onCreate 里调，
+        // 否则首次启动的日活会漏统。正式初始化要等用户同意隐私政策（见 Analytics）。
+        Analytics.preInit(this)
         container = AppContainer(this)
         container.network.start()
 

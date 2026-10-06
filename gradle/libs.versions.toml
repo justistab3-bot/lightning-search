@@ -18,6 +18,12 @@ gson = "2.11.0"
 junit = "4.13.2"
 json = "20250517"
 desugar = "2.1.5"
+# 友盟+ 统计与崩溃分析。三个都要：common + asms 是统计底座（官方标「必选」），
+# apm 才是崩溃/ANR 采集。AAR 里没声明 minSdk，跟随主工程，所以不挡 Android 5.0；
+# 原生库带 armeabi-v7a，32 位老设备能跑。
+umengCommon = "9.9.10"
+umengAsms = "1.8.7.2"
+umengApm = "2.1.0"
 
 [libraries]
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
@@ -47,6 +53,10 @@ json = { module = "org.json:json", version.ref = "json" }
 # 核心库脱糖：把 Java 8+ 的 API 改写成 Android 5.0 上能跑的等价实现。
 # 只影响编译产物，不打进 APK 的类（生成的合成类除外）。
 desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar" }
+# 友盟在阿里云 public 镜像上（官方文档写 repo1.maven.org，本机直连 403，镜像是它的代理）
+umeng-common = { module = "com.umeng.umsdk:common", version.ref = "umengCommon" }
+umeng-asms = { module = "com.umeng.umsdk:asms", version.ref = "umengAsms" }
+umeng-apm = { module = "com.umeng.umsdk:apm", version.ref = "umengApm" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
