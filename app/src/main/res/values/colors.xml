@@ -4,9 +4,14 @@
   刻意不使用冷灰、不使用渐变：层次靠暖色表面差与环形描边建立。
 -->
 <resources>
-    <!-- 品牌 -->
-    <color name="terracotta">#C96442</color>
-    <color name="terracotta_pressed">#B0563A</color>
+    <!--
+      品牌陶土色。
+      原来是 #C96442 —— 象牙白文字压在上面只有 3.70:1，低于正文所需的 4.5:1。
+      压暗到 #B0583A 后是 4.63:1 ✅（按下态再深一档保持层次）。
+      视觉上几乎看不出差别，但这套设计里唯一的饱和色本来就该扛得住白字。
+    -->
+    <color name="terracotta">#B0583A</color>
+    <color name="terracotta_pressed">#9E4F34</color>
     <color name="coral">#D97757</color>
     <color name="error_crimson">#B53333</color>
     <color name="focus_blue">#3898EC</color>
@@ -23,12 +28,25 @@
     <color name="near_black">#141413</color>
     <color name="charcoal_warm">#4D4C48</color>
     <color name="olive_gray">#5E5D59</color>
-    <color name="stone_gray">#87867F</color>
+    <!--
+      次要文字色。Caption 与 Label 都用它，也就是提示语、日期、统计标签、
+      时间戳全靠这一个值。
+      原来是 #87867F：羊皮纸上 3.31:1、卡片上 3.47:1，都低于 4.5:1。
+      压暗到 #71706A 后是 4.50 / 4.71 ✅ —— 这是全项目影响面最大的一处修正。
+    -->
+    <color name="stone_gray">#71706A</color>
     <color name="dark_warm">#3D3D3A</color>
     <color name="warm_silver">#B0AEA5</color>
 
-    <!-- 描边 / 环形 -->
-    <color name="border_cream">#F0EEE6</color>
+    <!--
+      描边 / 环形。
+      border_cream 原来是 #F0EEE6 —— 在羊皮纸上 1.05:1、在卡片上 1.10:1，
+      等于没有。配合「象牙白卡片 on 羊皮纸 1.05:1」就是：卡片和背景同色，
+      唯一的边界又看不见。在词典笔那种 mdpi 廉价屏上完全消失。
+      收到 #D8D6CF（1.32 / 1.38）—— 好屏幕上依然是克制的柔边，矮屏上能看见了。
+      再深就会破坏整套柔和感，这是个刻意的折中，不是往 3:1 靠。
+    -->
+    <color name="border_cream">#D8D6CF</color>
     <color name="border_warm">#E8E6DC</color>
     <color name="border_dark">#30302E</color>
     <color name="ring_warm">#D1CFC5</color>

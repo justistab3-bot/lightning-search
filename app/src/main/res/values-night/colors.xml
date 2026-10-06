@@ -11,19 +11,34 @@
     <color name="near_black">#FAF9F5</color>
     <color name="charcoal_warm">#E8E6DC</color>
     <color name="olive_gray">#B0AEA5</color>
-    <color name="stone_gray">#87867F</color>
+    <!-- 亮色下压暗到 #71706A；暗色下反过来要提亮。原值在卡片上只有 3.62:1 -->
+    <color name="stone_gray">#9A998F</color>
     <color name="dark_warm">#D1CFC5</color>
     <color name="warm_silver">#B0AEA5</color>
 
-    <color name="border_cream">#30302E</color>
+    <!--
+      描边。原值是 #30302E —— 和卡片色**完全相同**，对比度 1.00，
+      暗色下卡片边框等于不存在。提到 #4D4C48（卡片上 1.54，背景上 2.14）。
+    -->
+    <color name="border_cream">#4D4C48</color>
     <color name="border_warm">#3D3D3A</color>
     <color name="border_dark">#3D3D3A</color>
     <color name="ring_warm">#4D4C48</color>
     <color name="ring_deep">#5E5D59</color>
 
-    <color name="terracotta">#D97757</color>
-    <color name="terracotta_pressed">#C96442</color>
+    <!--
+      陶土色在暗色下要**提亮**：按钮文字用的是 ivory，而暗色主题里 ivory 是深色
+      (#30302E)，等于深字压在浅底上。原值 #D97757 只有 4.24:1，差一点。
+    -->
+    <color name="terracotta">#E08A6B</color>
+    <color name="terracotta_pressed">#D0704F</color>
     <color name="coral">#E08A6B</color>
+
+    <!--
+      错误色原来没有暗色覆盖，沿用了亮色的 #B53333 —— 在深背景上只有 3.06:1、
+      卡片上 2.20:1，报错信息几乎看不清。这是亮色主题看不出来的问题。
+    -->
+    <color name="error_crimson">#E87F7F</color>
 
     <color name="subject_math">#D97757</color>
     <color name="subject_chinese">#8B9A6F</color>

@@ -31,8 +31,8 @@
 
         <ImageButton
             android:id="@+id/backButton"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/action_close"
             android:padding="10dp"
@@ -103,7 +103,7 @@
                     android:paddingBottom="4dp"
                     android:text="@string/page_tap_to_select"
                     android:textColor="@color/white"
-                    android:textSize="11sp" />
+                    android:textSize="12sp" />
             </FrameLayout>
         </com.google.android.material.card.MaterialCardView>
 

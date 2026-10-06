@@ -18,8 +18,8 @@
 
         <ImageButton
             android:id="@+id/backButton"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/action_close"
             android:padding="10dp"
@@ -46,8 +46,8 @@
 
         <ImageButton
             android:id="@+id/fullscreenButton"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/action_answer_fullscreen"
             android:padding="10dp"
@@ -131,8 +131,8 @@
                 android:layout_height="match_parent" />
             <ImageButton
                 android:id="@+id/exitFullscreenButton"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:layout_gravity="top|end"
                 android:layout_margin="8dp"
                 android:background="@drawable/bg_circle_scrim"
