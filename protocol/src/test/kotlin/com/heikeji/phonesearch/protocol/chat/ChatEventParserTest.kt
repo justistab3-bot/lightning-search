@@ -249,21 +249,21 @@ class ChatEventParserTest {
 
     @Test
     fun `ask params carry the two switches`() {
-        val on = ChatRequest.askParams("1", "你好", emptyList(), 6, thinkEnabled = true, searchEnabled = true)
+        val on = KdChatAsk.Input.buildTextInput("1", "你好", emptyList(), 6, thinkEnabled = true, searchEnabled = true).params()
         assertEquals("1", on["thinkEnabled"])
         assertEquals("1", on["searchEnabled"])
         assertEquals("normal", on["toolType"])
         assertEquals("211", on["feVc"])
         assertEquals("你好", on["content"])
 
-        val off = ChatRequest.askParams("1", "你好", emptyList(), 6, thinkEnabled = false, searchEnabled = false)
+        val off = KdChatAsk.Input.buildTextInput("1", "你好", emptyList(), 6, thinkEnabled = false, searchEnabled = false).params()
         assertEquals("0", off["thinkEnabled"])
         assertEquals("0", off["searchEnabled"])
     }
 
     @Test
     fun `empty history becomes an empty json array`() {
-        assertEquals("[]", ChatRequest.contextJson(emptyList()))
+        assertEquals("[]", KdChat.contextJson(emptyList()))
     }
 
     @Test
@@ -273,7 +273,7 @@ class ChatEventParserTest {
             ChatTurn(ChatRole.ASSISTANT, "第一个回答", 1791229332),
             ChatTurn(ChatRole.USER, "第二个问题", 1791229346),
         )
-        val json = ChatRequest.contextJson(history)
+        val json = KdChat.contextJson(history)
         assertEquals(
             """[{"toolType":"normal","role":"user","content":"第一个问题","time":1791229331,"intent":[],"isCard":"0"},""" +
                 """{"toolType":"normal","role":"user","content":"第二个问题","time":1791229346,"intent":[],"isCard":"0"}]""",
@@ -287,13 +287,13 @@ class ChatEventParserTest {
             ChatTurn(ChatRole.USER, "", 1),
             ChatTurn(ChatRole.USER, "有效", 2),
         )
-        assertFalse(ChatRequest.contextJson(history).contains("\"content\":\"\""))
-        assertTrue(ChatRequest.contextJson(history).contains("有效"))
+        assertFalse(KdChat.contextJson(history).contains("\"content\":\"\""))
+        assertTrue(KdChat.contextJson(history).contains("有效"))
     }
 
     @Test
     fun `create params match the capture`() {
-        val params = ChatRequest.createParams(6)
+        val params = KdChatCreate.Input.buildInput(6).params()
         assertEquals("scancode", params["appId"])
         assertEquals("6", params["grade"])
         assertEquals("211", params["feVc"])
@@ -303,7 +303,7 @@ class ChatEventParserTest {
 
     @Test
     fun `photo ask marks the tool type and carries the image md5`() {
-        val params = ChatRequest.photoAskParams(
+        val params = KdChatPhotoAsk.Input.buildInput(
             sessionId = "142120914113",
             content = "1, 2, 3, 4, 5, ",
             history = emptyList(),
@@ -311,7 +311,7 @@ class ChatEventParserTest {
             thinkEnabled = false,
             searchEnabled = false,
             picMd5 = "4c4be24bcb6a6dc1f884ecf20198e756",
-        )
+        ).params()
         assertEquals("image", params["toolType"])
         assertEquals("""{"picMD5":"4c4be24bcb6a6dc1f884ecf20198e756"}""", params["imageInfo"])
         assertEquals("142120914113", params["sessionId"])
@@ -322,7 +322,7 @@ class ChatEventParserTest {
 
     @Test
     fun `photo ask honours the switches and keeps context`() {
-        val params = ChatRequest.photoAskParams(
+        val params = KdChatPhotoAsk.Input.buildInput(
             sessionId = "1",
             content = "",
             history = listOf(ChatTurn(ChatRole.USER, "上一轮", 100)),
@@ -330,9 +330,9 @@ class ChatEventParserTest {
             thinkEnabled = true,
             searchEnabled = true,
             picMd5 = "abc",
-        )
+        ).params()
         assertEquals("1", params["thinkEnabled"])
         assertEquals("1", params["searchEnabled"])
-        assertTrue(params["context"]!!.contains("上一轮"))
+        assertTrue((params["context"] as String).contains("上一轮"))
     }
 }

@@ -2,7 +2,7 @@ package com.heikeji.phonesearch.ui.common
 
 import android.content.Context
 import android.content.Intent
-import com.heikeji.phonesearch.protocol.model.SearchMode
+import com.heikeji.phonesearch.protocol.search.model.SearchMode
 import com.heikeji.phonesearch.ui.crop.CropActivity
 import com.heikeji.phonesearch.ui.page.PageResultActivity
 

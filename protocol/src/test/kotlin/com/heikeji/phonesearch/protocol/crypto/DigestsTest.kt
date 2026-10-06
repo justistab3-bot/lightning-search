@@ -1,4 +1,4 @@
-package com.heikeji.phonesearch.protocol.crypto
+package com.heikeji.phonesearch.protocol.core.crypto
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

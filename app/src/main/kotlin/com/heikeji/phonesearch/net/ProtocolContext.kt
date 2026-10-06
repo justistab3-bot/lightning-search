@@ -4,10 +4,10 @@ import android.content.Context
 import android.os.Looper
 import android.os.SystemClock
 import com.heikeji.phonesearch.protocol.ProtocolException
-import com.heikeji.phonesearch.protocol.ProtocolProfile
-import com.heikeji.phonesearch.protocol.crypto.Digests
-import com.heikeji.phonesearch.protocol.crypto.ResponseKey
-import com.heikeji.phonesearch.protocol.sign.SignA
+import com.heikeji.phonesearch.protocol.core.NetConfig
+import com.heikeji.phonesearch.protocol.core.crypto.Digests
+import com.heikeji.phonesearch.protocol.core.crypto.ResponseKey
+import com.heikeji.phonesearch.protocol.core.sign.SignA
 
 /**
  * 协议上下文（原 P0.f）：设备签名材料的缓存、校验、responseKey 派生与校时。
@@ -45,7 +45,7 @@ class ProtocolContext(
             val cachedSignA = prefs.getString(KEY_SIGN_A, null)
             val cachedSignB = prefs.getString(KEY_SIGN_B, null)
             if (cachedCuid == identity.cuid &&
-                cachedDigest == ProtocolProfile.CERTIFICATE_DIGEST &&
+                cachedDigest == NetConfig.CERTIFICATE_DIGEST &&
                 !cachedSignA.isNullOrEmpty() && !cachedSignB.isNullOrEmpty()
             ) {
                 try {
@@ -72,7 +72,7 @@ class ProtocolContext(
 
             prefs.edit()
                 .putString(KEY_CUID, identity.cuid)
-                .putString(KEY_CERTIFICATE_DIGEST, ProtocolProfile.CERTIFICATE_DIGEST)
+                .putString(KEY_CERTIFICATE_DIGEST, NetConfig.CERTIFICATE_DIGEST)
                 .putString(KEY_SIGN_A, signA)
                 .putString(KEY_SIGN_B, signB)
                 .apply()

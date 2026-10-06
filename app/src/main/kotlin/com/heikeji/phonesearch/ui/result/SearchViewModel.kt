@@ -7,8 +7,8 @@ import com.heikeji.phonesearch.AppContainer
 import com.heikeji.phonesearch.account.SessionRepository
 import com.heikeji.phonesearch.net.SearchChallengeException
 import com.heikeji.phonesearch.net.SessionExpiredException
-import com.heikeji.phonesearch.protocol.model.SearchMode
-import com.heikeji.phonesearch.protocol.model.SearchResult
+import com.heikeji.phonesearch.protocol.search.model.SearchMode
+import com.heikeji.phonesearch.protocol.search.model.SearchResult
 import com.heikeji.phonesearch.search.SearchRepository
 import com.heikeji.phonesearch.search.SearchTask
 import kotlinx.coroutines.CancellationException

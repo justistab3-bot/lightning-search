@@ -22,7 +22,7 @@ import com.heikeji.phonesearch.appContainer
 import com.heikeji.phonesearch.data.HistoryEntry
 import com.heikeji.phonesearch.data.UserPrefs
 import com.heikeji.phonesearch.databinding.ActivitySearchResultBinding
-import com.heikeji.phonesearch.protocol.model.SearchResult
+import com.heikeji.phonesearch.protocol.search.model.SearchResult
 import com.heikeji.phonesearch.protocol.render.AnswerPageRenderer
 import com.heikeji.phonesearch.ui.chat.ChatActivity
 import com.heikeji.phonesearch.ui.common.PageNumberView

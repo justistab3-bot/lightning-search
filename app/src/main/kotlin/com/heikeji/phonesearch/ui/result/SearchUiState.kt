@@ -1,6 +1,6 @@
 package com.heikeji.phonesearch.ui.result
 
-import com.heikeji.phonesearch.protocol.model.SearchResult
+import com.heikeji.phonesearch.protocol.search.model.SearchResult
 
 /** 结果页的搜题状态机。 */
 sealed interface SearchUiState {

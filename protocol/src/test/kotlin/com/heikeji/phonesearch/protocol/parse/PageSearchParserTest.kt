@@ -1,10 +1,10 @@
-package com.heikeji.phonesearch.protocol.parse
+package com.heikeji.phonesearch.protocol.search.parse
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.heikeji.phonesearch.protocol.ProtocolException
-import com.heikeji.phonesearch.protocol.codec.PageExtraInfo
-import com.heikeji.phonesearch.protocol.model.PageWarnings
+import com.heikeji.phonesearch.protocol.core.codec.PageExtraInfo
+import com.heikeji.phonesearch.protocol.search.model.PageWarnings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -388,7 +388,7 @@ class PageSearchParserTest {
 
     @Test
     fun `quad bounding rect string is dot zero formatted`() {
-        val quad = com.heikeji.phonesearch.protocol.model.QuestionQuad
+        val quad = com.heikeji.phonesearch.protocol.search.model.QuestionQuad
             .parse("10@20@100@40@100@200@10@180", 2400, 3200)!!
         assertEquals("10.0@20.0@100.0@200.0", quad.boundingRectString())
     }

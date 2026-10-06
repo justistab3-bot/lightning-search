@@ -53,7 +53,7 @@ class AnswerHtmlSanitizerImageLinkTest {
 
     @Test
     fun `renderer output contains a clickable image anchor`() {
-        val item = com.heikeji.phonesearch.protocol.model.AnswerItem(
+        val item = com.heikeji.phonesearch.protocol.search.model.AnswerItem(
             index = 1,
             title = "结果 1",
             subject = "物理",

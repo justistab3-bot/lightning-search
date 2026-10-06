@@ -23,9 +23,9 @@ import com.heikeji.phonesearch.appContainer
 import com.heikeji.phonesearch.databinding.ActivityPageResultBinding
 import com.heikeji.phonesearch.image.OriginalImageHandle
 import com.heikeji.phonesearch.image.QuestionImageProcessor
-import com.heikeji.phonesearch.protocol.ProtocolProfile
-import com.heikeji.phonesearch.protocol.model.PageQuestionBlock
-import com.heikeji.phonesearch.protocol.model.SearchMode
+import com.heikeji.phonesearch.protocol.core.NetConfig
+import com.heikeji.phonesearch.protocol.search.model.PageQuestionBlock
+import com.heikeji.phonesearch.protocol.search.model.SearchMode
 import com.heikeji.phonesearch.protocol.render.AnswerPageRenderer
 import com.heikeji.phonesearch.ui.common.PageNumberView
 import com.heikeji.phonesearch.ui.common.SubjectStyle
@@ -148,7 +148,7 @@ class PageResultActivity : AppCompatActivity(), AnswerImageHost {
             val bitmap = QuestionImageProcessor.decodeOriented(
                 file = source,
                 extraRotationDegrees = extraRotation,
-                minEdge = ProtocolProfile.IMAGE_PAGE_OUTPUT_MAX_EDGE,
+                minEdge = NetConfig.IMAGE_PAGE_OUTPUT_MAX_EDGE,
             )
             try {
                 val bytes = QuestionImageProcessor.encode(bitmap, Int.MAX_VALUE, NORMALIZE_QUALITY)
@@ -384,7 +384,7 @@ class PageResultActivity : AppCompatActivity(), AnswerImageHost {
             } else {
                 null
             }
-        } ?: ProtocolProfile.QUAD_DEFAULT_RECT.copyOf()
+        } ?: NetConfig.QUAD_DEFAULT_RECT.copyOf()
 
         val highlight = block?.location?.let { quad ->
             val width = state.result?.pictureWidth ?: 0

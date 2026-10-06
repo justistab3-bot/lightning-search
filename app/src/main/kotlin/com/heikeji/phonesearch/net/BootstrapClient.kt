@@ -1,9 +1,9 @@
 package com.heikeji.phonesearch.net
 
 import com.heikeji.phonesearch.protocol.ProtocolException
-import com.heikeji.phonesearch.protocol.ProtocolProfile
-import com.heikeji.phonesearch.protocol.codec.UrlForm
-import com.heikeji.phonesearch.protocol.envelope.Envelope
+import com.heikeji.phonesearch.protocol.core.NetConfig
+import com.heikeji.phonesearch.protocol.core.codec.UrlForm
+import com.heikeji.phonesearch.protocol.core.envelope.Envelope
 
 /**
  * antispam 初始化请求（原 f1.b.H）。
@@ -31,14 +31,14 @@ class BootstrapClient(
         }
 
         val result = transport.post(
-            host = ProtocolProfile.HOST_KDDZY,
-            path = ProtocolProfile.PATH_ANTISPAM,
+            host = NetConfig.HOST_KDDZY,
+            path = NetConfig.PATH_ANTISPAM,
             body = UrlForm.encodeForm(params).toByteArray(Charsets.UTF_8),
-            contentType = ProtocolProfile.FORM_CONTENT_TYPE,
+            contentType = NetConfig.FORM_CONTENT_TYPE,
             cookie = null,
             acceptGzip = true,
-            readTimeoutMs = ProtocolProfile.ANTISPAM_READ_TIMEOUT_MS,
-            maxBytes = ProtocolProfile.MAX_ANTISPAM_RESPONSE_BYTES,
+            readTimeoutMs = NetConfig.ANTISPAM_READ_TIMEOUT_MS,
+            maxBytes = NetConfig.MAX_ANTISPAM_RESPONSE_BYTES,
         )
         onDate(result.dateMillis)
 

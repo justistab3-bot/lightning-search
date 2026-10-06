@@ -1,7 +1,7 @@
 package com.heikeji.phonesearch.net
 
 import com.heikeji.phonesearch.protocol.ProtocolException
-import com.heikeji.phonesearch.protocol.ProtocolProfile
+import com.heikeji.phonesearch.protocol.core.NetConfig
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.IOException
@@ -43,7 +43,7 @@ class StreamHandle internal constructor(
  * 底层 HTTP（对应原 P0.c.f 里 HttpURLConnection 的使用方式）。
  *
  * 硬性约束：
- * - 只允许 [ProtocolProfile.API_HOSTS] 里的主机；
+ * - 只允许 [NetConfig.API_HOSTS] 里的主机；
  * - path 必须以单斜杠开头，不能是 `//`，不能含 `?` 或 `#`；
  * - 禁止自动重定向；connect 15s；read 默认 30s；
  * - 响应正文有上限，超限直接失败。
@@ -65,9 +65,9 @@ class HttpTransport(
         contentType: String,
         cookie: String?,
         acceptGzip: Boolean = false,
-        readTimeoutMs: Int = ProtocolProfile.READ_TIMEOUT_MS,
-        maxBytes: Int = ProtocolProfile.MAX_RESPONSE_BYTES,
-        userAgent: String = ProtocolProfile.USER_AGENT,
+        readTimeoutMs: Int = NetConfig.READ_TIMEOUT_MS,
+        maxBytes: Int = NetConfig.MAX_RESPONSE_BYTES,
+        userAgent: String = NetConfig.USER_AGENT,
     ): HttpResult {
         validate(host, path)
         val connection = open(host + path)
@@ -109,7 +109,7 @@ class HttpTransport(
         cookie: String?,
         readTimeoutMs: Int,
         accept: String = "text/event-stream",
-        userAgent: String = ProtocolProfile.USER_AGENT,
+        userAgent: String = NetConfig.USER_AGENT,
     ): StreamHandle {
         validate(host, path)
         val connection = open(host + path)
@@ -172,7 +172,7 @@ class HttpTransport(
 
     private fun open(url: String): HttpURLConnection {
         val connection = URL(url).openConnection() as HttpURLConnection
-        connection.connectTimeout = ProtocolProfile.CONNECT_TIMEOUT_MS
+        connection.connectTimeout = NetConfig.CONNECT_TIMEOUT_MS
         connection.instanceFollowRedirects = false
         connection.useCaches = false
         return connection
@@ -240,7 +240,7 @@ class HttpTransport(
     }
 
     private fun validate(host: String, path: String) {
-        if (host !in ProtocolProfile.API_HOSTS) throw ProtocolException("请求地址无效")
+        if (host !in NetConfig.API_HOSTS) throw ProtocolException("请求地址无效")
         if (!path.startsWith("/") || path.startsWith("//") ||
             path.contains("?") || path.contains("#")
         ) {

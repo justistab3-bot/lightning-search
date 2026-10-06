@@ -2,7 +2,7 @@ package com.heikeji.phonesearch.image
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import com.heikeji.phonesearch.protocol.ProtocolProfile
+import com.heikeji.phonesearch.protocol.core.NetConfig
 import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
@@ -30,7 +30,7 @@ object RemoteImageLoader {
             connection.connectTimeout = CONNECT_TIMEOUT_MS
             connection.readTimeout = READ_TIMEOUT_MS
             connection.instanceFollowRedirects = false
-            connection.setRequestProperty("User-Agent", ProtocolProfile.USER_AGENT)
+            connection.setRequestProperty("User-Agent", NetConfig.USER_AGENT)
             connection.setRequestProperty("Accept", "image/*")
             if (connection.responseCode !in 200..299) return null
             val bytes = connection.inputStream.use { readLimited(it, MAX_BYTES) } ?: return null

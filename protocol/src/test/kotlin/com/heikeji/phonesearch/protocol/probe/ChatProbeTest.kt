@@ -1,15 +1,15 @@
 package com.heikeji.phonesearch.protocol.probe
 
-import com.heikeji.phonesearch.protocol.ProtocolProfile
+import com.heikeji.phonesearch.protocol.core.NetConfig
 import com.heikeji.phonesearch.protocol.aiwriting.SseParser
 import com.heikeji.phonesearch.protocol.chat.ChatEventParser
 import com.heikeji.phonesearch.protocol.chat.model.ChatEvent
-import com.heikeji.phonesearch.protocol.codec.UrlForm
-import com.heikeji.phonesearch.protocol.crypto.Digests
-import com.heikeji.phonesearch.protocol.crypto.ResponseKey
-import com.heikeji.phonesearch.protocol.envelope.Envelope
-import com.heikeji.phonesearch.protocol.sign.RequestSigner
-import com.heikeji.phonesearch.protocol.sign.SignA
+import com.heikeji.phonesearch.protocol.core.codec.UrlForm
+import com.heikeji.phonesearch.protocol.core.crypto.Digests
+import com.heikeji.phonesearch.protocol.core.crypto.ResponseKey
+import com.heikeji.phonesearch.protocol.core.envelope.Envelope
+import com.heikeji.phonesearch.protocol.core.sign.RequestSigner
+import com.heikeji.phonesearch.protocol.core.sign.SignA
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Test
@@ -36,7 +36,7 @@ import java.util.zip.GZIPInputStream
  */
 class ChatProbeTest {
 
-    private val host = ProtocolProfile.HOST_KDDZY
+    private val host = NetConfig.HOST_KDDZY
 
     @Test
     fun `probe kdchat ask raw sse frames`() {
@@ -185,29 +185,29 @@ class ChatProbeTest {
     /** 公共参数。照抄抓包里的字段名，值用本应用自己的。 */
     private fun common(cuid: String): Map<String, String> = linkedMapOf(
         "city" to "",
-        "channel" to ProtocolProfile.CHANNEL,
+        "channel" to NetConfig.CHANNEL,
         "appBit" to "64",
         "occupationType" to "0",
         "phoneDevice" to "luming",
         "adid" to "",
         "province" to "",
         "osVersion" to "16",
-        "pkgName" to ProtocolProfile.PKG_NAME,
+        "pkgName" to NetConfig.PKG_NAME,
         "appId" to "scancode",
         "brand" to "Xiaomi",
         "identityIdV2" to "0",
         "area" to "",
         "cuid" to cuid,
-        "os" to ProtocolProfile.OS,
+        "os" to NetConfig.OS,
         "abis" to "1",
-        "vc" to ProtocolProfile.VC,
-        "token" to ProtocolProfile.TOKEN,
+        "vc" to NetConfig.VC,
+        "token" to NetConfig.TOKEN,
         "digGrade" to "6",
-        "isPad" to ProtocolProfile.IS_PAD,
-        "vcname" to ProtocolProfile.VC_NAME,
+        "isPad" to NetConfig.IS_PAD,
+        "vcname" to NetConfig.VC_NAME,
         "sdk" to "36",
         "device" to "luming",
-        "operatorid" to ProtocolProfile.OPERATOR_ID,
+        "operatorid" to NetConfig.OPERATOR_ID,
         "did" to "",
         "nt" to "mobile",
     )
@@ -218,14 +218,14 @@ class ChatProbeTest {
         params["data"] = signA
         for ((k, v) in common(cuid)) if (!params.containsKey(k)) params[k] = v
 
-        val connection = open("$host${ProtocolProfile.PATH_ANTISPAM}")
+        val connection = open("$host${NetConfig.PATH_ANTISPAM}")
         return try {
             connection.requestMethod = "POST"
             connection.doOutput = true
             connection.setRequestProperty("Accept", "application/json")
             connection.setRequestProperty("Accept-Encoding", "gzip")
-            connection.setRequestProperty("Content-Type", ProtocolProfile.FORM_CONTENT_TYPE)
-            connection.setRequestProperty("User-Agent", ProtocolProfile.USER_AGENT)
+            connection.setRequestProperty("Content-Type", NetConfig.FORM_CONTENT_TYPE)
+            connection.setRequestProperty("User-Agent", NetConfig.USER_AGENT)
             val bytes = UrlForm.encodeForm(params).toByteArray(Charsets.UTF_8)
             connection.setFixedLengthStreamingMode(bytes.size)
             connection.outputStream.use { it.write(bytes) }
@@ -272,8 +272,8 @@ class ChatProbeTest {
             connection.doOutput = true
             connection.setRequestProperty("Accept", "application/json")
             connection.setRequestProperty("Accept-Encoding", "identity")
-            connection.setRequestProperty("Content-Type", ProtocolProfile.FORM_CONTENT_TYPE)
-            connection.setRequestProperty("User-Agent", ProtocolProfile.USER_AGENT)
+            connection.setRequestProperty("Content-Type", NetConfig.FORM_CONTENT_TYPE)
+            connection.setRequestProperty("User-Agent", NetConfig.USER_AGENT)
             connection.setRequestProperty("Cookie", "cuid=" + UrlForm.encode(cuid))
             val bytes = UrlForm.encodeForm(merged).toByteArray(Charsets.UTF_8)
             connection.setFixedLengthStreamingMode(bytes.size)
@@ -318,8 +318,8 @@ class ChatProbeTest {
             connection.readTimeout = 30_000
             connection.setRequestProperty("Accept", "text/event-stream")
             connection.setRequestProperty("Accept-Encoding", "identity")
-            connection.setRequestProperty("Content-Type", ProtocolProfile.FORM_CONTENT_TYPE)
-            connection.setRequestProperty("User-Agent", ProtocolProfile.USER_AGENT)
+            connection.setRequestProperty("Content-Type", NetConfig.FORM_CONTENT_TYPE)
+            connection.setRequestProperty("User-Agent", NetConfig.USER_AGENT)
             connection.setRequestProperty("Cookie", "cuid=" + UrlForm.encode(cuid))
             val bytes = UrlForm.encodeForm(merged).toByteArray(Charsets.UTF_8)
             connection.setFixedLengthStreamingMode(bytes.size)

@@ -2,14 +2,19 @@ package com.heikeji.phonesearch.net
 
 import com.heikeji.phonesearch.account.SessionRepository
 import com.heikeji.phonesearch.protocol.ProtocolException
-import com.heikeji.phonesearch.protocol.ProtocolProfile
+import com.heikeji.phonesearch.protocol.core.NetConfig
 import com.heikeji.phonesearch.protocol.aiwriting.SseParser
+import com.heikeji.phonesearch.protocol.chat.KdChatAsk
+import com.heikeji.phonesearch.protocol.chat.KdChatCreate
+import com.heikeji.phonesearch.protocol.chat.KdChatGuide
+import com.heikeji.phonesearch.protocol.chat.KdChatPhotoAsk
+import com.heikeji.phonesearch.protocol.chat.KdChatStop
 import com.heikeji.phonesearch.protocol.chat.ChatEventParser
-import com.heikeji.phonesearch.protocol.chat.ChatRequest
 import com.heikeji.phonesearch.protocol.chat.model.ChatEvent
 import com.heikeji.phonesearch.protocol.chat.model.ChatTurn
-import com.heikeji.phonesearch.protocol.codec.UrlForm
-import com.heikeji.phonesearch.protocol.sign.RequestSigner
+import com.heikeji.phonesearch.protocol.core.InputBase
+import com.heikeji.phonesearch.protocol.core.codec.UrlForm
+import com.heikeji.phonesearch.protocol.core.sign.RequestSigner
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
@@ -31,7 +36,8 @@ class ChatClient(
 
     /** 建会话，返回 sessionId。 */
     fun createSession(grade: Int): String {
-        val json = postJson(ChatRequest.PATH_CREATE, ChatRequest.createParams(grade))
+        val input = KdChatCreate.Input.buildInput(grade)
+        val json = postJson(input.url, stringParams(input))
         val sessionId = json?.optJSONObject("data")?.optString("sessionId").orEmpty()
         if (sessionId.isEmpty()) throw ProtocolException("建立会话失败")
         return sessionId
@@ -39,8 +45,9 @@ class ChatClient(
 
     /** 推荐问题。失败不致命，返回空列表。 */
     fun guide(grade: Int): List<String> {
+        val input = KdChatGuide.Input.buildInput(grade)
         val json = try {
-            postJson(ChatRequest.PATH_GUIDE, ChatRequest.guideParams(grade))
+            postJson(input.url, stringParams(input))
         } catch (e: Exception) {
             return emptyList()
         } ?: return emptyList()
@@ -68,7 +75,7 @@ class ChatClient(
         searchEnabled: Boolean,
         onEvent: (ChatEvent) -> Unit,
     ) {
-        val params = ChatRequest.photoAskParams(
+        val input = KdChatPhotoAsk.Input.buildInput(
             sessionId = sessionId,
             content = content,
             history = history,
@@ -77,13 +84,13 @@ class ChatClient(
             searchEnabled = searchEnabled,
             picMd5 = md5Hex(jpeg),
         )
-        val merged = signedParams(params)
-        val boundary = ProtocolProfile.MULTIPART_BOUNDARY_PREFIX +
+        val merged = signedParams(stringParams(input))
+        val boundary = NetConfig.MULTIPART_BOUNDARY_PREFIX +
             UUID.randomUUID().toString().replace("-", "")
         val body = Multipart.build(boundary, jpeg, params = merged)
 
         streamRequest(
-            path = ChatRequest.PATH_PHOTO_ASK,
+            path = input.url,
             body = body,
             contentType = "multipart/form-data; boundary=$boundary",
             onEvent = onEvent,
@@ -104,7 +111,7 @@ class ChatClient(
         searchEnabled: Boolean,
         onEvent: (ChatEvent) -> Unit,
     ) {
-        val params = ChatRequest.askParams(
+        val input = KdChatAsk.Input.buildTextInput(
             sessionId = sessionId,
             content = content,
             history = history,
@@ -113,9 +120,9 @@ class ChatClient(
             searchEnabled = searchEnabled,
         )
         streamRequest(
-            path = ChatRequest.PATH_ASK,
-            body = signedBody(params),
-            contentType = ProtocolProfile.FORM_CONTENT_TYPE,
+            path = input.url,
+            body = signedBody(stringParams(input)),
+            contentType = NetConfig.FORM_CONTENT_TYPE,
             onEvent = onEvent,
         )
     }
@@ -124,7 +131,7 @@ class ChatClient(
      * AI 解题：带搜题结果上下文（sid/subjectId/etid/pid）讲解指定题目。
      *
      * 官方走 `/kdchat/api/ask`（multipart，与纯文字 ask 同端点、带图片），
-     * 响应 SSE。参数见 [ChatRequest.aiSolveParams]（ai-pure-page 抓包对齐）。
+     * 响应 SSE。参数见 [KdChatAsk.Input.buildAiSolveInput]（ai-pure-page 抓包对齐）。
      */
     fun askAiSolve(
         sessionId: String,
@@ -137,7 +144,7 @@ class ChatClient(
         pvalLabel: Int = 1,
         onEvent: (ChatEvent) -> Unit,
     ) {
-        val params = ChatRequest.aiSolveParams(
+        val input = KdChatAsk.Input.buildAiSolveInput(
             sessionId = sessionId,
             grade = grade,
             picMd5 = md5Hex(jpeg),
@@ -147,13 +154,13 @@ class ChatClient(
             pid = pid,
             pvalLabel = pvalLabel,
         )
-        val merged = signedParams(params)
-        val boundary = ProtocolProfile.MULTIPART_BOUNDARY_PREFIX +
+        val merged = signedParams(stringParams(input))
+        val boundary = NetConfig.MULTIPART_BOUNDARY_PREFIX +
             UUID.randomUUID().toString().replace("-", "")
         val body = Multipart.build(boundary, jpeg, params = merged)
 
         streamRequest(
-            path = ChatRequest.PATH_ASK,
+            path = input.url,
             body = body,
             contentType = "multipart/form-data; boundary=$boundary",
             onEvent = onEvent,
@@ -168,7 +175,7 @@ class ChatClient(
         onEvent: (ChatEvent) -> Unit,
     ) {
         val handle = transport.postStream(
-            host = ProtocolProfile.HOST_KDDZY,
+            host = NetConfig.HOST_KDDZY,
             path = path,
             body = body,
             contentType = contentType,
@@ -203,10 +210,8 @@ class ChatClient(
     fun stop(sessionId: String, answerId: String) {
         if (sessionId.isEmpty()) return
         try {
-            postJson(
-                ChatRequest.PATH_STOP,
-                linkedMapOf("sessionId" to sessionId, "answerId" to answerId),
-            )
+            val input = KdChatStop.Input.buildInput(sessionId, answerId)
+            postJson(input.url, stringParams(input))
         } catch (e: Exception) {
             // 收尾动作，静默
         }
@@ -214,12 +219,19 @@ class ChatClient(
 
     // ------------------------------------------------------------------ 内部
 
+    /** Input 的业务参数转 String 映射（本客户端的参数值都是字符串）。 */
+    private fun stringParams(input: InputBase): Map<String, String> {
+        val result = LinkedHashMap<String, String>()
+        for ((key, value) in input.params()) result[key] = value?.toString().orEmpty()
+        return result
+    }
+
     private fun postJson(path: String, params: Map<String, String>): JSONObject? {
         val result = transport.post(
-            host = ProtocolProfile.HOST_KDDZY,
+            host = NetConfig.HOST_KDDZY,
             path = path,
             body = signedBody(params),
-            contentType = ProtocolProfile.FORM_CONTENT_TYPE,
+            contentType = NetConfig.FORM_CONTENT_TYPE,
             cookie = cookie(),
         )
         protocol.calibrate(result.dateMillis)
@@ -290,7 +302,7 @@ class ChatClient(
     }
 
     private fun cookie(): String? {
-        if (ProtocolProfile.HOST_KDDZY !in ProtocolProfile.COOKIE_HOSTS) return null
+        if (NetConfig.HOST_KDDZY !in NetConfig.COOKIE_HOSTS) return null
         val kduss = sessions.kduss()
         return buildString {
             append("cuid=").append(UrlForm.encode(identity.cuid))

@@ -37,6 +37,23 @@ android {
         buildConfigField("String", "UMENG_APPKEY", "\"$umengAppKey\"")
     }
 
+    // ===== 兼容红线（运营要求，构建期强制校验）=====
+    // 底线一：最低版本必须保持 Android 5.0（API 21）—— 词典笔普遍停在 5.x/6.x。
+    // 底线二：32 位（armeabi-v7a）必须保留 —— 大量词典笔是 32 位设备，
+    //         且官方原生库只有 arm64 版（32 位上自动回退 Java 密钥链，见 PhoneNativeSdk）。
+    // 想动这两条，必须同时修改这里的断言并更新 VERSION.md，防止静默破坏。
+    val compatMinSdk: Int = defaultConfig.minSdk ?: 0
+    check(compatMinSdk == 21) {
+        "闪电搜题兼容红线：minSdk 必须保持 21（Android 5.0）。" +
+            "确需提升请先与运营确认，并同步修改本断言与 VERSION.md。"
+    }
+    check(defaultConfig.ndk.abiFilters.isEmpty() ||
+        defaultConfig.ndk.abiFilters.contains("armeabi-v7a")
+    ) {
+        "闪电搜题兼容红线：abiFilters 不得排除 armeabi-v7a（32 位）。" +
+            "确需调整请先与运营确认，并同步修改本断言与 VERSION.md。"
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false

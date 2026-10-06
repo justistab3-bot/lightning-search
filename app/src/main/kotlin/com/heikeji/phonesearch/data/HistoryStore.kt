@@ -3,8 +3,8 @@ package com.heikeji.phonesearch.data
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import com.heikeji.phonesearch.protocol.model.AnswerItem
-import com.heikeji.phonesearch.protocol.model.SearchResult
+import com.heikeji.phonesearch.protocol.search.model.AnswerItem
+import com.heikeji.phonesearch.protocol.search.model.SearchResult
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream

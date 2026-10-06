@@ -12,7 +12,7 @@ import androidx.lifecycle.lifecycleScope
 import com.heikeji.phonesearch.R
 import com.heikeji.phonesearch.databinding.ActivitySelectImageBinding
 import com.heikeji.phonesearch.image.QuestionImageProcessor
-import com.heikeji.phonesearch.protocol.ProtocolProfile
+import com.heikeji.phonesearch.protocol.core.NetConfig
 import com.heikeji.phonesearch.ui.common.applySystemBarPadding
 import com.heikeji.phonesearch.ui.common.displayMessage
 import com.heikeji.phonesearch.ui.common.showMessage
@@ -52,7 +52,7 @@ class SelectImageActivity : AppCompatActivity() {
         binding.confirmButton.setOnClickListener { confirm() }
 
         val initial = intent.getFloatArrayExtra(EXTRA_RECT)
-            ?: ProtocolProfile.QUAD_DEFAULT_RECT.copyOf()
+            ?: NetConfig.QUAD_DEFAULT_RECT.copyOf()
         binding.selectionView.setSelection(
             RectF(initial[0], initial[1], initial[2], initial[3]),
         )

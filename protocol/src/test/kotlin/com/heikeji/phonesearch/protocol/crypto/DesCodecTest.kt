@@ -1,4 +1,4 @@
-package com.heikeji.phonesearch.protocol.crypto
+package com.heikeji.phonesearch.protocol.core.crypto
 
 import com.heikeji.phonesearch.protocol.ProtocolException
 import org.junit.Assert.assertEquals
@@ -44,13 +44,13 @@ class DesCodecTest {
             assertEquals("malformed vector line: $line", 4, parts.size)
             val (cuid, signA, signB, deviceSecret) = parts
 
-            assertEquals(deviceSecret, com.heikeji.phonesearch.protocol.sign.SignA.parseDeviceSecret(cuid, signA, signB))
+            assertEquals(deviceSecret, com.heikeji.phonesearch.protocol.core.sign.SignA.parseDeviceSecret(cuid, signA, signB))
             assertEquals(
                 "device secret must round-trip through the signA plaintext layout",
                 signA,
                 DesCodec.encode(
                     "8&%d*##" + DesCodec.decode(signA, "@fG2SuLA").substring(7, 17) +
-                        "##" + com.heikeji.phonesearch.protocol.ProtocolProfile.CERTIFICATE_DIGEST +
+                        "##" + com.heikeji.phonesearch.protocol.core.NetConfig.CERTIFICATE_DIGEST +
                         "##" + cuid,
                     "@fG2SuLA",
                 ),

@@ -1,18 +1,18 @@
 package com.heikeji.phonesearch.search
 
-import com.heikeji.phonesearch.net.ApiClient
 import com.heikeji.phonesearch.net.ApiException
 import com.heikeji.phonesearch.net.ProtocolContext
+import com.heikeji.phonesearch.net.SearchApi
 import com.heikeji.phonesearch.protocol.ProtocolException
-import com.heikeji.phonesearch.protocol.codec.PageExtraInfo
-import com.heikeji.phonesearch.protocol.decode.AnswerDecoder
-import com.heikeji.phonesearch.protocol.model.AnswerItem
-import com.heikeji.phonesearch.protocol.model.PageSearchResult
-import com.heikeji.phonesearch.protocol.model.SearchChallenge
-import com.heikeji.phonesearch.protocol.model.SearchMode
-import com.heikeji.phonesearch.protocol.model.SearchResult
-import com.heikeji.phonesearch.protocol.parse.AnswerParser
-import com.heikeji.phonesearch.protocol.parse.PageSearchParser
+import com.heikeji.phonesearch.protocol.core.codec.PageExtraInfo
+import com.heikeji.phonesearch.protocol.search.decode.AnswerDecoder
+import com.heikeji.phonesearch.protocol.search.model.AnswerItem
+import com.heikeji.phonesearch.protocol.search.model.PageSearchResult
+import com.heikeji.phonesearch.protocol.search.model.SearchChallenge
+import com.heikeji.phonesearch.protocol.search.model.SearchMode
+import com.heikeji.phonesearch.protocol.search.model.SearchResult
+import com.heikeji.phonesearch.protocol.search.parse.AnswerParser
+import com.heikeji.phonesearch.protocol.search.parse.PageSearchParser
 import org.json.JSONObject
 import java.util.UUID
 
@@ -23,7 +23,7 @@ import java.util.UUID
  * 验证成功后按原模式恢复，不会把整页/框选降级成普通单题。
  */
 class SearchRepository(
-    private val apiClient: ApiClient,
+    private val apiClient: SearchApi,
     private val protocol: ProtocolContext,
     private val challenges: SearchChallengeStore,
 ) {

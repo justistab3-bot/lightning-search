@@ -5,7 +5,7 @@ import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import androidx.exifinterface.media.ExifInterface
 import com.heikeji.phonesearch.net.ApiException
-import com.heikeji.phonesearch.protocol.ProtocolProfile
+import com.heikeji.phonesearch.protocol.core.NetConfig
 import java.io.ByteArrayOutputStream
 import java.io.File
 
@@ -27,7 +27,7 @@ object QuestionImageProcessor {
 
         var sampleSize = 1
         while (maxOf(bounds.outWidth, bounds.outHeight) / sampleSize >
-            ProtocolProfile.IMAGE_DECODE_MAX_EDGE
+            NetConfig.IMAGE_DECODE_MAX_EDGE
         ) {
             sampleSize *= 2
         }
@@ -134,8 +134,8 @@ object QuestionImageProcessor {
     /** 普通单题的上传 JPEG（最长边 1600 / 质量 88）。 */
     fun encodeForUpload(bitmap: Bitmap): ByteArray = encode(
         bitmap = bitmap,
-        maxEdge = ProtocolProfile.IMAGE_OUTPUT_MAX_EDGE,
-        quality = ProtocolProfile.IMAGE_JPEG_QUALITY,
+        maxEdge = NetConfig.IMAGE_OUTPUT_MAX_EDGE,
+        quality = NetConfig.IMAGE_JPEG_QUALITY,
     )
 
     /**

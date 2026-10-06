@@ -1,6 +1,6 @@
 package com.heikeji.phonesearch.search
 
-import com.heikeji.phonesearch.protocol.model.SearchChallenge
+import com.heikeji.phonesearch.protocol.search.model.SearchChallenge
 
 /**
  * 内存中的验证挑战（同一时刻最多一个）。

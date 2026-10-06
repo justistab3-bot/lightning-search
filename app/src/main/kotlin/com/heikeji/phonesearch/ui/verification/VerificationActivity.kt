@@ -23,8 +23,8 @@ import com.heikeji.phonesearch.R
 import com.heikeji.phonesearch.appContainer
 import com.heikeji.phonesearch.databinding.ActivityVerificationBinding
 import com.heikeji.phonesearch.net.ApiException
-import com.heikeji.phonesearch.protocol.ProtocolProfile
-import com.heikeji.phonesearch.protocol.codec.UrlForm
+import com.heikeji.phonesearch.protocol.core.NetConfig
+import com.heikeji.phonesearch.protocol.core.codec.UrlForm
 import com.heikeji.phonesearch.ui.common.applySystemBarPadding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -116,10 +116,10 @@ class VerificationActivity : AppCompatActivity() {
 
     /** 原实现附加的 UA 后缀，用于让验证页识别为 App 内嵌环境。 */
     private fun userAgentSuffix(): String = listOf(
-        "scancode_vc/${ProtocolProfile.VC}",
-        "scancode_vcname/${ProtocolProfile.VC_NAME}",
+        "scancode_vc/${NetConfig.VC}",
+        "scancode_vcname/${NetConfig.VC_NAME}",
         "scancode_cuid/${container.identity.cuid}",
-        "HyAppName/${ProtocolProfile.APP_ID}",
+        "HyAppName/${NetConfig.APP_ID}",
         "zyb_jsBridge/1",
         "jsBridge_jsInterface/1",
         "WatchSearch/1.0.1",
@@ -128,7 +128,7 @@ class VerificationActivity : AppCompatActivity() {
     private fun installCookies() {
         val manager = CookieManager.getInstance()
         manager.setCookie(
-            ProtocolProfile.HOST_VERIFY,
+            NetConfig.HOST_VERIFY,
             "cuid=${UrlForm.encode(container.identity.cuid)}; Domain=zuoyebang.com; " +
                 "Path=/; Secure; SameSite=None",
             null,
@@ -136,7 +136,7 @@ class VerificationActivity : AppCompatActivity() {
         val kduss = container.sessions.kduss()
         if (kduss.isNotEmpty()) {
             manager.setCookie(
-                ProtocolProfile.HOST_VERIFY,
+                NetConfig.HOST_VERIFY,
                 "KDUSS=${UrlForm.encode(kduss)}; Domain=zuoyebang.com; " +
                     "Path=/; Secure; SameSite=None; HttpOnly",
                 null,
@@ -151,7 +151,7 @@ class VerificationActivity : AppCompatActivity() {
         } else {
             runCatching { URLDecoder.decode(rawValidatedInfo, "UTF-8") }.getOrDefault(rawValidatedInfo)
         }
-        return ProtocolProfile.HOST_VERIFY + ProtocolProfile.PATH_VERIFICATION +
+        return NetConfig.HOST_VERIFY + NetConfig.PATH_VERIFICATION +
             "?validatedInfo=" + URLEncoder.encode(value, "UTF-8")
     }
 
@@ -268,7 +268,7 @@ class VerificationActivity : AppCompatActivity() {
             uri.host == VERIFY_HOST &&
             uri.rawUserInfo == null &&
             uri.port == -1 &&
-            uri.rawPath == ProtocolProfile.PATH_VERIFICATION &&
+            uri.rawPath == NetConfig.PATH_VERIFICATION &&
             uri.rawFragment == null &&
             rawQuery.startsWith("validatedInfo=") &&
             !rawQuery.contains('&')
@@ -301,11 +301,11 @@ class VerificationActivity : AppCompatActivity() {
                 val data = JSONObject()
                 for ((key, value) in container.identity.publicParams()) data.put(key, value)
                 data.put("cuid", UrlForm.encode(container.identity.cuid))
-                data.put("appid", ProtocolProfile.APP_ID)
-                data.put("pkgname", ProtocolProfile.PKG_NAME)
+                data.put("appid", NetConfig.APP_ID)
+                data.put("pkgname", NetConfig.PKG_NAME)
                 data.put("grade", session?.grade ?: 0)
                 data.put("nt", container.identity.networkType())
-                data.put("host", ProtocolProfile.HOST_KDDZY)
+                data.put("host", NetConfig.HOST_KDDZY)
                 reply(callbackKey, data, 200)
             }
 
@@ -363,8 +363,8 @@ class VerificationActivity : AppCompatActivity() {
     private fun fetchHtml(): String {
         val result = container.transport.getHtml(
             url = expectedUrl,
-            readTimeoutMs = ProtocolProfile.VERIFICATION_READ_TIMEOUT_MS,
-            maxBytes = ProtocolProfile.MAX_VERIFICATION_HTML_BYTES,
+            readTimeoutMs = NetConfig.VERIFICATION_READ_TIMEOUT_MS,
+            maxBytes = NetConfig.MAX_VERIFICATION_HTML_BYTES,
             userAgent = userAgent,
             cookie = CookieManager.getInstance().getCookie(expectedUrl),
         )

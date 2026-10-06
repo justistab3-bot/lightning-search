@@ -10,15 +10,17 @@ import com.heikeji.phonesearch.account.SessionRepository
 import com.heikeji.phonesearch.analytics.Analytics
 import com.heikeji.phonesearch.data.HistoryStore
 import com.heikeji.phonesearch.data.StorageCleaner
-import com.heikeji.phonesearch.net.ApiClient
+import com.heikeji.phonesearch.net.AccountApi
 import com.heikeji.phonesearch.net.AiWritingClient
 import com.heikeji.phonesearch.net.ChatClient
 import com.heikeji.phonesearch.net.DiagLog
 import com.heikeji.phonesearch.net.DeviceIdentity
 import com.heikeji.phonesearch.net.HttpTransport
+import com.heikeji.phonesearch.net.Net
 import com.heikeji.phonesearch.net.NetworkMonitor
 import com.heikeji.phonesearch.net.PhoneNativeSdk
 import com.heikeji.phonesearch.net.ProtocolContext
+import com.heikeji.phonesearch.net.SearchApi
 import com.heikeji.phonesearch.search.SearchChallengeStore
 import com.heikeji.phonesearch.search.SearchRepository
 import com.heikeji.phonesearch.ui.offline.NoNetworkActivity
@@ -156,9 +158,17 @@ class AppContainer(context: Context) {
     private val sessionStore = SecureSessionStore(context)
     val sessions = SessionRepository(sessionStore)
 
-    val apiClient = ApiClient(identity, protocol, sessions, transport)
+    /** 统一执行器（官方 Net）：签名 + 信封 + 传输 + 外壳。 */
+    val net = Net(identity, protocol, sessions, transport)
+
+    /** 账号域（登录 / 用户资料 / 实名校验）。 */
+    val apiClient = AccountApi(net, protocol, sessions)
+
+    /** 搜题域（含 getdid / getdiggrade 前置）。 */
+    val searchApi = SearchApi(net, identity)
+
     val challenges = SearchChallengeStore()
-    val searchRepository = SearchRepository(apiClient, protocol, challenges)
+    val searchRepository = SearchRepository(searchApi, protocol, challenges)
     val history = HistoryStore(context)
 
     /** AI 作文（独立域名、无签名、SSE 流式）。 */

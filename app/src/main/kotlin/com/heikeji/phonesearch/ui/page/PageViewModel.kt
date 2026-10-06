@@ -9,7 +9,7 @@ import com.heikeji.phonesearch.account.SessionRepository
 import com.heikeji.phonesearch.image.OriginalImageHandle
 import com.heikeji.phonesearch.net.SearchChallengeException
 import com.heikeji.phonesearch.net.SessionExpiredException
-import com.heikeji.phonesearch.protocol.model.SearchMode
+import com.heikeji.phonesearch.protocol.search.model.SearchMode
 import com.heikeji.phonesearch.search.SearchRepository
 import com.heikeji.phonesearch.search.SearchTask
 import kotlinx.coroutines.CancellationException
@@ -204,7 +204,7 @@ class PageViewModel(
 
     private fun run(
         grade: Int,
-        block: suspend (SearchTask) -> com.heikeji.phonesearch.protocol.model.PageSearchResult,
+        block: suspend (SearchTask) -> com.heikeji.phonesearch.protocol.search.model.PageSearchResult,
     ) {
         val current = task ?: return
         if (job?.isActive == true) return
@@ -248,7 +248,7 @@ class PageViewModel(
 
     /** 默认选中第一个有可显示答案的题块。 */
     private fun firstDisplayableBlock(
-        result: com.heikeji.phonesearch.protocol.model.PageSearchResult,
+        result: com.heikeji.phonesearch.protocol.search.model.PageSearchResult,
     ): Int {
         val index = result.blocks.indexOfFirst { it.hasAnswer }
         return if (index >= 0) index else 0

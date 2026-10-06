@@ -2,10 +2,10 @@ package com.heikeji.phonesearch.protocol.chat
 
 import com.heikeji.phonesearch.protocol.aiwriting.SseEvent
 import com.heikeji.phonesearch.protocol.chat.model.ChatEvent
-import com.heikeji.phonesearch.protocol.json.Json
-import com.heikeji.phonesearch.protocol.json.arrOrNull
-import com.heikeji.phonesearch.protocol.json.objOrNull
-import com.heikeji.phonesearch.protocol.json.strOrEmpty
+import com.heikeji.phonesearch.protocol.core.json.Json
+import com.heikeji.phonesearch.protocol.core.json.arrOrNull
+import com.heikeji.phonesearch.protocol.core.json.objOrNull
+import com.heikeji.phonesearch.protocol.core.json.strOrEmpty
 import com.google.gson.JsonObject
 
 /**

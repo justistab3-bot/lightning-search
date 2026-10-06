@@ -15,7 +15,7 @@ import android.view.ScaleGestureDetector
 import android.view.View
 import androidx.core.content.ContextCompat
 import com.heikeji.phonesearch.R
-import com.heikeji.phonesearch.protocol.ProtocolProfile
+import com.heikeji.phonesearch.protocol.core.NetConfig
 import com.heikeji.phonesearch.ui.common.dp
 import kotlin.math.abs
 import kotlin.math.min
@@ -66,10 +66,10 @@ class SelectionImageView @JvmOverloads constructor(
 
     /** 归一化框选区域。 */
     private val rect = RectF(
-        ProtocolProfile.QUAD_DEFAULT_RECT[0],
-        ProtocolProfile.QUAD_DEFAULT_RECT[1],
-        ProtocolProfile.QUAD_DEFAULT_RECT[2],
-        ProtocolProfile.QUAD_DEFAULT_RECT[3],
+        NetConfig.QUAD_DEFAULT_RECT[0],
+        NetConfig.QUAD_DEFAULT_RECT[1],
+        NetConfig.QUAD_DEFAULT_RECT[2],
+        NetConfig.QUAD_DEFAULT_RECT[3],
     )
 
     /** 服务端题框（归一化），仅用于高亮。 */

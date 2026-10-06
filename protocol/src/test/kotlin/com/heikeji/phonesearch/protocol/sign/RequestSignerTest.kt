@@ -1,4 +1,4 @@
-package com.heikeji.phonesearch.protocol.sign
+package com.heikeji.phonesearch.protocol.core.sign
 
 import com.heikeji.phonesearch.protocol.ProtocolException
 import org.junit.Assert.assertEquals

@@ -1,13 +1,13 @@
 package com.heikeji.phonesearch.protocol.probe
 
 import com.google.gson.JsonParser
-import com.heikeji.phonesearch.protocol.ProtocolProfile
-import com.heikeji.phonesearch.protocol.codec.UrlForm
-import com.heikeji.phonesearch.protocol.crypto.Digests
-import com.heikeji.phonesearch.protocol.crypto.ResponseKey
-import com.heikeji.phonesearch.protocol.decode.AnswerDecoder
-import com.heikeji.phonesearch.protocol.sign.RequestSigner
-import com.heikeji.phonesearch.protocol.sign.SignA
+import com.heikeji.phonesearch.protocol.core.NetConfig
+import com.heikeji.phonesearch.protocol.core.codec.UrlForm
+import com.heikeji.phonesearch.protocol.core.crypto.Digests
+import com.heikeji.phonesearch.protocol.core.crypto.ResponseKey
+import com.heikeji.phonesearch.protocol.search.decode.AnswerDecoder
+import com.heikeji.phonesearch.protocol.core.sign.RequestSigner
+import com.heikeji.phonesearch.protocol.core.sign.SignA
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 import java.awt.Color
@@ -37,7 +37,7 @@ import javax.imageio.ImageIO
  */
 class ReplayProbeTest {
 
-    private val host = ProtocolProfile.HOST_KDDZY
+    private val host = NetConfig.HOST_KDDZY
 
     // 官方客户端的材料（用户设备抓包）
     private val cuid = "960A6AAFD2BF38F81789216A4D3EE1EA|0"
@@ -106,7 +106,7 @@ class ReplayProbeTest {
             "adid" to scenarioAdid,
             "province" to "",
             "osVersion" to "16",
-            "pkgName" to ProtocolProfile.PKG_NAME,
+            "pkgName" to NetConfig.PKG_NAME,
             "appId" to "scancode",
             "brand" to "Xiaomi",
             "identityIdV2" to "1",
@@ -115,7 +115,7 @@ class ReplayProbeTest {
             "os" to "android",
             "abis" to "1",
             "vc" to "1810",
-            "token" to ProtocolProfile.TOKEN,
+            "token" to NetConfig.TOKEN,
             "digGrade" to "6",
             "isPad" to "0",
             "vcname" to "7.7.0",
@@ -137,11 +137,11 @@ class ReplayProbeTest {
         merged["_t_"] = tSeconds.toString()
         merged["kakorrhaphiophobia"] = uptime.toString()
 
-        val boundary = ProtocolProfile.MULTIPART_BOUNDARY_PREFIX +
+        val boundary = NetConfig.MULTIPART_BOUNDARY_PREFIX +
             UUID.randomUUID().toString().replace("-", "")
         val body = multipart(boundary, jpeg, merged)
 
-        val connection = open("$host${ProtocolProfile.PATH_PAGE_SEARCH}")
+        val connection = open("$host${NetConfig.PATH_PAGE_SEARCH}")
         val resp = try {
             connection.requestMethod = "POST"
             connection.doOutput = true

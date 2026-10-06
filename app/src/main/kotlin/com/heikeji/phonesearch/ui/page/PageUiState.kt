@@ -1,8 +1,8 @@
 package com.heikeji.phonesearch.ui.page
 
-import com.heikeji.phonesearch.protocol.model.AnswerItem
-import com.heikeji.phonesearch.protocol.model.PageQuestionBlock
-import com.heikeji.phonesearch.protocol.model.PageSearchResult
+import com.heikeji.phonesearch.protocol.search.model.AnswerItem
+import com.heikeji.phonesearch.protocol.search.model.PageQuestionBlock
+import com.heikeji.phonesearch.protocol.search.model.PageSearchResult
 
 /**
  * 整页结果页状态。

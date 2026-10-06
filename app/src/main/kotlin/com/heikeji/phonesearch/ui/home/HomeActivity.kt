@@ -33,7 +33,7 @@ import com.heikeji.phonesearch.protocol.aiwriting.AiWritingRequest
 import com.heikeji.phonesearch.ui.onboarding.OnboardingActivity
 import com.heikeji.phonesearch.databinding.ActivityHomeBinding
 import com.heikeji.phonesearch.databinding.ItemHistoryBinding
-import com.heikeji.phonesearch.protocol.model.SearchMode
+import com.heikeji.phonesearch.protocol.search.model.SearchMode
 import com.heikeji.phonesearch.ui.camera.CameraActivity
 import com.heikeji.phonesearch.ui.common.Greetings
 import com.heikeji.phonesearch.ui.common.SearchEntry

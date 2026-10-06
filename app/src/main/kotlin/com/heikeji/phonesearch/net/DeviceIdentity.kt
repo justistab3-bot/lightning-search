@@ -9,10 +9,8 @@ import android.os.Build
 import android.os.Process
 import android.os.SystemClock
 import android.provider.Settings
-import com.heikeji.phonesearch.protocol.ProtocolProfile
-import com.heikeji.phonesearch.protocol.codec.Base64NoWrap
-import com.heikeji.phonesearch.protocol.crypto.Rc4
-import org.json.JSONObject
+import com.heikeji.phonesearch.protocol.core.NetConfig
+import com.heikeji.phonesearch.protocol.identity.DeviceInfo
 import java.util.Locale
 import java.util.UUID
 
@@ -45,7 +43,7 @@ class DeviceIdentity(context: Context) {
 
     /** 学段（digGrade）。官方经 /kdapi/device/getdiggrade 回填；默认 6。 */
     @Volatile
-    var digGrade: String = ProtocolProfile.DIG_GRADE
+    var digGrade: String = NetConfig.DIG_GRADE
 
     /** getdiggrade 返回的 digGrade 回填。 */
     fun updateDigGrade(value: String) {
@@ -68,16 +66,16 @@ class DeviceIdentity(context: Context) {
     fun publicParams(): LinkedHashMap<String, String> {
         val params = LinkedHashMap<String, String>()
         params["cuid"] = cuid
-        params["channel"] = ProtocolProfile.CHANNEL
-        params["token"] = ProtocolProfile.TOKEN
-        params["vc"] = ProtocolProfile.VC
-        params["vcname"] = ProtocolProfile.VC_NAME
-        params["os"] = ProtocolProfile.OS
+        params["channel"] = NetConfig.CHANNEL
+        params["token"] = NetConfig.TOKEN
+        params["vc"] = NetConfig.VC
+        params["vcname"] = NetConfig.VC_NAME
+        params["os"] = NetConfig.OS
         params["sdk"] = Build.VERSION.SDK_INT.toString()
-        params["operatorid"] = ProtocolProfile.OPERATOR_ID
+        params["operatorid"] = NetConfig.OPERATOR_ID
         params["device"] = Build.MODEL
-        params["pkgName"] = ProtocolProfile.PKG_NAME
-        params["appId"] = ProtocolProfile.APP_ID
+        params["pkgName"] = NetConfig.PKG_NAME
+        params["appId"] = NetConfig.APP_ID
         params["province"] = ""
         params["city"] = ""
         params["area"] = ""
@@ -89,7 +87,7 @@ class DeviceIdentity(context: Context) {
         params["phoneDevice"] = Build.DEVICE
         params["identityIdV2"] = "1"
         params["occupationType"] = "0"
-        params["isPad"] = ProtocolProfile.IS_PAD
+        params["isPad"] = NetConfig.IS_PAD
         params["digGrade"] = digGrade
         params["did"] = did
         return params
@@ -137,60 +135,36 @@ class DeviceIdentity(context: Context) {
     /**
      * Getdid 上报负载：设备信息 JSON 经 RC4（官方 ENTRY_KEY）加密后的 Base64。
      *
-     * 字段与官方 `DeviceIdHelper.getDeviceInfo` 对齐；拿不到的一律空串/0。
+     * 官方标准：事实采集在本类（Android），字段结构与加密在
+     * `protocol.identity.DeviceInfo`（官方 PackageHelper/DeviceIdHelper 对应）。
      */
-    fun didPayload(): String {
-        val json = JSONObject()
-        json.put("did", "")
-        json.put("os", "android")
-        json.put("appId", ProtocolProfile.APP_ID)
-        json.put("imei1", "")
-        json.put("imei2", "")
-        json.put("oaid", "")
-        // 序列号：无权限时返回 "unknown"（官方同样如此）；缺失时留空。
-        json.put("sn", serialOrEmpty())
-        json.put(
-            "androidId",
-            runCatching {
+    fun didPayload(): String = DeviceInfo.buildPayload(
+        DeviceInfo.Facts(
+            appId = NetConfig.APP_ID,
+            osVersion = Build.VERSION.RELEASE,
+            language = Locale.getDefault().language,
+            country = Locale.getDefault().country,
+            brand = Build.BRAND,
+            model = Build.MODEL,
+            sn = serialOrEmpty(),
+            androidId = runCatching {
                 Settings.Secure.getString(
                     appContext.contentResolver,
                     Settings.Secure.ANDROID_ID,
                 )
             }.getOrDefault(""),
-        )
-        json.put("user", "")
-        json.put("osVersion", Build.VERSION.RELEASE)
-        json.put("language", Locale.getDefault().language)
-        json.put(
-            "typewriting",
-            runCatching {
+            typewriting = runCatching {
                 Settings.Secure.getString(
                     appContext.contentResolver,
                     Settings.Secure.DEFAULT_INPUT_METHOD,
                 )
             }.getOrDefault(""),
-        )
-        json.put("browser", "")
-        json.put("powerOnTime", System.currentTimeMillis() - SystemClock.elapsedRealtime())
-        json.put("sysUpdateTime", 0)
-        json.put("uid", -1)
-        json.put("operator", "")
-        json.put("country", Locale.getDefault().country)
-        json.put("brand", Build.BRAND)
-        json.put("model", Build.MODEL)
-        json.put("memory", totalMemoryGb())
-        json.put("cpu", "armeabi-v7a")
-        json.put("hardDisk", totalDiskBytes())
-        json.put("sdkVersion", "4")
-        json.put("uidStr", "")
-        json.put("screen", screenWh())
-
-        val encrypted = Rc4.apply(
-            json.toString().toByteArray(Charsets.UTF_8),
-            ProtocolProfile.DID_RC4_KEY,
-        )
-        return Base64NoWrap.encode(encrypted)
-    }
+            powerOnTime = System.currentTimeMillis() - SystemClock.elapsedRealtime(),
+            memoryGb = totalMemoryGb(),
+            hardDiskBytes = totalDiskBytes(),
+            screen = screenWh(),
+        ),
+    )
 
     /** 设备序列号：拿不到时返回 "unknown"（官方 DeviceIdHelper 同语义）。 */
     @SuppressLint("MissingPermission", "HardwareIds")

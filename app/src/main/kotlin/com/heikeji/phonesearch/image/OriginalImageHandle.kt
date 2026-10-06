@@ -8,8 +8,8 @@ import android.graphics.Rect
 import android.graphics.RectF
 import androidx.exifinterface.media.ExifInterface
 import com.heikeji.phonesearch.net.ApiException
-import com.heikeji.phonesearch.protocol.ProtocolProfile
-import com.heikeji.phonesearch.protocol.model.SearchMode
+import com.heikeji.phonesearch.protocol.core.NetConfig
+import com.heikeji.phonesearch.protocol.search.model.SearchMode
 import java.io.File
 
 /**
@@ -46,7 +46,7 @@ class OriginalImageHandle private constructor(
     val uploadHeight: Int get() = displayHeight
 
     /** 预览用位图（最长边约 900），调用方负责回收。 */
-    fun previewBitmap(maxEdge: Int = ProtocolProfile.IMAGE_PREVIEW_MAX_EDGE): Bitmap =
+    fun previewBitmap(maxEdge: Int = NetConfig.IMAGE_PREVIEW_MAX_EDGE): Bitmap =
         QuestionImageProcessor.decodePreview(file, maxEdge)
 
     /**
@@ -89,8 +89,8 @@ class OriginalImageHandle private constructor(
         try {
             return QuestionImageProcessor.encode(
                 bitmap = oriented,
-                maxEdge = ProtocolProfile.IMAGE_CROP_OUTPUT_MAX_EDGE,
-                quality = ProtocolProfile.IMAGE_CROP_JPEG_QUALITY,
+                maxEdge = NetConfig.IMAGE_CROP_OUTPUT_MAX_EDGE,
+                quality = NetConfig.IMAGE_CROP_JPEG_QUALITY,
             )
         } finally {
             if (!oriented.isRecycled) oriented.recycle()
@@ -121,7 +121,7 @@ class OriginalImageHandle private constructor(
     private fun decodeRegion(rect: Rect): Bitmap {
         var sample = 1
         while (maxOf(rect.width(), rect.height()) / (sample * 2) >=
-            ProtocolProfile.IMAGE_CROP_OUTPUT_MAX_EDGE
+            NetConfig.IMAGE_CROP_OUTPUT_MAX_EDGE
         ) {
             sample *= 2
         }
@@ -159,7 +159,7 @@ class OriginalImageHandle private constructor(
          */
         fun prepare(source: File, mode: SearchMode): OriginalImageHandle {
             if (!source.isFile) throw ApiException("图片文件不存在，请重新拍摄")
-            if (source.length() > ProtocolProfile.IMAGE_MAX_INPUT_BYTES) {
+            if (source.length() > NetConfig.IMAGE_MAX_INPUT_BYTES) {
                 throw ApiException("图片过大，请重新拍摄或裁剪后再试")
             }
 
@@ -173,12 +173,12 @@ class OriginalImageHandle private constructor(
             val display = ImageOrientation.displaySize(orientation, bounds[0], bounds[1])
 
             val targetEdge = when (mode) {
-                SearchMode.PAGE -> ProtocolProfile.IMAGE_PAGE_OUTPUT_MAX_EDGE
-                else -> ProtocolProfile.IMAGE_OUTPUT_MAX_EDGE
+                SearchMode.PAGE -> NetConfig.IMAGE_PAGE_OUTPUT_MAX_EDGE
+                else -> NetConfig.IMAGE_OUTPUT_MAX_EDGE
             }
             val quality = when (mode) {
-                SearchMode.PAGE -> ProtocolProfile.IMAGE_PAGE_JPEG_QUALITY
-                else -> ProtocolProfile.IMAGE_JPEG_QUALITY
+                SearchMode.PAGE -> NetConfig.IMAGE_PAGE_JPEG_QUALITY
+                else -> NetConfig.IMAGE_JPEG_QUALITY
             }
 
             val decoded = decodeForTarget(source, bounds, targetEdge)

@@ -3,12 +3,15 @@ package com.heikeji.phonesearch.protocol.aiwriting
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.heikeji.phonesearch.protocol.aiwriting.model.WritingMode
-import com.heikeji.phonesearch.protocol.codec.UrlForm
+import com.heikeji.phonesearch.protocol.core.codec.UrlForm
 
 /**
  * AI 作文的请求构造。
  *
- * 与搜题那套完全不同：**没有签名、没有 KDUSS**，只需要 `cuid` + `appid=scancode` + 版本号。
+ * 官方标准说明：作文系列是 **H5 风格接口**（官方在 WebView 里用 JS 调）——
+ * 没有签名、没有 KDUSS，只需要 `cuid` + `appid=scancode` + 版本号，
+ * 走 query 参数 + JSON body，因此**不套用** [com.heikeji.phonesearch.protocol.core.InputBase]
+ * 那套「签名 RPC」模式，按官方 H5 的原始形态保留本构造器。
  * 实测版本号不影响结果（1170/6.49.0 与 1810/7.7.0 都能通），所以沿用本应用现有的版本。
  *
  * 中文与英语是**两套端点、两套参数**（`language` 在 body 里是数字、在 query 里是英文名）。

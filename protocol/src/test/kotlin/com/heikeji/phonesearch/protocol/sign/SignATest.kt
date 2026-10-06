@@ -1,8 +1,8 @@
-package com.heikeji.phonesearch.protocol.sign
+package com.heikeji.phonesearch.protocol.core.sign
 
 import com.heikeji.phonesearch.protocol.ProtocolException
-import com.heikeji.phonesearch.protocol.ProtocolProfile
-import com.heikeji.phonesearch.protocol.crypto.DesCodec
+import com.heikeji.phonesearch.protocol.core.NetConfig
+import com.heikeji.phonesearch.protocol.core.crypto.DesCodec
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -18,7 +18,7 @@ class SignATest {
     private fun signB(secret: String = deviceSecret) =
         DesCodec.encode(
             random10 + "xy" + secret,
-            random10.substring(0, 5) + ProtocolProfile.SIGN_B_KEY_SUFFIX,
+            random10.substring(0, 5) + NetConfig.SIGN_B_KEY_SUFFIX,
         )
 
     @Test
@@ -33,16 +33,16 @@ class SignATest {
     @Test
     fun `build produces the plaintext layout the server expects`() {
         val cipher = signA()
-        val plainLength = ProtocolProfile.SIGN_A_PLAIN_PREFIX.length + 10 + 2 +
-            ProtocolProfile.CERTIFICATE_DIGEST.length + 2 + cuid.length
+        val plainLength = NetConfig.SIGN_A_PLAIN_PREFIX.length + 10 + 2 +
+            NetConfig.CERTIFICATE_DIGEST.length + 2 + cuid.length
         assertEquals(plainLength, 53 + cuid.length)
         assertEquals(((plainLength / 8) + 1) * 8 * 4, cipher.length)
 
-        val decoded = DesCodec.decode(cipher, ProtocolProfile.SIGN_A_KEY)
-        assertEquals(ProtocolProfile.SIGN_A_PLAIN_PREFIX, decoded.substring(0, 7))
+        val decoded = DesCodec.decode(cipher, NetConfig.SIGN_A_KEY)
+        assertEquals(NetConfig.SIGN_A_PLAIN_PREFIX, decoded.substring(0, 7))
         assertEquals(random10, decoded.substring(7, 17))
         assertEquals("##", decoded.substring(17, 19))
-        assertEquals(ProtocolProfile.CERTIFICATE_DIGEST, decoded.substring(19, 51))
+        assertEquals(NetConfig.CERTIFICATE_DIGEST, decoded.substring(19, 51))
         assertEquals("##", decoded.substring(51, 53))
         assertEquals(cuid, decoded.substring(53))
     }
@@ -57,7 +57,7 @@ class SignATest {
         val otherRandom10 = "q7Wm2Zp0Kd"
         val foreignSignB = DesCodec.encode(
             otherRandom10 + "xy" + deviceSecret,
-            otherRandom10.substring(0, 5) + ProtocolProfile.SIGN_B_KEY_SUFFIX,
+            otherRandom10.substring(0, 5) + NetConfig.SIGN_B_KEY_SUFFIX,
         )
         assertThrows { SignA.parseDeviceSecret(cuid, signA(), foreignSignB) }
     }
@@ -82,7 +82,7 @@ class SignATest {
     @Test
     fun `rejects a device secret that does not satisfy the 22 character layout`() {
         // 长度不足 22 的 signB 明文
-        val shortSignB = DesCodec.encode(random10 + "x", random10.substring(0, 5) + ProtocolProfile.SIGN_B_KEY_SUFFIX)
+        val shortSignB = DesCodec.encode(random10 + "x", random10.substring(0, 5) + NetConfig.SIGN_B_KEY_SUFFIX)
         assertThrows { SignA.parseDeviceSecret(cuid, signA(), shortSignB) }
     }
 

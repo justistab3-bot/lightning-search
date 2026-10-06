@@ -1,16 +1,16 @@
 package com.heikeji.phonesearch.protocol.probe
 
 import com.google.gson.JsonParser
-import com.heikeji.phonesearch.protocol.ProtocolProfile
-import com.heikeji.phonesearch.protocol.codec.Base64NoWrap
-import com.heikeji.phonesearch.protocol.codec.UrlForm
-import com.heikeji.phonesearch.protocol.crypto.Digests
-import com.heikeji.phonesearch.protocol.crypto.Rc4
-import com.heikeji.phonesearch.protocol.crypto.ResponseKey
-import com.heikeji.phonesearch.protocol.decode.AnswerDecoder
-import com.heikeji.phonesearch.protocol.envelope.Envelope
-import com.heikeji.phonesearch.protocol.sign.RequestSigner
-import com.heikeji.phonesearch.protocol.sign.SignA
+import com.heikeji.phonesearch.protocol.core.NetConfig
+import com.heikeji.phonesearch.protocol.core.codec.Base64NoWrap
+import com.heikeji.phonesearch.protocol.core.codec.UrlForm
+import com.heikeji.phonesearch.protocol.core.crypto.Digests
+import com.heikeji.phonesearch.protocol.core.crypto.Rc4
+import com.heikeji.phonesearch.protocol.core.crypto.ResponseKey
+import com.heikeji.phonesearch.protocol.search.decode.AnswerDecoder
+import com.heikeji.phonesearch.protocol.core.envelope.Envelope
+import com.heikeji.phonesearch.protocol.core.sign.RequestSigner
+import com.heikeji.phonesearch.protocol.core.sign.SignA
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 import java.awt.Color
@@ -51,7 +51,7 @@ import javax.imageio.ImageIO
  */
 class ContentGateProbeTest {
 
-    private val host = ProtocolProfile.HOST_KDDZY
+    private val host = NetConfig.HOST_KDDZY
 
     @Test
     fun `probe answer content with official params`() {
@@ -90,7 +90,7 @@ class ContentGateProbeTest {
             cuid = cuid,
             digest = digest,
             jpeg = jpeg,
-            path = ProtocolProfile.PATH_PAGE_SEARCH,
+            path = NetConfig.PATH_PAGE_SEARCH,
             extra = mapOf(
                 "picMD5" to Digests.md5Upper(jpeg),
                 "shumei" to "",
@@ -226,18 +226,18 @@ class ContentGateProbeTest {
         "adid" to "",
         "province" to "",
         "osVersion" to "16",
-        "pkgName" to ProtocolProfile.PKG_NAME,
+        "pkgName" to NetConfig.PKG_NAME,
         "appId" to "scancode",
         "brand" to "Xiaomi",
         "identityIdV2" to "0",
         "area" to "",
         "cuid" to cuid,
-        "os" to ProtocolProfile.OS,
+        "os" to NetConfig.OS,
         "abis" to "1",
         "vc" to "1810",
-        "token" to ProtocolProfile.TOKEN,
+        "token" to NetConfig.TOKEN,
         "digGrade" to "0",
-        "isPad" to ProtocolProfile.IS_PAD,
+        "isPad" to NetConfig.IS_PAD,
         "vcname" to "7.7.0",
         "sdk" to "36",
         "device" to "luming",
@@ -272,8 +272,8 @@ class ContentGateProbeTest {
             connection.doOutput = true
             connection.setRequestProperty("Accept", "application/json")
             connection.setRequestProperty("Accept-Encoding", "identity")
-            connection.setRequestProperty("Content-Type", ProtocolProfile.FORM_CONTENT_TYPE)
-            connection.setRequestProperty("User-Agent", ProtocolProfile.USER_AGENT)
+            connection.setRequestProperty("Content-Type", NetConfig.FORM_CONTENT_TYPE)
+            connection.setRequestProperty("User-Agent", NetConfig.USER_AGENT)
             connection.setRequestProperty("Cookie", "cuid=" + UrlForm.encode(cuid))
             val bytes = UrlForm.encodeForm(merged).toByteArray(Charsets.UTF_8)
             connection.setFixedLengthStreamingMode(bytes.size)
@@ -314,7 +314,7 @@ class ContentGateProbeTest {
         params["_t_"] = tSeconds.toString()
         params["kakorrhaphiophobia"] = uptime.toString()
 
-        val boundary = ProtocolProfile.MULTIPART_BOUNDARY_PREFIX +
+        val boundary = NetConfig.MULTIPART_BOUNDARY_PREFIX +
             UUID.randomUUID().toString().replace("-", "")
         val body = multipart(boundary, jpeg, params)
 
@@ -328,7 +328,7 @@ class ContentGateProbeTest {
                 "Content-Type",
                 "multipart/form-data; boundary=$boundary",
             )
-            connection.setRequestProperty("User-Agent", ProtocolProfile.USER_AGENT)
+            connection.setRequestProperty("User-Agent", NetConfig.USER_AGENT)
             connection.setRequestProperty("Cookie", "cuid=" + UrlForm.encode(cuid))
             connection.setFixedLengthStreamingMode(body.size)
             connection.outputStream.use { it.write(body) }
@@ -381,14 +381,14 @@ class ContentGateProbeTest {
         params["data"] = signA
         for ((k, v) in officialCommon(cuid)) if (!params.containsKey(k)) params[k] = v
 
-        val connection = open("$host${ProtocolProfile.PATH_ANTISPAM}")
+        val connection = open("$host${NetConfig.PATH_ANTISPAM}")
         return try {
             connection.requestMethod = "POST"
             connection.doOutput = true
             connection.setRequestProperty("Accept", "application/json")
             connection.setRequestProperty("Accept-Encoding", "gzip")
-            connection.setRequestProperty("Content-Type", ProtocolProfile.FORM_CONTENT_TYPE)
-            connection.setRequestProperty("User-Agent", ProtocolProfile.USER_AGENT)
+            connection.setRequestProperty("Content-Type", NetConfig.FORM_CONTENT_TYPE)
+            connection.setRequestProperty("User-Agent", NetConfig.USER_AGENT)
             val bytes = UrlForm.encodeForm(params).toByteArray(Charsets.UTF_8)
             connection.setFixedLengthStreamingMode(bytes.size)
             connection.outputStream.use { it.write(bytes) }

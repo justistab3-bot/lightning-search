@@ -1,6 +1,6 @@
 package com.heikeji.phonesearch.search
 
-import com.heikeji.phonesearch.protocol.model.SearchMode
+import com.heikeji.phonesearch.protocol.search.model.SearchMode
 
 /**
  * 一次搜索的不可变上下文，对应原 `O0.l`。

@@ -1,6 +1,6 @@
 package com.heikeji.phonesearch.protocol.render
 
-import com.heikeji.phonesearch.protocol.model.AnswerItem
+import com.heikeji.phonesearch.protocol.search.model.AnswerItem
 
 /**
  * 把一条 [AnswerItem] 渲染成答案页 WebView 的完整 HTML。

@@ -1,14 +1,14 @@
 package com.heikeji.phonesearch.net
 
 import com.heikeji.phonesearch.protocol.ProtocolException
-import com.heikeji.phonesearch.protocol.ProtocolProfile
+import com.heikeji.phonesearch.protocol.core.NetConfig
 import com.heikeji.phonesearch.protocol.aiwriting.AiWritingEventParser
 import com.heikeji.phonesearch.protocol.aiwriting.AiWritingRequest
 import com.heikeji.phonesearch.protocol.aiwriting.EssayLanguage
 import com.heikeji.phonesearch.protocol.aiwriting.SseParser
 import com.heikeji.phonesearch.protocol.aiwriting.model.AiWritingEvent
 import com.heikeji.phonesearch.protocol.aiwriting.model.WritingMode
-import com.heikeji.phonesearch.protocol.codec.UrlForm
+import com.heikeji.phonesearch.protocol.core.codec.UrlForm
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.IOException
@@ -108,7 +108,7 @@ class AiWritingClient {
             language = language,
             describe = describe,
         )
-        val url = ProtocolProfile.HOST_API_KDDZY + path + "?" + query
+        val url = NetConfig.HOST_API_KDDZY + path + "?" + query
         val connection = open(url)
         try {
             connection.requestMethod = "GET"
@@ -170,11 +170,11 @@ class AiWritingClient {
     }
 
     private fun postJson(cuid: String, path: String, query: String, body: String): JSONObject? {
-        val url = ProtocolProfile.HOST_API_KDDZY + path + if (query.isEmpty()) "" else "?$query"
+        val url = NetConfig.HOST_API_KDDZY + path + if (query.isEmpty()) "" else "?$query"
         val connection = open(url)
         return try {
             connection.requestMethod = "POST"
-            connection.readTimeout = ProtocolProfile.READ_TIMEOUT_MS
+            connection.readTimeout = NetConfig.READ_TIMEOUT_MS
             connection.doOutput = true
             applyCommonHeaders(connection, cuid)
             connection.setRequestProperty("Accept", "application/json, text/plain, */*")
@@ -199,11 +199,11 @@ class AiWritingClient {
     }
 
     private fun getJson(cuid: String, path: String, query: String): JSONObject? {
-        val url = ProtocolProfile.HOST_API_KDDZY + path + if (query.isEmpty()) "" else "?$query"
+        val url = NetConfig.HOST_API_KDDZY + path + if (query.isEmpty()) "" else "?$query"
         val connection = open(url)
         return try {
             connection.requestMethod = "GET"
-            connection.readTimeout = ProtocolProfile.READ_TIMEOUT_MS
+            connection.readTimeout = NetConfig.READ_TIMEOUT_MS
             applyCommonHeaders(connection, cuid)
             connection.setRequestProperty("Accept", "application/json, text/plain, */*")
             connection.setRequestProperty("Accept-Encoding", "identity")
@@ -229,25 +229,25 @@ class AiWritingClient {
     }
 
     private fun applyCommonHeaders(connection: HttpURLConnection, cuid: String) {
-        connection.setRequestProperty("appid", ProtocolProfile.APP_ID)
+        connection.setRequestProperty("appid", NetConfig.APP_ID)
         connection.setRequestProperty("cuid", cuid)
-        connection.setRequestProperty("vc", ProtocolProfile.VC)
-        connection.setRequestProperty("vcname", ProtocolProfile.VC_NAME)
-        connection.setRequestProperty("channel", ProtocolProfile.CHANNEL)
-        connection.setRequestProperty("os", ProtocolProfile.OS)
-        connection.setRequestProperty("Origin", ProtocolProfile.HOST_KDDZY)
-        connection.setRequestProperty("Referer", ProtocolProfile.HOST_KDDZY + "/")
-        connection.setRequestProperty("X-Requested-With", ProtocolProfile.PKG_NAME)
+        connection.setRequestProperty("vc", NetConfig.VC)
+        connection.setRequestProperty("vcname", NetConfig.VC_NAME)
+        connection.setRequestProperty("channel", NetConfig.CHANNEL)
+        connection.setRequestProperty("os", NetConfig.OS)
+        connection.setRequestProperty("Origin", NetConfig.HOST_KDDZY)
+        connection.setRequestProperty("Referer", NetConfig.HOST_KDDZY + "/")
+        connection.setRequestProperty("X-Requested-With", NetConfig.PKG_NAME)
         connection.setRequestProperty("Cookie", "cuid=" + UrlForm.encode(cuid))
-        connection.setRequestProperty("User-Agent", ProtocolProfile.AI_WRITING_USER_AGENT)
+        connection.setRequestProperty("User-Agent", NetConfig.AI_WRITING_USER_AGENT)
     }
 
     private fun open(url: String): HttpURLConnection {
-        if (!url.startsWith(ProtocolProfile.HOST_API_KDDZY + "/")) {
+        if (!url.startsWith(NetConfig.HOST_API_KDDZY + "/")) {
             throw ProtocolException("请求地址无效")
         }
         val connection = URL(url).openConnection() as HttpURLConnection
-        connection.connectTimeout = ProtocolProfile.CONNECT_TIMEOUT_MS
+        connection.connectTimeout = NetConfig.CONNECT_TIMEOUT_MS
         connection.instanceFollowRedirects = false
         connection.useCaches = false
         return connection

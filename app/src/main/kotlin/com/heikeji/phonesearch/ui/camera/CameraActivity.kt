@@ -18,7 +18,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import com.heikeji.phonesearch.R
 import com.heikeji.phonesearch.databinding.ActivityCameraBinding
-import com.heikeji.phonesearch.protocol.model.SearchMode
+import com.heikeji.phonesearch.protocol.search.model.SearchMode
 import com.heikeji.phonesearch.ui.common.SearchEntry
 import com.heikeji.phonesearch.ui.common.applySystemBarPadding
 import com.heikeji.phonesearch.ui.common.showMessage

@@ -1,14 +1,14 @@
 package com.heikeji.phonesearch.protocol.probe
 
 import com.google.gson.JsonParser
-import com.heikeji.phonesearch.protocol.ProtocolProfile
-import com.heikeji.phonesearch.protocol.codec.UrlForm
-import com.heikeji.phonesearch.protocol.crypto.Digests
-import com.heikeji.phonesearch.protocol.crypto.ResponseKey
-import com.heikeji.phonesearch.protocol.decode.AnswerDecoder
-import com.heikeji.phonesearch.protocol.envelope.Envelope
-import com.heikeji.phonesearch.protocol.sign.RequestSigner
-import com.heikeji.phonesearch.protocol.sign.SignA
+import com.heikeji.phonesearch.protocol.core.NetConfig
+import com.heikeji.phonesearch.protocol.core.codec.UrlForm
+import com.heikeji.phonesearch.protocol.core.crypto.Digests
+import com.heikeji.phonesearch.protocol.core.crypto.ResponseKey
+import com.heikeji.phonesearch.protocol.search.decode.AnswerDecoder
+import com.heikeji.phonesearch.protocol.core.envelope.Envelope
+import com.heikeji.phonesearch.protocol.core.sign.RequestSigner
+import com.heikeji.phonesearch.protocol.core.sign.SignA
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 import java.awt.Color
@@ -39,7 +39,7 @@ import javax.imageio.ImageIO
  */
 class ContentGateParamProbeTest {
 
-    private val host = ProtocolProfile.HOST_KDDZY
+    private val host = NetConfig.HOST_KDDZY
 
     @Test
     fun `probe which param unlocks real content`() {
@@ -93,7 +93,7 @@ class ContentGateParamProbeTest {
         extra["identityIdV2"] = if (identity) "1" else "0"
         extra["digGrade"] = if (getdiggrade) "6" else "0"
 
-        val resp = multipartSearch(cuid, digest, jpeg, ProtocolProfile.PATH_PAGE_SEARCH, extra)
+        val resp = multipartSearch(cuid, digest, jpeg, NetConfig.PATH_PAGE_SEARCH, extra)
         val dumpFile = java.io.File("build/content-probe-${name.take(2)}.json")
         dumpFile.writeText(resp)
         println("响应已存 ${dumpFile.name}（${resp.length} 字符）")
@@ -132,26 +132,26 @@ class ContentGateParamProbeTest {
     /** 老版本参数（我们的当前值），identity 由参数控制。 */
     private fun oldCommon(cuid: String, identity: Boolean): Map<String, String> = linkedMapOf(
         "city" to "",
-        "channel" to ProtocolProfile.CHANNEL,
+        "channel" to NetConfig.CHANNEL,
         "appBit" to "64",
         "occupationType" to "0",
         "phoneDevice" to "luming",
         "adid" to "",
         "province" to "",
         "osVersion" to "16",
-        "pkgName" to ProtocolProfile.PKG_NAME,
+        "pkgName" to NetConfig.PKG_NAME,
         "appId" to "scancode",
         "brand" to "Xiaomi",
         "identityIdV2" to if (identity) "1" else "0",
         "area" to "",
         "cuid" to cuid,
-        "os" to ProtocolProfile.OS,
+        "os" to NetConfig.OS,
         "abis" to "1",
-        "vc" to ProtocolProfile.VC,
-        "token" to ProtocolProfile.TOKEN,
+        "vc" to NetConfig.VC,
+        "token" to NetConfig.TOKEN,
         "digGrade" to "0",
-        "isPad" to ProtocolProfile.IS_PAD,
-        "vcname" to ProtocolProfile.VC_NAME,
+        "isPad" to NetConfig.IS_PAD,
+        "vcname" to NetConfig.VC_NAME,
         "sdk" to "36",
         "device" to "luming",
         "operatorid" to "0",
@@ -178,8 +178,8 @@ class ContentGateParamProbeTest {
             connection.doOutput = true
             connection.setRequestProperty("Accept", "application/json")
             connection.setRequestProperty("Accept-Encoding", "identity")
-            connection.setRequestProperty("Content-Type", ProtocolProfile.FORM_CONTENT_TYPE)
-            connection.setRequestProperty("User-Agent", ProtocolProfile.USER_AGENT)
+            connection.setRequestProperty("Content-Type", NetConfig.FORM_CONTENT_TYPE)
+            connection.setRequestProperty("User-Agent", NetConfig.USER_AGENT)
             connection.setRequestProperty("Cookie", "cuid=" + UrlForm.encode(cuid))
             val bytes = UrlForm.encodeForm(merged).toByteArray(Charsets.UTF_8)
             connection.setFixedLengthStreamingMode(bytes.size)
@@ -213,7 +213,7 @@ class ContentGateParamProbeTest {
         )
         params["_t_"] = tSeconds.toString()
         params["kakorrhaphiophobia"] = uptime.toString()
-        val boundary = ProtocolProfile.MULTIPART_BOUNDARY_PREFIX +
+        val boundary = NetConfig.MULTIPART_BOUNDARY_PREFIX +
             UUID.randomUUID().toString().replace("-", "")
         val body = multipart(boundary, jpeg, params)
         val connection = open("$host$path")
@@ -223,7 +223,7 @@ class ContentGateParamProbeTest {
             connection.setRequestProperty("Accept", "application/json")
             connection.setRequestProperty("Accept-Encoding", "identity")
             connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
-            connection.setRequestProperty("User-Agent", ProtocolProfile.USER_AGENT)
+            connection.setRequestProperty("User-Agent", NetConfig.USER_AGENT)
             connection.setRequestProperty("Cookie", "cuid=" + UrlForm.encode(cuid))
             connection.setFixedLengthStreamingMode(body.size)
             connection.outputStream.use { it.write(body) }
@@ -266,14 +266,14 @@ class ContentGateParamProbeTest {
         val params = LinkedHashMap<String, String?>()
         params["data"] = signA
         for ((k, v) in oldCommon(cuid, false)) if (!params.containsKey(k)) params[k] = v
-        val connection = open("$host${ProtocolProfile.PATH_ANTISPAM}")
+        val connection = open("$host${NetConfig.PATH_ANTISPAM}")
         return try {
             connection.requestMethod = "POST"
             connection.doOutput = true
             connection.setRequestProperty("Accept", "application/json")
             connection.setRequestProperty("Accept-Encoding", "gzip")
-            connection.setRequestProperty("Content-Type", ProtocolProfile.FORM_CONTENT_TYPE)
-            connection.setRequestProperty("User-Agent", ProtocolProfile.USER_AGENT)
+            connection.setRequestProperty("Content-Type", NetConfig.FORM_CONTENT_TYPE)
+            connection.setRequestProperty("User-Agent", NetConfig.USER_AGENT)
             val bytes = UrlForm.encodeForm(params).toByteArray(Charsets.UTF_8)
             connection.setFixedLengthStreamingMode(bytes.size)
             connection.outputStream.use { it.write(bytes) }
