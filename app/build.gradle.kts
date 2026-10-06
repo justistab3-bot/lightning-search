@@ -13,11 +13,12 @@ android {
 
     defaultConfig {
         applicationId = "com.heikeji.phonesearch"
-        minSdk = 24
+        // 21 = Android 5.0。词典笔这类设备普遍停在 5.x/6.x。
+        minSdk = 21
         targetSdk = 37
         // 每轮迭代都往上走：装到机器上后可以直接从「设置 - 应用」或首页底部确认版本。
-        versionCode = 25
-        versionName = "1.25.0"
+        versionCode = 26
+        versionName = "1.26.0"
     }
 
     buildTypes {
@@ -29,6 +30,9 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // :protocol 是纯 JVM 模块，用了 Java 8+ 的 API（java.util.Base64、Optional 等），
+        // Android 5.0 上没有，必须靠脱糖在编译期改写成等价实现。
+        isCoreLibraryDesugaringEnabled = true
     }
 
     buildFeatures {
@@ -63,6 +67,8 @@ dependencies {
     implementation(libs.androidx.camera.view)
     implementation(libs.material)
     implementation(libs.kotlinx.coroutines.android)
+
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
 
     testImplementation(libs.junit)
     // 单元测试跑在 JVM 上，android.jar 里的 org.json 是桩实现（一调用就抛 not mocked）。

@@ -57,7 +57,7 @@ class DeviceIdentity(context: Context) {
         params["osVersion"] = Build.VERSION.RELEASE
         params["brand"] = Build.BRAND
         params["abis"] = if (Build.SUPPORTED_ABIS.any { it == "arm64-v8a" }) "1" else "0"
-        params["appBit"] = if (Process.is64Bit()) "64" else "32"
+        params["appBit"] = if (is64Bit()) "64" else "32"
         params["adid"] = ""
         params["phoneDevice"] = Build.DEVICE
         params["identityIdV2"] = "0"
@@ -67,17 +67,40 @@ class DeviceIdentity(context: Context) {
         return params
     }
 
+    /**
+     * 当前进程是不是 64 位。
+     *
+     * `Process.is64Bit()` 是 API 23 才有的，本应用最低支持 5.0（API 21），
+     * 所以在老系统上退回到「设备支持哪些 ABI」来判断。
+     */
+    private fun is64Bit(): Boolean =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Process.is64Bit()
+        } else {
+            Build.SUPPORTED_64_BIT_ABIS.isNotEmpty()
+        }
+
     /** Wi-Fi 为 "wifi"，其他为 "mobile"（原 P0.a.f）。 */
     fun networkType(): String = try {
         val manager = appContext.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
-        val network = manager?.activeNetwork
-        val capabilities = network?.let { manager.getNetworkCapabilities(it) }
-        if (capabilities != null &&
-            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
-        ) {
-            "wifi"
-        } else {
+        if (manager == null) {
             "mobile"
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val capabilities = manager.activeNetwork?.let { manager.getNetworkCapabilities(it) }
+            if (capabilities != null &&
+                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+            ) {
+                "wifi"
+            } else {
+                "mobile"
+            }
+        } else {
+            // getActiveNetwork() 是 API 23 才有的；5.0/5.1 用老接口。
+            // getActiveNetworkInfo 虽已废弃，但在 minSdk 21 上仍可用。
+            @Suppress("DEPRECATION")
+            val info = manager.activeNetworkInfo
+            @Suppress("DEPRECATION")
+            if (info != null && info.type == ConnectivityManager.TYPE_WIFI) "wifi" else "mobile"
         }
     } catch (e: SecurityException) {
         "mobile"

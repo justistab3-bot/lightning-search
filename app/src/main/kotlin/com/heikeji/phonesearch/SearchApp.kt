@@ -35,6 +35,7 @@ class SearchApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        enableTls12OnOldDevices()
         container = AppContainer(this)
         container.network.start()
 
@@ -43,6 +44,24 @@ class SearchApp : Application() {
 
         registerActivityLifecycleCallbacks(ActivityTracker())
         observeConnectivity()
+    }
+
+    /**
+     * Android 5.x 上把 TLS 1.2 显式打开。
+     *
+     * 本应用所有接口都是 https，而老系统的 `HttpsURLConnection` 默认协议列表里
+     * 不一定包含 TLS 1.2 —— 一旦服务端只收 TLS 1.2，表现就是「所有请求都失败」，
+     * 而且报错很难懂。API 22 以后系统默认就带上了，所以只在前面对付。
+     */
+    private fun enableTls12OnOldDevices() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP_MR1) return
+        try {
+            val context = javax.net.ssl.SSLContext.getInstance("TLSv1.2")
+            context.init(null, null, null)
+            javax.net.ssl.HttpsURLConnection.setDefaultSSLSocketFactory(context.socketFactory)
+        } catch (e: Exception) {
+            // 拿不到就维持系统默认，至少不至于起不来
+        }
     }
 
     /**

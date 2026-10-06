@@ -33,8 +33,10 @@
         <item name="android:windowBackground">@color/parchment</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:windowLightStatusBar">true</item>
-        <item name="android:windowLightNavigationBar">true</item>
+        <!-- 深色图标：23/27 以下系统没有这两个属性，会被直接忽略（不是崩溃），
+             所以标记 targetApi 让 lint 别报 NewApi。 -->
+        <item name="android:windowLightStatusBar" tools:targetApi="23">true</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">true</item>
     </style>
 
     <!-- 相机 / 裁剪：暖炭色沉浸式 -->
@@ -44,8 +46,8 @@
         <item name="colorSurface">@color/deep_dark</item>
         <item name="colorOnSurface">@color/ivory</item>
         <item name="colorSurfaceContainerLow">@color/dark_surface</item>
-        <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="23">false</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">false</item>
     </style>
 
     <!-- 首页：暖底，浅色状态栏图标由头部承担 -->

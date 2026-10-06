@@ -2,6 +2,7 @@ package com.heikeji.phonesearch.net
 
 import com.heikeji.phonesearch.protocol.ProtocolException
 import com.heikeji.phonesearch.protocol.ProtocolProfile
+import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
@@ -128,7 +129,9 @@ class HttpTransport {
             StreamHandle(
                 connection = connection,
                 statusCode = status,
-                reader = (stream ?: InputStream.nullInputStream()).bufferedReader(),
+                // 不能用 InputStream.nullInputStream()：那是 API 33 才有的，
+                // 本应用最低支持 5.0。
+                reader = (stream ?: ByteArrayInputStream(ByteArray(0))).bufferedReader(),
             )
         } catch (e: Exception) {
             connection.disconnect()

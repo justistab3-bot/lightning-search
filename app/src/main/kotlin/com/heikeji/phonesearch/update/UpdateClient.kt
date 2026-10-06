@@ -108,7 +108,7 @@ object UpdateClient {
             if (connection.responseCode !in 200..299) {
                 throw IOException("下载失败（HTTP ${connection.responseCode}）")
             }
-            val total = connection.contentLengthLong
+            val total = contentLengthOf(connection)
             if (total > UpdateConfig.MAX_APK_BYTES) throw IOException("安装包过大，已中止")
 
             target.parentFile?.mkdirs()
@@ -149,6 +149,15 @@ object UpdateClient {
     }
 
     /** 用 HEAD 拿一下文件大小，失败返回 -1（Gitee 的附件不一定支持 HEAD）。 */
+    /**
+     * 读 Content-Length。
+     *
+     * `URLConnection.contentLengthLong` 是 API 24 才有的，本应用最低支持 5.0，
+     * 所以自己解析响应头。
+     */
+    private fun contentLengthOf(connection: java.net.URLConnection): Long =
+        connection.getHeaderField("Content-Length")?.trim()?.toLongOrNull() ?: -1L
+
     fun contentLength(url: String): Long {
         if (!url.startsWith("https://")) return -1
         return try {
@@ -159,7 +168,7 @@ object UpdateClient {
                 setRequestProperty("User-Agent", USER_AGENT)
             }
             try {
-                if (connection.responseCode in 200..299) connection.contentLengthLong else -1
+                if (connection.responseCode in 200..299) contentLengthOf(connection) else -1
             } finally {
                 connection.disconnect()
             }

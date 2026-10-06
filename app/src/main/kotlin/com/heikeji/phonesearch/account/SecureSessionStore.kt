@@ -1,6 +1,7 @@
 package com.heikeji.phonesearch.account
 
 import android.content.Context
+import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
@@ -18,12 +19,17 @@ import javax.crypto.spec.GCMParameterSpec
  *
  * Android Keystore alias `watch_search_session_v1`，AES/GCM/NoPadding，256 位密钥；
  * iv 与密文以 Base64(NO_WRAP) 存进 `secure_account` SharedPreferences。
- * **禁止明文落盘**。
+ *
+ * **API 21/22 的降级**：`KeyGenParameterSpec` 是 API 23 才有的，Android 5.0/5.1
+ * 上拿不到硬件密钥库。这时改用「设备标识派生密钥」的软件 AES —— 强度明显弱于
+ * 硬件密钥库（能读到设备标识的人就能解密），但比明文落盘好：
+ * 光把 SharedPreferences 文件拷走是解不开的。见 [softwareKey]。
  */
 class SecureSessionStore(context: Context) {
 
-    private val prefs = context.applicationContext
-        .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    private val appContext = context.applicationContext
+
+    private val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     fun load(): AccountSession? {
         val iv = prefs.getString(KEY_IV, null)
@@ -89,6 +95,8 @@ class SecureSessionStore(context: Context) {
     }
 
     private fun secretKey(): SecretKey {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return softwareKey()
+
         val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
         val existing = keyStore.getEntry(ALIAS, null) as? KeyStore.SecretKeyEntry
         if (existing != null) return existing.secretKey
@@ -105,6 +113,26 @@ class SecureSessionStore(context: Context) {
                 .build(),
         )
         return generator.generateKey()
+    }
+
+    /**
+     * API 21/22 的软件密钥。
+     *
+     * 用「ANDROID_ID + 包名 + 固定盐」派生，**不落盘** —— 这样即使有人把
+     * SharedPreferences 文件拷到别的设备上也解不开。但在同一台设备上，
+     * 其他应用（Android 8 以前 ANDROID_ID 对所有应用可见）理论上能推出来，
+     * 所以强度不如 Keystore。这是老系统上能做的最好的折中。
+     */
+    private fun softwareKey(): SecretKey {
+        @Suppress("DEPRECATION")
+        val androidId = android.provider.Settings.Secure.getString(
+            appContext.contentResolver,
+            android.provider.Settings.Secure.ANDROID_ID,
+        ).orEmpty()
+        val material = "$androidId|${appContext.packageName}|$ALIAS"
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+            .digest(material.toByteArray(Charsets.UTF_8))
+        return javax.crypto.spec.SecretKeySpec(digest, "AES")
     }
 
     private companion object {

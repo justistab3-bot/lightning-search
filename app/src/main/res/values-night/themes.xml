@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <style name="Theme.FlashSearch" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowLightNavigationBar">false</item>
+        <!-- 深色主题下状态栏/导航栏用浅色图标。这两个属性 23/27 以下不存在，
+             会被系统忽略（不是崩溃），标记 targetApi 让 lint 别报 NewApi。 -->
+        <item name="android:windowLightStatusBar" tools:targetApi="23">false</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">false</item>
     </style>
 </resources>
