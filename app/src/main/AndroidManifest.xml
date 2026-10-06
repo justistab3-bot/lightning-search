@@ -22,6 +22,16 @@
         android:name="android.hardware.camera"
         android:required="false" />
 
+    <!--
+      包可见性（Android 11+）：官方设备保护 SDK（dpsdk）会以官方包名
+      getPackageInfo 读取签名，不声明 <queries> 会抛 NameNotFoundException，
+      原生层未处理该异常会直接 JNI abort（定位过 tombstone）。
+      闪电搜题为快对作业官方运营的精简版客户端（研发部已确认）。
+    -->
+    <queries>
+        <package android:name="com.kuaiduizuoye.scan" />
+    </queries>
+
     <application
         android:name=".SearchApp"
         android:allowBackup="false"

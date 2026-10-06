@@ -135,7 +135,20 @@ class ApiClient(
         } else {
             ProtocolProfile.PATH_SEARCH
         }
-        val data = post(ProtocolProfile.HOST_KDDZY, path, params, jpeg, null)
+        val data = try {
+            DiagLog.append("searchRaw 开始 mode=$mode grade=$grade")
+            post(ProtocolProfile.HOST_KDDZY, path, params, jpeg, null)
+        } catch (e: Exception) {
+            DiagLog.append("searchRaw 请求异常：${e.javaClass.simpleName}: ${e.message}")
+            throw e
+        }
+        val searchInfo = data.optJSONObject("searchInfo")
+        val answersObj = data.optJSONObject("answers")
+        DiagLog.append(
+            "searchRaw 完成 subject=${searchInfo?.optString("subjectName")} " +
+                "count=${answersObj?.optInt("count", -1)} " +
+                "validatedInfo=${data.optString("validatedInfo").isNotEmpty()}",
+        )
         // validatedInfo 只是「本次命中了风控规则」的**提示**，不代表搜题失败。
         // 实测（抓包对比）：服务器在同一次成功响应里既返回完整答案
         // （answers.count=4、locs、locInfo 一应俱全），又带上 validatedInfo。
@@ -170,6 +183,7 @@ class ApiClient(
     fun ensureDid() {
         if (identity.did.isNotEmpty() || didAttempted) return
         didAttempted = true
+        DiagLog.append("ensureDid 开始")
         try {
             val params = LinkedHashMap<String, String?>()
             params["param"] = identity.didPayload()
@@ -178,9 +192,11 @@ class ApiClient(
                 ProtocolProfile.PATH_GETDID,
                 params,
             )
-            identity.updateDid(data.optString("did", ""))
+            val newDid = data.optString("did", "")
+            DiagLog.append("ensureDid 返回 did=${newDid.length} 字符")
+            identity.updateDid(newDid)
         } catch (e: Exception) {
-            // 设备 ID 上报失败不阻塞搜题。
+            DiagLog.append("ensureDid 异常：${e.javaClass.simpleName}: ${e.message}")
         }
     }
 
@@ -196,6 +212,7 @@ class ApiClient(
     fun ensureDigGrade(grade: Int) {
         if (digGradeAttempted) return
         digGradeAttempted = true
+        DiagLog.append("ensureDigGrade 开始 grade=$grade")
         try {
             val params = LinkedHashMap<String, String?>()
             params["grade"] = grade.toString()
@@ -204,9 +221,11 @@ class ApiClient(
                 ProtocolProfile.PATH_DIG_GRADE,
                 params,
             )
-            identity.updateDigGrade(data.optString("digGrade", ""))
+            val dg = data.optString("digGrade", "")
+            DiagLog.append("ensureDigGrade 返回 digGrade=$dg")
+            identity.updateDigGrade(dg)
         } catch (e: Exception) {
-            // 学段上报失败不阻塞搜题。
+            DiagLog.append("ensureDigGrade 异常：${e.javaClass.simpleName}: ${e.message}")
         }
     }
 

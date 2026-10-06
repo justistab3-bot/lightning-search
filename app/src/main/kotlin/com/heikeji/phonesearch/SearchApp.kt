@@ -13,6 +13,7 @@ import com.heikeji.phonesearch.data.StorageCleaner
 import com.heikeji.phonesearch.net.ApiClient
 import com.heikeji.phonesearch.net.AiWritingClient
 import com.heikeji.phonesearch.net.ChatClient
+import com.heikeji.phonesearch.net.DiagLog
 import com.heikeji.phonesearch.net.DeviceIdentity
 import com.heikeji.phonesearch.net.HttpTransport
 import com.heikeji.phonesearch.net.NetworkMonitor
@@ -41,14 +42,31 @@ class SearchApp : Application() {
         // 友盟预初始化：不采集任何信息，但必须在 Application.onCreate 里调，
         // 否则首次启动的日活会漏统。正式初始化要等用户同意隐私政策（见 Analytics）。
         Analytics.preInit(this)
+        DiagLog.init(this)
         container = AppContainer(this)
         container.network.start()
+
+        // 崩溃落盘：原生 abort 没有 logcat 时，靠这个文件定位
+        // （Android/data/com.heikeji.phonesearch/files/protocol-log.txt）。
+        installCrashFileLogger()
 
         // 磁盘回收：清掉陈旧安装包与相机临时图（后台做，不挡启动）
         scope.launch(Dispatchers.IO) { StorageCleaner.sweep(this@SearchApp) }
 
         registerActivityLifecycleCallbacks(ActivityTracker())
         observeConnectivity()
+    }
+
+    /** 未捕获异常追加到 protocol-log.txt，再交给原处理器（保留友盟上报链）。 */
+    private fun installCrashFileLogger() {
+        val previous = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            DiagLog.append(
+                "CRASH ${thread.name} ${throwable.javaClass.name}: ${throwable.message}",
+            )
+            throwable.stackTrace.take(10).forEach { DiagLog.append("  at $it") }
+            previous?.uncaughtException(thread, throwable)
+        }
     }
 
     /**
@@ -151,7 +169,9 @@ class AppContainer(context: Context) {
 
     init {
         sessions.restore()
-        // 预热官方设备保护 SDK（后台异步，同官方启动流程）；票据首搜前就绪。
+        // 预热官方设备保护 SDK（后台异步，同官方启动流程）：
+        // 票据要几秒后才可用，启动时先初始化，首搜就能拿到（v1.33.2 已修掉
+        // 之前的 JNI abort —— manifest <queries> + 官方 APP 安装预检查）。
         PhoneNativeSdk.preInit(context)
     }
 }

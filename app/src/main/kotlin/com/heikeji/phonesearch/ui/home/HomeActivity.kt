@@ -10,6 +10,8 @@ import android.provider.MediaStore
 import android.view.View
 import android.view.animation.DecelerateInterpolator
 import android.webkit.CookieManager
+import android.Manifest
+import android.content.pm.PackageManager
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -162,6 +164,20 @@ class HomeActivity : AppCompatActivity() {
 
     private var pendingCaptureFile: File? = null
 
+    /**
+     * 相机权限回调：同意后立即拉起系统相机。
+     *
+     * 背景（U-APM 崩溃日志定位）：重装后运行时权限会被重置，此时若直接启动
+     * ACTION_IMAGE_CAPTURE，系统会抛
+     * `SecurityException: ... with revoked permission android.permission.CAMERA`。
+     * 所以长按之前必须先检查/申请权限，和内置相机（CameraActivity）一致。
+     */
+    private val cameraPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) launchSystemCameraNow()
+    }
+
     private val systemCameraLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult(),
     ) { result ->
@@ -191,6 +207,19 @@ class HomeActivity : AppCompatActivity() {
      * 系统相机自己会按 EXIF 记录方向，所以这里不做额外旋转（`extraRotation = 0`）。
      */
     private fun launchSystemCamera() {
+        val granted = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.CAMERA,
+        ) == PackageManager.PERMISSION_GRANTED
+        if (!granted) {
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+            return
+        }
+        launchSystemCameraNow()
+    }
+
+    /** 权限已就绪，直接拉起系统相机。 */
+    private fun launchSystemCameraNow() {
         val dir = File(cacheDir, "captures").apply { mkdirs() }
         val file = File(dir, "system-${UUID.randomUUID()}.jpg")
 
@@ -297,7 +326,7 @@ class HomeActivity : AppCompatActivity() {
     /** 首页底部显示版本号，方便确认装的是哪一轮构建。 */
     // ------------------------------------------------------------------ 存储占用
 
-    /** 协议诊断：原生 SDK 状态 + 设备身份，排查内容门用。 */
+    /** 协议诊断：原生 SDK 状态 + 设备身份 + 文件日志尾部，排查内容门/闪退用。 */
     private fun showProtocolStatus() {
         val identity = container.identity
         val sb = StringBuilder()
@@ -305,11 +334,22 @@ class HomeActivity : AppCompatActivity() {
         sb.append("did：").append(identity.did.ifEmpty { "（空）" }).append('\n')
         sb.append("digGrade：").append(identity.digGrade).append('\n')
         sb.append("cuid：").append(identity.cuid.take(8)).append("…")
+        sb.append("\n\n—— 日志尾部 ——\n")
+        sb.append(readProtocolLogTail())
         androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle(R.string.settings_protocol_status)
             .setMessage(sb.toString())
             .setPositiveButton(R.string.storage_ok, null)
             .show()
+    }
+
+    /** 读取原生调用日志的最后 ~30 行（getExternalFilesDir 属于应用自身，可读）。 */
+    private fun readProtocolLogTail(): String = try {
+        val file = java.io.File(getExternalFilesDir(null), "protocol-log.txt")
+        if (!file.isFile) "（还没有日志）"
+        else file.readLines().takeLast(30).joinToString("\n")
+    } catch (e: Exception) {
+        "（日志读取失败：${e.message}）"
     }
 
     /**

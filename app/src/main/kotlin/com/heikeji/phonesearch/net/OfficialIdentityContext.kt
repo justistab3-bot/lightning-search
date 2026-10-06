@@ -7,10 +7,13 @@ import android.content.ContextWrapper
  * 让官方原生 SDK（dpsdk / baseutil）看到官方客户端的包身份。
  *
  * 官方 `libdpsdk.so` 白名单校验调用方的包名（com.kuaiduizuoye.scan 等），
- * 并经由 PackageManager 读取该包的签名信息。本包装**只**重写
- * `getPackageName()`，其余调用（含 getPackageManager）原样透传 ——
- * 于是 SDK 用返回的包名去 `getPackageInfo` 时，查到的是设备上真实安装的
- * 官方客户端的 PackageInfo（真实签名），票据与官方客户端一致。
+ * 并读取该包的签名信息。本包装只重写 `getPackageName()`，其余调用透传：
+ * SDK 用官方包名去 `getPackageInfo` 时（配合 manifest 里的 `<queries>` 声明），
+ * 拿到的是设备上真实安装的官方客户端的 PackageInfo（真实签名）。
+ *
+ * 官方客户端未安装时**不要调用**原生 SDK —— [PhoneNativeSdk] 会先做安装预检查，
+ * 避免原生层因 `NameNotFoundException` 的挂起异常触发 JNI abort
+ * （此 abort 已由设备 tombstone 定位确认）。
  *
  * 用途：闪电搜题是快对作业官方运营的精简版客户端，按官方身份调用自家的
  * 设备保护 SDK（研发部已确认）。
