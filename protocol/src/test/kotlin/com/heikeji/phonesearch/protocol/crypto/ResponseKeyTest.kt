@@ -12,10 +12,17 @@ import org.junit.Test
  */
 class ResponseKeyTest {
 
-    /** 独立期望值：deviceSecret = "9fK2mQ7xLp"。 */
+    /**
+     * 独立期望值：deviceSecret = "9fK2mQ7xLp"，VC=1810。
+     *
+     * 用 Python 按同样的 MD5+交换步骤独立重算，不取自 Kotlin 实现。
+     * （VC=1170 的旧期望值为 2dbfba7d51d4b2f873a5ad84ef28502d…，公式本身没变。）
+     */
     private val expected =
-        "2dbfba7d51d4b2f873a5ad84ef28502d6a5b948fd556709227dec541fa562658" +
-            "fa36556fa01e9653f13a2a3926f17be331cd22941af1d9898bc5ba70303e7f05"
+        "c6acf04db2a0098a7246f09db43a18fd" +
+            "6a5b948fd556709227dec541fa5632d2" +
+            "fa363a37cae4b52e4572ceab50de97e6" +
+            "31cd22941af1d9898bc5ba70303e7f05"
 
     @Test
     fun `derives the expected 128 hex key`() {

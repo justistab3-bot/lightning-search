@@ -48,7 +48,15 @@ class StreamHandle internal constructor(
  * - 禁止自动重定向；connect 15s；read 默认 30s；
  * - 响应正文有上限，超限直接失败。
  */
-class HttpTransport {
+class HttpTransport(
+    /**
+     * 官方手机客户端的附加请求头（Dp-Ticket、zyb-*、na__kf_source__、Trace 等）。
+     *
+     * 每次请求重新调用（Trace 与票据都是按请求现算的）；空值头会被跳过，
+     * 与官方 `j.java` 里「空头不加」的行为一致。仅对作业帮系主机生效。
+     */
+    private val phoneHeaders: () -> Map<String, String> = { emptyMap() },
+) {
 
     fun post(
         host: String,
@@ -72,7 +80,7 @@ class HttpTransport {
                 "Accept-Encoding",
                 if (acceptGzip) "gzip" else "identity",
             )
-            connection.setRequestProperty("User-Agent", userAgent)
+            connection.setRequestProperty("User-Agent", applyPhoneIdentity(connection, host, userAgent))
             connection.setRequestProperty("X-Wap-Proxy-Cookie", "none")
             connection.setRequestProperty("Content-Type", contentType)
             if (!cookie.isNullOrEmpty()) {
@@ -114,7 +122,7 @@ class HttpTransport {
             connection.setRequestProperty("Accept-Encoding", "identity")
             connection.setRequestProperty("Cache-Control", "no-cache")
             connection.setRequestProperty("Pragma", "no-cache")
-            connection.setRequestProperty("User-Agent", userAgent)
+            connection.setRequestProperty("User-Agent", applyPhoneIdentity(connection, host, userAgent))
             connection.setRequestProperty("X-Wap-Proxy-Cookie", "none")
             connection.setRequestProperty("Content-Type", contentType)
             if (!cookie.isNullOrEmpty()) {
@@ -152,7 +160,7 @@ class HttpTransport {
             connection.readTimeout = readTimeoutMs
             connection.setRequestProperty("Accept", "text/html")
             connection.setRequestProperty("Accept-Encoding", "identity")
-            connection.setRequestProperty("User-Agent", userAgent)
+            connection.setRequestProperty("User-Agent", applyPhoneIdentity(connection, url, userAgent))
             if (!cookie.isNullOrEmpty()) {
                 connection.setRequestProperty("Cookie", cookie)
             }
@@ -169,6 +177,36 @@ class HttpTransport {
         connection.useCaches = false
         return connection
     }
+
+    /**
+     * 对作业帮系主机换上官方手机客户端的身份：WebView UA + Dp-Ticket/zyb-* 等附加头。
+     * 返回最终使用的 UA。
+     */
+    private fun applyPhoneIdentity(
+        connection: HttpURLConnection,
+        hostOrUrl: String,
+        baseUserAgent: String,
+    ): String {
+        if (!isPhoneHost(hostOrUrl)) return baseUserAgent
+        for ((key, value) in phoneHeaders()) {
+            if (key.isNotEmpty() && value.isNotEmpty()) {
+                connection.setRequestProperty(key, value)
+            }
+        }
+        return phoneUserAgent()
+    }
+
+    private fun isPhoneHost(hostOrUrl: String): Boolean =
+        hostOrUrl.contains("kuaiduizuoye.com") ||
+            hostOrUrl.contains("zuoyebang.com") ||
+            hostOrUrl.contains("zybang.com")
+
+    /** 官方 7.7.0 的 WebView UA，按本机 Build 动态拼（与官方 App 同源）。 */
+    private fun phoneUserAgent(): String =
+        "Mozilla/5.0 (Linux; Android ${android.os.Build.VERSION.RELEASE}; " +
+            "${android.os.Build.MODEL} Build/${android.os.Build.ID}; wv) " +
+            "AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 " +
+            "Chrome/153.0.8010.36 Mobile Safari/537.36"
 
     private fun read(
         connection: HttpURLConnection,

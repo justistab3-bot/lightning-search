@@ -21,6 +21,7 @@ class ProtocolContext(
 ) {
 
     private val lock = Any()
+    private val appContext = context.applicationContext
     private val prefs = context.applicationContext
         .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
@@ -48,7 +49,11 @@ class ProtocolContext(
                 !cachedSignA.isNullOrEmpty() && !cachedSignB.isNullOrEmpty()
             ) {
                 try {
-                    applyDeviceSecret(SignA.parseDeviceSecret(identity.cuid, cachedSignA, cachedSignB))
+                    applyDeviceSecret(
+                        SignA.parseDeviceSecret(identity.cuid, cachedSignA, cachedSignB),
+                        cachedSignA,
+                        cachedSignB,
+                    )
                     return
                 } catch (e: Exception) {
                     // 缓存材料与当前身份不匹配：清掉后走完整初始化。
@@ -72,7 +77,7 @@ class ProtocolContext(
                 .putString(KEY_SIGN_B, signB)
                 .apply()
 
-            applyDeviceSecret(secret)
+            applyDeviceSecret(secret, signA, signB)
         }
     }
 
@@ -127,9 +132,20 @@ class ProtocolContext(
         }
     }
 
-    private fun applyDeviceSecret(secret: String) {
+    /**
+     * 应用签名材料并派生 responseKey。
+     *
+     * 手机版模拟（官方 7.7.0）：`ResponseKey.derive` 的公式本身就是按 VC 派生密钥的
+     * （b 段含 md5(VC)），VC=1810 时与官方 nativeGetKey 等价 —— 已用探针实测
+     * 解开服务器按 1810 加密的答案内容验证过，所以 Java 推导始终有效。
+     *
+     * 官方原生 SDK 只负责 Dp-Ticket（dpsdk）；baseutil 的 setToken 顺带调用一次，
+     * 供诊断，不参与密钥选择。
+     */
+    private fun applyDeviceSecret(secret: String, signA: String, signB: String) {
         deviceSecret = secret
         deviceSecretDigestValue = Digests.md5Lower(secret)
+        PhoneNativeSdk.setToken(appContext, identity.cuid, signA, signB)
         responseKeyValue = ResponseKey.derive(secret)
         uptimeAtReady = SystemClock.elapsedRealtime()
     }

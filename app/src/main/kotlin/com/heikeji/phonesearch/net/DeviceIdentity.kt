@@ -6,7 +6,12 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
 import android.os.Process
+import android.os.SystemClock
+import android.provider.Settings
 import com.heikeji.phonesearch.protocol.ProtocolProfile
+import com.heikeji.phonesearch.protocol.codec.Base64NoWrap
+import com.heikeji.phonesearch.protocol.crypto.Rc4
+import org.json.JSONObject
 import java.util.Locale
 import java.util.UUID
 
@@ -37,6 +42,27 @@ class DeviceIdentity(context: Context) {
         }
     }
 
+    /** 学段（digGrade）。官方经 /kdapi/device/getdiggrade 回填；默认 6。 */
+    @Volatile
+    var digGrade: String = ProtocolProfile.DIG_GRADE
+
+    /** getdiggrade 返回的 digGrade 回填。 */
+    fun updateDigGrade(value: String) {
+        if (value.isNotEmpty()) digGrade = value
+    }
+
+    /** 服务器下发的设备 ID（did），持久化。 */
+    @Volatile
+    var did: String = synchronized(LOCK) {
+        prefs.getString(KEY_DID, "") ?: ""
+    }
+
+    fun updateDid(value: String) {
+        if (value.isEmpty()) return
+        did = value
+        prefs.edit().putString(KEY_DID, value).apply()
+    }
+
     /** 每个普通 API 都会带上的公共参数（保持插入顺序）。 */
     fun publicParams(): LinkedHashMap<String, String> {
         val params = LinkedHashMap<String, String>()
@@ -60,10 +86,11 @@ class DeviceIdentity(context: Context) {
         params["appBit"] = if (is64Bit()) "64" else "32"
         params["adid"] = ""
         params["phoneDevice"] = Build.DEVICE
-        params["identityIdV2"] = "0"
+        params["identityIdV2"] = "1"
         params["occupationType"] = "0"
         params["isPad"] = ProtocolProfile.IS_PAD
-        params["digGrade"] = ProtocolProfile.DIG_GRADE
+        params["digGrade"] = digGrade
+        params["did"] = did
         return params
     }
 
@@ -106,9 +133,83 @@ class DeviceIdentity(context: Context) {
         "mobile"
     }
 
+    /**
+     * Getdid 上报负载：设备信息 JSON 经 RC4（官方 ENTRY_KEY）加密后的 Base64。
+     *
+     * 字段与官方 `DeviceIdHelper.getDeviceInfo` 对齐；拿不到的一律空串/0。
+     */
+    fun didPayload(): String {
+        val json = JSONObject()
+        json.put("did", "")
+        json.put("os", "android")
+        json.put("appId", ProtocolProfile.APP_ID)
+        json.put("imei1", "")
+        json.put("imei2", "")
+        json.put("oaid", "")
+        json.put("sn", runCatching { Build.getSerial() }.getOrDefault(""))
+        json.put(
+            "androidId",
+            runCatching {
+                Settings.Secure.getString(
+                    appContext.contentResolver,
+                    Settings.Secure.ANDROID_ID,
+                )
+            }.getOrDefault(""),
+        )
+        json.put("user", "")
+        json.put("osVersion", Build.VERSION.RELEASE)
+        json.put("language", Locale.getDefault().language)
+        json.put(
+            "typewriting",
+            runCatching {
+                Settings.Secure.getString(
+                    appContext.contentResolver,
+                    Settings.Secure.DEFAULT_INPUT_METHOD,
+                )
+            }.getOrDefault(""),
+        )
+        json.put("browser", "")
+        json.put("powerOnTime", System.currentTimeMillis() - SystemClock.elapsedRealtime())
+        json.put("sysUpdateTime", 0)
+        json.put("uid", -1)
+        json.put("operator", "")
+        json.put("country", Locale.getDefault().country)
+        json.put("brand", Build.BRAND)
+        json.put("model", Build.MODEL)
+        json.put("memory", totalMemoryGb())
+        json.put("cpu", "armeabi-v7a")
+        json.put("hardDisk", totalDiskBytes())
+        json.put("sdkVersion", "4")
+        json.put("uidStr", "")
+        json.put("screen", screenWh())
+
+        val encrypted = Rc4.apply(
+            json.toString().toByteArray(Charsets.UTF_8),
+            ProtocolProfile.DID_RC4_KEY,
+        )
+        return Base64NoWrap.encode(encrypted)
+    }
+
+    private fun totalMemoryGb(): Long = runCatching {
+        val info = android.app.ActivityManager.MemoryInfo()
+        (appContext.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager)
+            .getMemoryInfo(info)
+        info.totalMem / (1024L * 1024L * 1024L)
+    }.getOrDefault(0L)
+
+    private fun totalDiskBytes(): Long = runCatching {
+        android.os.StatFs(android.os.Environment.getDataDirectory().path).totalBytes
+    }.getOrDefault(0L)
+
+    private fun screenWh(): String = runCatching {
+        val metrics = appContext.resources.displayMetrics
+        "${metrics.widthPixels}*${metrics.heightPixels}"
+    }.getOrDefault("0*0")
+
     private companion object {
         const val PREFS_NAME = "device_identity"
         const val KEY_CUID = "cuid"
+        const val KEY_DID = "did"
         const val CUID_SUFFIX = "|0"
         val LOCK = Any()
     }

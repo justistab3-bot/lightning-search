@@ -123,6 +123,12 @@ class ApiClient(
         params["isStudentMode"] = ProtocolProfile.SEARCH_IS_STUDENT_MODE
         params["grade"] = grade.toString()
         params["from"] = ProtocolProfile.SEARCH_FROM
+        params["abtest"] = ProtocolProfile.SEARCH_ABTEST
+
+        // 官方链路：搜题前先完成设备 ID（getdid）与学段（getdiggrade）上报，
+        // 服务器记住后才会给真答案内容。
+        ensureDid()
+        ensureDigGrade(grade)
 
         val path = if (mode == SearchMode.PAGE) {
             ProtocolProfile.PATH_PAGE_SEARCH
@@ -150,6 +156,59 @@ class ApiClient(
     /** 响应里有没有可用答案。判定逻辑见 [SearchAnswers.hasUsableAnswer]。 */
     private fun hasUsableAnswer(data: JSONObject): Boolean =
         SearchAnswers.hasUsableAnswer(data)
+
+    // ------------------------------------------------------------------ 学段
+
+    @Volatile
+    private var didAttempted = false
+
+    /**
+     * 官方 7.7.0 的设备 ID 链路：上报设备信息（RC4 加密）换服务器下发的 did。
+     *
+     * did 会进入公共参数与 `zyb-did` 头。只尝试一次，失败静默。
+     */
+    fun ensureDid() {
+        if (identity.did.isNotEmpty() || didAttempted) return
+        didAttempted = true
+        try {
+            val params = LinkedHashMap<String, String?>()
+            params["param"] = identity.didPayload()
+            val data = post(
+                ProtocolProfile.HOST_RESOURCE,
+                ProtocolProfile.PATH_GETDID,
+                params,
+            )
+            identity.updateDid(data.optString("did", ""))
+        } catch (e: Exception) {
+            // 设备 ID 上报失败不阻塞搜题。
+        }
+    }
+
+    @Volatile
+    private var digGradeAttempted = false
+
+    /**
+     * 官方 7.7.0 的搜题前置：`/kdapi/device/getdiggrade` 上报学段。
+     *
+     * 响应 `{"data":{"digGrade":6}}` 回填到后续所有请求的公共参数。
+     * 只尝试一次；失败静默（保留默认学段，不阻塞搜题）。
+     */
+    fun ensureDigGrade(grade: Int) {
+        if (digGradeAttempted) return
+        digGradeAttempted = true
+        try {
+            val params = LinkedHashMap<String, String?>()
+            params["grade"] = grade.toString()
+            val data = post(
+                ProtocolProfile.HOST_KDDZY,
+                ProtocolProfile.PATH_DIG_GRADE,
+                params,
+            )
+            identity.updateDigGrade(data.optString("digGrade", ""))
+        } catch (e: Exception) {
+            // 学段上报失败不阻塞搜题。
+        }
+    }
 
     // ------------------------------------------------------------------ 实名
 
@@ -301,7 +360,9 @@ class ApiClient(
             if (!merged.containsKey(key)) merged[key] = value
         }
         val session = sessions.current()
-        merged["identityIdV2"] = (session?.identityIdV2 ?: 0).toString()
+        // 官方手机客户端匿名状态也发 identityIdV2=1（身份已初始化）；
+        // 登录后以会话里的值为准。
+        merged["identityIdV2"] = (session?.identityIdV2 ?: 1).toString()
         merged["occupationType"] = (session?.occupationType ?: 0).toString()
         merged["nt"] = identity.networkType()
 

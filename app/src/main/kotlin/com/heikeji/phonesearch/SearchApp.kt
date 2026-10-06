@@ -16,6 +16,7 @@ import com.heikeji.phonesearch.net.ChatClient
 import com.heikeji.phonesearch.net.DeviceIdentity
 import com.heikeji.phonesearch.net.HttpTransport
 import com.heikeji.phonesearch.net.NetworkMonitor
+import com.heikeji.phonesearch.net.PhoneNativeSdk
 import com.heikeji.phonesearch.net.ProtocolContext
 import com.heikeji.phonesearch.search.SearchChallengeStore
 import com.heikeji.phonesearch.search.SearchRepository
@@ -116,7 +117,21 @@ class SearchApp : Application() {
 class AppContainer(context: Context) {
 
     val identity = DeviceIdentity(context)
-    val transport = HttpTransport()
+
+    /**
+     * 手机版模拟：对作业帮系主机附加官方 7.7.0 的请求头。
+     * 票据与 Trace 都是按请求现算；原生 SDK 未就绪时自动留空（行为同官方）。
+     */
+    val transport = HttpTransport(phoneHeaders = {
+        buildMap {
+            PhoneNativeSdk.dpTicket().takeIf { it.isNotEmpty() }?.let { put("Dp-Ticket", it) }
+            put("zyb-cuid", identity.cuid)
+            identity.did.takeIf { it.isNotEmpty() }?.let { put("zyb-did", it) }
+            put("na__kf_source__", "scancode")
+            put("X-Zyb-Trace-Id", PhoneNativeSdk.traceId())
+            put("X-Zyb-Trace-T", System.currentTimeMillis().toString())
+        }
+    })
     val protocol = ProtocolContext(context, identity, transport)
     val network = NetworkMonitor(context)
 

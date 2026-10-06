@@ -35,16 +35,28 @@ object ProtocolProfile {
     const val RESPONSE_KEY_LENGTH = 128
 
     // ---- 公共参数（设备与协议身份）----
-    const val CHANNEL = "vivo"
+    //
+    // 手机版模拟（官方 7.7.0 抓包对齐）：channel/版本号/运营商/学段均按官方手机客户端。
+    // vc 同时是答案密钥的派生入参（nativeGetKey(vc)），**必须**和发送的 vc 一致。
+    const val CHANNEL = "xiaomi"
     const val TOKEN = "1_XPXQH3c5HRPtFHkSwi3sCCURmT25QfxM"
-    const val VC = "1170"
-    const val VC_NAME = "6.49.0"
+    const val VC = "1810"
+    const val VC_NAME = "7.7.0"
+
+    /**
+     * 原生密钥不可用时的整体回退（老手表版参数 + 老 Java 密钥推导）。
+     * 服务器按版本号加密答案内容，参数与密钥必须成对切换，不能混搭。
+     */
+    const val VC_LEGACY = "1170"
+    const val VC_NAME_LEGACY = "6.49.0"
     const val OS = "android"
-    const val OPERATOR_ID = "0"
+    const val OPERATOR_ID = "46000"
     const val PKG_NAME = "com.kuaiduizuoye.scan"
     const val APP_ID = "scancode"
     const val IS_PAD = "0"
-    const val DIG_GRADE = "0"
+
+    /** 默认学段；官方会在选年级后经 getdiggrade 回填真实值。 */
+    const val DIG_GRADE = "6"
 
     /** 请求签名前缀。 */
     const val SIGN_PREFIX = "8&%d*["
@@ -76,21 +88,31 @@ object ProtocolProfile {
     /** 整页搜题（1.1.1 新增）。 */
     const val PATH_PAGE_SEARCH = "/picsearch/submit/pagesearch"
     const val PATH_CHECK_IDENTITY = "/resourceserver/checkidentity"
+    /** 学段上报（官方 7.7.0 搜题前置）。 */
+    const val PATH_DIG_GRADE = "/kdapi/device/getdiggrade"
+
+    /** 设备 ID 上报（官方 DeviceIdHelper，did 由服务器下发）。 */
+    const val PATH_GETDID = "/userident/user/getdid"
+
+    /** Getdid 上报负载的 RC4 密钥（官方 PackageHelper.ENTRY_KEY）。 */
+    const val DID_RC4_KEY = "msyx6nw\$jwk12.76alvkf"
     const val PATH_VERIFICATION =
         "/static/hy/fe-paisou-vue/anti-grabbing-verification.html"
 
-    // ---- 搜题业务参数 ----
+    // ---- 搜题业务参数（官方 7.7.0 抓包对齐）----
     /** 普通单题首次搜索。 */
     const val SEARCH_REFERER_SINGLE = "1"
     /** 由整页题块框选触发的精搜。 */
     const val SEARCH_REFERER_CROP = "3"
-    /** 整页搜题。 */
-    const val SEARCH_REFERER_PAGE = "home"
+    /** 整页搜题：官方 7.7.0 传空串。 */
+    const val SEARCH_REFERER_PAGE = ""
     const val SEARCH_SHUMEI = ""
-    const val SEARCH_REF = "1"
+    const val SEARCH_REF = "0"
     const val SEARCH_IMG_CORRECTION = "0"
     const val SEARCH_IS_STUDENT_MODE = "1"
-    const val SEARCH_FROM = "homePage"
+    const val SEARCH_FROM = "otherPage"
+    /** 官方 7.7.0 的搜题参数里带有空的 abtest 占位。 */
+    const val SEARCH_ABTEST = "{}"
 
     // ---- HTTP 行为 ----
     const val CONNECT_TIMEOUT_MS = 15_000

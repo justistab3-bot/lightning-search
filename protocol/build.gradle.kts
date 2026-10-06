@@ -22,14 +22,19 @@ dependencies {
 }
 
 tasks.withType<Test>().configureEach {
-    // 网络探针（probe 包）默认跳过，靠 -DchatProbe=1 / -DsearchProbe=1 显式开启；
+    // 网络探针（probe 包）默认跳过，靠 -DchatProbe=1 / -DsearchProbe=1 / -DcontentProbe=1 显式开启；
     // 开启时才把 stdout 打出来，平时保持安静。
     val chatProbe = System.getProperty("chatProbe")
     val searchProbe = System.getProperty("searchProbe")
+    val contentProbe = System.getProperty("contentProbe")
+    val contentProbe2 = System.getProperty("contentProbe2")
     systemProperty("chatProbe", chatProbe ?: "")
     systemProperty("searchProbe", searchProbe ?: "")
+    systemProperty("contentProbe", contentProbe ?: "")
+    systemProperty("contentProbe2", contentProbe2 ?: "")
     testLogging {
         events("passed", "skipped", "failed")
-        showStandardStreams = chatProbe == "1" || searchProbe == "1"
+        showStandardStreams = chatProbe == "1" || searchProbe == "1" ||
+            contentProbe == "1" || contentProbe2 == "1"
     }
 }
