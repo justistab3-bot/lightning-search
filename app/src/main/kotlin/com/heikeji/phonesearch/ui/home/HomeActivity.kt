@@ -26,6 +26,7 @@ import com.heikeji.phonesearch.data.formatBytes
 import com.heikeji.phonesearch.data.relativeTime
 import com.heikeji.phonesearch.data.todayLabel
 import com.heikeji.phonesearch.data.UserPrefs
+import com.heikeji.phonesearch.net.PhoneNativeSdk
 import com.heikeji.phonesearch.protocol.aiwriting.AiWritingRequest
 import com.heikeji.phonesearch.ui.onboarding.OnboardingActivity
 import com.heikeji.phonesearch.databinding.ActivityHomeBinding
@@ -296,6 +297,21 @@ class HomeActivity : AppCompatActivity() {
     /** 首页底部显示版本号，方便确认装的是哪一轮构建。 */
     // ------------------------------------------------------------------ 存储占用
 
+    /** 协议诊断：原生 SDK 状态 + 设备身份，排查内容门用。 */
+    private fun showProtocolStatus() {
+        val identity = container.identity
+        val sb = StringBuilder()
+        sb.append("原生：").append(PhoneNativeSdk.status()).append('\n')
+        sb.append("did：").append(identity.did.ifEmpty { "（空）" }).append('\n')
+        sb.append("digGrade：").append(identity.digGrade).append('\n')
+        sb.append("cuid：").append(identity.cuid.take(8)).append("…")
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(R.string.settings_protocol_status)
+            .setMessage(sb.toString())
+            .setPositiveButton(R.string.storage_ok, null)
+            .show()
+    }
+
     /**
      * 长按版本号打开设置。
      *
@@ -326,6 +342,7 @@ class HomeActivity : AppCompatActivity() {
                 getString(R.string.settings_storage, total),
                 getString(R.string.settings_privacy),
                 getString(R.string.settings_clear),
+                getString(R.string.settings_protocol_status),
             )
 
             androidx.appcompat.app.AlertDialog.Builder(this@HomeActivity)
@@ -342,6 +359,7 @@ class HomeActivity : AppCompatActivity() {
                         3 -> showStorageDetail(usage)
                         4 -> startActivity(PrivacyActivity.newIntent(this@HomeActivity))
                         5 -> clearTransient()
+                        6 -> showProtocolStatus()
                     }
                 }
                 .setNegativeButton(R.string.storage_ok, null)

@@ -151,6 +151,8 @@ class AppContainer(context: Context) {
 
     init {
         sessions.restore()
+        // 预热官方设备保护 SDK（后台异步，同官方启动流程）；票据首搜前就绪。
+        PhoneNativeSdk.preInit(context)
     }
 }
 

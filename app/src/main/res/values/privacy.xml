@@ -24,6 +24,7 @@
     <string name="settings_storage">存储占用：%1$s</string>
     <string name="settings_privacy">查看隐私政策</string>
     <string name="settings_clear">清理临时文件</string>
+    <string name="settings_protocol_status">协议诊断</string>
 
     <!-- 首次启动引导 -->
     <string name="onboard_title">欢迎使用闪电搜题</string>

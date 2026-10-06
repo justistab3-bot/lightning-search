@@ -28,13 +28,15 @@ tasks.withType<Test>().configureEach {
     val searchProbe = System.getProperty("searchProbe")
     val contentProbe = System.getProperty("contentProbe")
     val contentProbe2 = System.getProperty("contentProbe2")
+    val contentProbe3 = System.getProperty("contentProbe3")
     systemProperty("chatProbe", chatProbe ?: "")
     systemProperty("searchProbe", searchProbe ?: "")
     systemProperty("contentProbe", contentProbe ?: "")
     systemProperty("contentProbe2", contentProbe2 ?: "")
+    systemProperty("contentProbe3", contentProbe3 ?: "")
     testLogging {
         events("passed", "skipped", "failed")
         showStandardStreams = chatProbe == "1" || searchProbe == "1" ||
-            contentProbe == "1" || contentProbe2 == "1"
+            contentProbe == "1" || contentProbe2 == "1" || contentProbe3 == "1"
     }
 }
