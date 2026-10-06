@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
  * 当前登录会话。
  *
  * 与原实现的一处改进：`identityIdV2` / `occupationType` 随会话一起持久化，
- * 恢复会话后立刻用 `userinfov3` 回填。原实现把它们放在 ApiClient 实例状态里，
+ * 恢复会话后立刻用 `userinfov3` 回填。原实现把它们放在 API 客户端的实例状态里，
  * 重启后会退化成 "0" 直到再次登录。
  */
 class SessionRepository(private val store: SecureSessionStore) {

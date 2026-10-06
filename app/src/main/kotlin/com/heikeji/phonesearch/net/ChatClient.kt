@@ -25,7 +25,8 @@ import kotlin.coroutines.cancellation.CancellationException
  * 快问 AI 的 HTTP 通道。
  *
  * 和搜题同一套域名与签名，但**参数是明文表单**（不加密），响应是 SSE。
- * 见 [ChatRequest] 里的实测记录。
+ * 请求描述（端点 + 参数）在 `protocol.chat` 的 KdChatCreate / KdChatGuide /
+ * KdChatAsk / KdChatPhotoAsk / KdChatStop 各 Input 里（官方抓包对齐）。
  */
 class ChatClient(
     private val identity: DeviceIdentity,

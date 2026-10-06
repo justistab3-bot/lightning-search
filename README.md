@@ -282,26 +282,47 @@ pwsh -File tools/package-apk.ps1   # -> dist/闪电搜题-v<版本>.apk
 
 ## 工程结构
 
+接口层按官方快对作业 7.7.0 客户端的分层组织：**每个接口 = 模型 + 内嵌 Input
+（URL/buildInput/getParams）**，统一执行器 `Net` 完成公共参数、签名、信封与外壳。
+
 ```
 protocol/   纯 Kotlin/JVM，无 Android 依赖（编译期强制边界）
-  ProtocolProfile        协议常量集中处（UI 不得硬编码）
-  crypto/                DesCodec(自定义位序 DES) / Rc4 / Digests / PairSwap / ResponseKey
-  sign/                  SignA(signA 生成与 signB 校验) / RequestSigner
-  codec/                 UrlForm / Base64NoWrap
-  envelope/              Envelope(antispam 响应逐层解包)
-  decode/                AnswerDecoder(三条解码路径 + gzip)
-  parse/                 AnswerParser / ImagePidResolver
+  core/                 官方底座
+    InputBase            请求描述基类（url/pid/method/jsonBody/params，官方同名类）
+    NetConfig            主机与协议常量（按 __pid 选主机，官方 NetConfig 对应）
+    sign/                SignA(signA 生成与 signB 校验) / RequestSigner
+    codec/               UrlForm / Base64NoWrap / PageExtraInfo
+    crypto/              DesCodec(自定义位序 DES) / Rc4 / Digests / PairSwap / ResponseKey
+    envelope/            Envelope(antispam 响应逐层解包)
+    json/                Gson 封装
+  search/                搜题域
+    PicSingleSearch      官方同名模型 + Input（/picsearch/submit/singlesearch）
+    PicPageSearch        官方同名模型 + Input（/picsearch/submit/pagesearch）
+    decode/              AnswerDecoder(三条解码路径 + gzip)
+    parse/               AnswerParser / PageSearchParser / ImagePidResolver
+    model/               AnswerItem / SearchResult / PageSearchResult / QuestionQuad
+  identity/              设备身份域
+    Getdid               did 上报 Input（/userident/user/getdid，resource 主机）
+    KdapiDeviceGetDigGrade  学段上报 Input（/kdapi/device/getdiggrade）
+    DeviceInfo           官方 PackageHelper.ENTRY_KEY 的 RC4 上报负载
+  chat/                  kdchat 域（KdChatCreate/Guide/Ask/PhotoAsk/Stop + 解析）
+  aiwriting/             AI 作文域（H5 风格接口，不套签名 Input 模式）
+  account/               账号域（SmsSend/SmsLogin/PasswordLogin/UserInfo/CheckIdentity）
   render/                AnswerHtmlSanitizer(jsoup 白名单) / AnswerPageRenderer
-  model/                 AnswerItem / SearchResult / AccountSession / SearchChallenge
 
 app/        Android
-  net/       DeviceIdentity / HttpTransport / ProtocolContext / BootstrapClient / ApiClient
+  net/       Net(统一执行器) / SearchApi / AccountApi / ChatClient / AiWritingClient
+             DeviceIdentity / HttpTransport / ProtocolContext / PhoneNativeSdk / BootstrapClient
   account/   SecureSessionStore(Keystore AES-GCM) / SessionRepository
   image/     QuestionImageProcessor
   search/    SearchRepository / SearchChallengeStore
-  ui/        login / home / camera / crop / result / verification
+  ui/        login / home / camera / crop / result / verification / chat / essay / page
 tools/des-oracle/   DES 独立 oracle（见该目录 README）
 ```
+
+兼容红线（构建期强制）：`minSdk = 21`（Android 5.0）与 `armeabi-v7a`（32 位）
+写死在 `app/build.gradle.kts` 的断言里，改动必须同步 `VERSION.md`。
+官方原生库只有 arm64 版，32 位设备自动回退纯 Java 密钥链（见 PhoneNativeSdk）。
 
 ## 构建
 
@@ -324,9 +345,10 @@ $env:JAVA_HOME="D:\ansidio\jbr"
 
 ## 安全与隐私
 
-- 协议常量只在 `ProtocolProfile`。
+- 协议常量只在 `protocol.core.NetConfig`（UI 与 Activity 不得出现任何协议字面量）。
 - **不实现任何绕过风控的逻辑**；收到 `validatedInfo` 必须走官方验证页。
-- 验证页 WebView 与答案 WebView 完全分离；答案 WebView **禁用 JavaScript**、禁止一切导航。
+- 验证页 WebView 与答案 WebView 完全分离；答案 WebView 只开本地 KaTeX 的 JavaScript
+  （CSP 锁死脚本来源），禁止一切导航。
 - 验证页 Bridge 校验 bridgeSecret + origin/当前 URL/预期 URL 三者相等 + HTTPS + 精确 host/path
   + 无 userInfo/端口/fragment + query 仅 `validatedInfo` + 回调 ≤32768 字符 + KDUSS 未变；
   action 走白名单，其余回 404。
