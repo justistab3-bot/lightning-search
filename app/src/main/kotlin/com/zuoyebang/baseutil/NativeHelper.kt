@@ -22,11 +22,23 @@ import android.content.Context
 class NativeHelper private constructor() {
 
     companion object {
+        /**
+         * 原生库是否加载成功。
+         *
+         * 32 位设备（armeabi-v7a）没有对应的 .so，`loadLibrary` 会失败；
+         * 调用方必须先看这个标记再决定是否发起原生调用。
+         */
+        @JvmStatic
+        var loaded: Boolean = false
+            private set
+
         init {
             try {
                 System.loadLibrary("baseutil")
+                loaded = true
             } catch (t: Throwable) {
                 // 设备缺 ABI 对应库或加载失败：上层自动回退旧的 Java 密钥链。
+                loaded = false
             }
         }
 

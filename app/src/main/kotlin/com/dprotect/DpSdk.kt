@@ -17,11 +17,18 @@ import android.content.Context
 class DpSdk private constructor() {
 
     companion object {
+        /** 原生库是否加载成功（32 位设备没有对应 .so）。 */
+        @JvmStatic
+        var loaded: Boolean = false
+            private set
+
         init {
             try {
                 System.loadLibrary("dpsdk")
+                loaded = true
             } catch (t: Throwable) {
                 // 加载失败：上层会跳过 Dp-Ticket 头。
+                loaded = false
             }
         }
 

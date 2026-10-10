@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.content.Intent
 import android.hardware.display.DisplayManager
 import android.os.Bundle
+import android.util.Size
 import android.view.Surface
 import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
@@ -14,6 +15,8 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
+import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import com.heikeji.phonesearch.R
@@ -197,6 +200,11 @@ class CameraActivity : AppCompatActivity() {
         val rotation = currentRotation()
 
         val preview = Preview.Builder()
+            // 线上事故修复（v1.35.2）：老设备（camera2 legacy 兼容层）上不限制预览分辨率时，
+            // CameraX 可能挑出比传感器 active array 还大的尺寸，配置会话时抛
+            // `previewSize must not be wider than activeArray` —— 异常在相机内部线程，
+            // 进程直接崩。这里把预览上限压到 1280×720，并允许向下取最接近的档位。
+            .setResolutionSelector(previewResolutionSelector())
             .setTargetRotation(rotation)
             .build()
             .also { it.setSurfaceProvider(binding.previewView.surfaceProvider) }
@@ -216,10 +224,37 @@ class CameraActivity : AppCompatActivity() {
             provider.unbindAll()
             provider.bindToLifecycle(this, selector, preview, capture)
         } catch (e: Exception) {
-            binding.root.showMessage(getString(R.string.camera_failed))
-            finish()
+            // 兜底：分辨率约束在个别设备上仍可能不被接受，退回到不指定分辨率的预览。
+            try {
+                val fallback = Preview.Builder()
+                    .setTargetRotation(rotation)
+                    .build()
+                    .also { it.setSurfaceProvider(binding.previewView.surfaceProvider) }
+                previewUseCase = fallback
+                provider.unbindAll()
+                provider.bindToLifecycle(this, selector, fallback, capture)
+            } catch (e2: Exception) {
+                binding.root.showMessage(getString(R.string.camera_failed))
+                finish()
+            }
         }
     }
+
+    /**
+     * 预览分辨率选择器：上限 1280×720，取最接近且不高于该值的档位。
+     *
+     * 这是给 camera2 legacy 兼容层（Android 5–7 的老设备 / 词典笔）兜底的 ——
+     * 不限制时可能挑出超过传感器阵列的尺寸，导致配置会话时崩溃。
+     */
+    private fun previewResolutionSelector(): ResolutionSelector =
+        ResolutionSelector.Builder()
+            .setResolutionStrategy(
+                ResolutionStrategy(
+                    Size(PREVIEW_MAX_WIDTH, PREVIEW_MAX_HEIGHT),
+                    ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER,
+                ),
+            )
+            .build()
 
     private fun capture() {
         val capture = imageCapture ?: return
@@ -286,6 +321,15 @@ class CameraActivity : AppCompatActivity() {
          * 用户仍可用翻转按钮调整，调整后会覆盖这个默认值。
          */
         private const val DEFAULT_ROTATION = 180
+
+        /**
+         * 预览分辨率上限。
+         *
+         * 预览只是取景，不需要高分辨率；限住它能避开老设备上
+         * 「预览尺寸超过传感器阵列」的相机配置崩溃（见 bindUseCases）。
+         */
+        private const val PREVIEW_MAX_WIDTH = 1280
+        private const val PREVIEW_MAX_HEIGHT = 720
 
         fun newIntent(context: Context, mode: SearchMode): Intent =
             Intent(context, CameraActivity::class.java)

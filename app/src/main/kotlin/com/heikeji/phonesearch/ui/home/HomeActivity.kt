@@ -220,32 +220,41 @@ class HomeActivity : AppCompatActivity() {
 
     /** 权限已就绪，直接拉起系统相机。 */
     private fun launchSystemCameraNow() {
-        val dir = File(cacheDir, "captures").apply { mkdirs() }
-        val file = File(dir, "system-${UUID.randomUUID()}.jpg")
-
-        val uri = try {
-            FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
-        } catch (e: IllegalArgumentException) {
-            binding.root.showMessage(getString(R.string.system_camera_failed))
-            return
-        }
-
-        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE).apply {
-            putExtra(MediaStore.EXTRA_OUTPUT, uri)
-            addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-        if (intent.resolveActivity(packageManager) == null) {
-            binding.root.showMessage(getString(R.string.system_camera_unavailable))
-            return
-        }
-
-        pendingCaptureFile = file
         try {
-            systemCameraLauncher.launch(intent)
-        } catch (e: ActivityNotFoundException) {
+            val dir = File(cacheDir, "captures").apply { mkdirs() }
+            val file = File(dir, "system-${UUID.randomUUID()}.jpg")
+
+            val uri = try {
+                FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
+            } catch (e: IllegalArgumentException) {
+                binding.root.showMessage(getString(R.string.system_camera_failed))
+                return
+            }
+
+            val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE).apply {
+                putExtra(MediaStore.EXTRA_OUTPUT, uri)
+                addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            // resolveActivity 走 PackageManager 的 Binder，系统服务异常时会抛
+            // RemoteException（线上 1.31.0–1.33.2 有上报），这里整体兜住。
+            val resolved = runCatching { intent.resolveActivity(packageManager) }.getOrNull()
+            if (resolved == null) {
+                binding.root.showMessage(getString(R.string.system_camera_unavailable))
+                return
+            }
+
+            pendingCaptureFile = file
+            try {
+                systemCameraLauncher.launch(intent)
+            } catch (e: ActivityNotFoundException) {
+                pendingCaptureFile = null
+                file.delete()
+                binding.root.showMessage(getString(R.string.system_camera_unavailable))
+            }
+        } catch (t: Throwable) {
+            // 兜底：任何系统相机拉起失败都不应该让应用崩掉。
             pendingCaptureFile = null
-            file.delete()
-            binding.root.showMessage(getString(R.string.system_camera_unavailable))
+            binding.root.showMessage(getString(R.string.system_camera_failed))
         }
     }
 
