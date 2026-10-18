@@ -21,6 +21,7 @@ data class PageUiState(
     /** 一次性提示（失败原因、定位不可用等）。 */
     val message: String? = null,
     val needLogin: Boolean = false,
+    val loginMessage: String = "",
 ) {
     val blocks: List<PageQuestionBlock> get() = result?.blocks.orEmpty()
 

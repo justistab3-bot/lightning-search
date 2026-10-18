@@ -22,14 +22,14 @@
             android:layout_height="46dp"
             android:contentDescription="@string/app_name"
             android:src="@drawable/ic_bolt"
-            app:tint="@color/terracotta" />
+            app:tint="@color/brand" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:text="@string/app_name"
-            android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Display" />
+            android:textAppearance="@style/TextAppearance.FlashSearch.Display" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -42,10 +42,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
-            app:cardBackgroundColor="@color/ivory"
+            app:cardBackgroundColor="@color/surface"
             app:cardCornerRadius="24dp"
             app:cardElevation="2dp"
-            app:strokeColor="@color/border_cream"
+            app:strokeColor="@color/line"
             app:strokeWidth="1dp">
 
             <LinearLayout
@@ -58,11 +58,11 @@
                     android:id="@+id/modeTabs"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:tabIndicatorColor="@color/terracotta"
+                    app:tabIndicatorColor="@color/brand"
                     app:tabIndicatorFullWidth="false"
                     app:tabMode="fixed"
-                    app:tabSelectedTextColor="@color/near_black"
-                    app:tabTextColor="@color/stone_gray">
+                    app:tabSelectedTextColor="@color/ink"
+                    app:tabTextColor="@color/ink_tertiary">
 
                     <com.google.android.material.tabs.TabItem
                         android:layout_width="wrap_content"
@@ -80,12 +80,12 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="22dp"
                     android:hint="@string/login_hint_phone"
-                    app:boxBackgroundColor="@color/parchment"
+                    app:boxBackgroundColor="@color/bg"
                     app:boxCornerRadiusBottomEnd="12dp"
                     app:boxCornerRadiusBottomStart="12dp"
                     app:boxCornerRadiusTopEnd="12dp"
                     app:boxCornerRadiusTopStart="12dp"
-                    app:boxStrokeColor="@color/terracotta">
+                    app:boxStrokeColor="@color/brand">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/phoneInput"
@@ -108,12 +108,12 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:hint="@string/login_hint_code"
-                        app:boxBackgroundColor="@color/parchment"
+                        app:boxBackgroundColor="@color/bg"
                         app:boxCornerRadiusBottomEnd="12dp"
                         app:boxCornerRadiusBottomStart="12dp"
                         app:boxCornerRadiusTopEnd="12dp"
                         app:boxCornerRadiusTopStart="12dp"
-                        app:boxStrokeColor="@color/terracotta">
+                        app:boxStrokeColor="@color/brand">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/codeInput"
@@ -139,12 +139,12 @@
                     android:layout_marginTop="12dp"
                     android:hint="@string/login_hint_password"
                     android:visibility="gone"
-                    app:boxBackgroundColor="@color/parchment"
+                    app:boxBackgroundColor="@color/bg"
                     app:boxCornerRadiusBottomEnd="12dp"
                     app:boxCornerRadiusBottomStart="12dp"
                     app:boxCornerRadiusTopEnd="12dp"
                     app:boxCornerRadiusTopStart="12dp"
-                    app:boxStrokeColor="@color/terracotta"
+                    app:boxStrokeColor="@color/brand"
                     app:endIconMode="password_toggle">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -168,7 +168,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
                     android:layout_marginTop="16dp"
-                    android:indeterminateTint="@color/terracotta"
+                    android:indeterminateTint="@color/brand"
                     android:visibility="gone" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

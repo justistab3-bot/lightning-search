@@ -26,7 +26,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/onboard_title"
-            android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Title" />
+            android:textAppearance="@style/TextAppearance.FlashSearch.Title" />
 
         <TextView
             android:layout_width="match_parent"
@@ -48,14 +48,14 @@
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:layout_marginTop="26dp"
-            android:background="@color/border_cream" />
+            android:background="@color/line" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="22dp"
             android:text="@string/onboard_account_title"
-            android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Section" />
+            android:textAppearance="@style/TextAppearance.FlashSearch.Section" />
 
         <TextView
             android:layout_width="match_parent"
@@ -64,10 +64,7 @@
             android:text="@string/onboard_account_body"
             android:textAppearance="@style/TextAppearance.FlashSearch.Body" />
 
-        <!--
-          匿名是默认路径，所以「先不登录」给主按钮、全宽、更高；
-          「登录账号」降为次要的文字按钮。想登的人找得到，不想登的人一步就能进去。
-        -->
+        <!-- 选择年级后可直接进入首页，也可在此登录。 -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/skipButton"
             style="@style/Widget.FlashSearch.PrimaryButton"
@@ -92,7 +89,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:background="@color/warm_sand"
+            android:background="@color/surface_sunken"
             android:padding="14dp"
             android:text="@string/onboard_settings_hint"
             android:textAppearance="@style/TextAppearance.FlashSearch.Caption" />

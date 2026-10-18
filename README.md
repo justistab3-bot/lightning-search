@@ -30,8 +30,14 @@
 
 - 应用名：**闪电搜题**
 - 包名：`com.heikeji.phonesearch`（与原手表版隔离，可共存）
-- minSdk 24 / targetSdk 37 / compileSdk 37
-- 当前版本：**v1.8.0**（见 [VERSION.md](VERSION.md)）
+- minSdk 21 / targetSdk 37 / compileSdk 37
+- 当前版本：**v1.36.1**（见 [VERSION.md](VERSION.md)）
+
+## 账号与功能
+
+应用直接进入首页，AI 作文与快问 AI 不设置登录门槛。拍照搜题按服务端返回处理：收到“请前往个人中心登录”时显示“前往登录”按钮，用户完成登录后继续搜索原题。普通题目照常显示。
+
+不再包含搜题设备保护 SDK、包名/签名身份适配、票据等待或相关搜题网络探针。旧版登录凭据保持原有存储格式与密钥；服务端登录提醒本身不会删除本地账号。
 
 ## 这是什么
 
@@ -119,8 +125,8 @@ APK 落在 `filesDir/updates/`，不会被系统清缓存清掉；`file_paths.xm
 
 | 操作 | 行为 |
 |---|---|
-| **单击** | 应用内相机（CameraX）：可调预览方向、闪光灯、连拍后裁剪 |
-| **长按** | 直接调用**系统相机**：全分辨率，`FileProvider` 授权写入 `cache/captures/` |
+| **单击** | 系统相机：使用设备原生对焦、闪光灯与照片方向 |
+| **长按** | 应用内相机（CameraX）备用入口 |
 
 系统相机会自行按 EXIF 记录方向，所以走系统相机时不做额外旋转；两种入口的后续路由
 （单题 → 裁剪页 → 搜题 / 整页 → 整页结果页）由 `ui/common/SearchEntry` 统一决定，
@@ -227,10 +233,10 @@ pwsh -File tools/package-apk.ps1   # -> dist/闪电搜题-v<版本>.apk
 
 | 学科 | 图标 | 学科 | 图标 |
 |---|---|---|---|
-| 数学 | 根号 | 化学 | 试管 |
+| 数学 | 根号与 x | 化学 | 锥形瓶 |
 | 语文 | 摊开的书 | 生物 | 叶子 |
-| 英语 | 地球 | 历史 | 沙漏 |
-| 物理 | 锥形瓶（实验器材） | 地理 | 折叠地图 |
+| 英语 | Aa 字母 | 历史 | 古典建筑 |
+| 物理 | 原子轨道 | 地理 | 经纬地球 |
 | 政治 | 天平 | 其他 | 文档 |
 
 原生界面用 `PathParser` 绘制（`SubjectIconView`），答案页 HTML 用内联 SVG，两者共用同一份 path。
@@ -243,16 +249,16 @@ pwsh -File tools/package-apk.ps1   # -> dist/闪电搜题-v<版本>.apk
 
 ## 拍照与裁剪
 
-不调用系统相机应用，也不提供相册入口，全流程在应用内完成：
+默认使用系统相机拍摄，回到应用继续裁剪与搜题：
 
 ```
 首页「拍照搜题」
-  -> CameraActivity   内置 CameraX 相机（预览 / 快门 / 闪光灯三态 / 前后置切换）
+  -> 系统相机          FileProvider 提供全分辨率输出位置
   -> CropActivity     裁剪框（拖框内平移、拖四角缩放）+ 左右旋转 90°
   -> ResultActivity   编码成上传用 JPEG 后直接搜题
 ```
 
-- 相机页与裁剪页锁定竖屏，避免旋转带来的坐标换算问题。
+- 拍照保留 EXIF 方向，单题进入裁剪页，整页直接上传原始整页图。
 - 裁剪视图 `CropImageView` 自己绘制位图并管理裁剪框，避免「ImageView + 覆盖层」两套坐标系同步的经典问题。
 - 图片处理分两步：`decodeForEditing`（采样到最长边 2048、按 EXIF 摆正）→ 用户编辑 →
   `encodeForUpload`（最长边 1600、JPEG 88、校验 SOI）。
@@ -312,7 +318,7 @@ protocol/   纯 Kotlin/JVM，无 Android 依赖（编译期强制边界）
 
 app/        Android
   net/       Net(统一执行器) / SearchApi / AccountApi / ChatClient / AiWritingClient
-             DeviceIdentity / HttpTransport / ProtocolContext / PhoneNativeSdk / BootstrapClient
+             DeviceIdentity / HttpTransport / ProtocolContext / BootstrapClient
   account/   SecureSessionStore(Keystore AES-GCM) / SessionRepository
   image/     QuestionImageProcessor
   search/    SearchRepository / SearchChallengeStore
@@ -322,7 +328,7 @@ tools/des-oracle/   DES 独立 oracle（见该目录 README）
 
 兼容红线（构建期强制）：`minSdk = 21`（Android 5.0）与 `armeabi-v7a`（32 位）
 写死在 `app/build.gradle.kts` 的断言里，改动必须同步 `VERSION.md`。
-官方原生库只有 arm64 版，32 位设备自动回退纯 Java 密钥链（见 PhoneNativeSdk）。
+账号凭据继续使用旧版的 Keystore 与加密存储格式，升级无需迁移或清空数据，详见 [账号与升级衔接](docs/account-upgrade.md)。
 
 ## 构建
 

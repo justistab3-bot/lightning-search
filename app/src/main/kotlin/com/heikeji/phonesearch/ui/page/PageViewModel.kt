@@ -10,6 +10,7 @@ import com.heikeji.phonesearch.image.OriginalImageHandle
 import com.heikeji.phonesearch.net.SearchChallengeException
 import com.heikeji.phonesearch.net.SessionExpiredException
 import com.heikeji.phonesearch.protocol.search.model.SearchMode
+import com.heikeji.phonesearch.protocol.search.parse.SearchLoginRequiredException
 import com.heikeji.phonesearch.search.SearchRepository
 import com.heikeji.phonesearch.search.SearchTask
 import kotlinx.coroutines.CancellationException
@@ -78,6 +79,12 @@ class PageViewModel(
     /** 从登录页回来后继续原任务。 */
     fun resumeAfterLogin(grade: Int) {
         challengeLaunched = false
+        repository.clearChallenge()
+        task = task?.copy(
+            generation = ++generation,
+            kdussSnapshot = sessions.kduss(),
+            uidSnapshot = sessions.current()?.uid.orEmpty(),
+        )
         resumeCurrent(grade)
     }
 
@@ -94,6 +101,12 @@ class PageViewModel(
     }
 
     fun shouldLaunchChallenge(): Boolean = !challengeLaunched
+
+    fun requireLogin(message: String) {
+        _state.value = _state.value.copy(
+            loading = false, needLogin = true, message = null, loginMessage = message,
+        )
+    }
 
     fun cancel() {
         job?.cancel()
@@ -168,6 +181,7 @@ class PageViewModel(
     }
 
     private suspend fun runRefine(grade: Int, refineTask: SearchTask) {
+        _state.value = _state.value.copy(loading = true, message = null, needLogin = false, loginMessage = "")
         try {
             val refined = withContext(Dispatchers.IO) { repository.search(refineTask, grade) }
             if (isStale(refineTask)) return
@@ -189,7 +203,13 @@ class PageViewModel(
             _state.value = _state.value.copy(
                 loading = false,
                 needLogin = true,
-                message = e.message ?: "登录已失效，请重新登录",
+                message = null,
+                loginMessage = e.message ?: "登录已失效，请重新登录",
+            )
+        } catch (e: SearchLoginRequiredException) {
+            if (isStale(refineTask)) return
+            _state.value = _state.value.copy(
+                loading = false, needLogin = true, message = null, loginMessage = e.message.orEmpty(),
             )
         } catch (e: Exception) {
             if (isStale(refineTask)) return
@@ -210,7 +230,7 @@ class PageViewModel(
         if (job?.isActive == true) return
 
         job = viewModelScope.launch {
-            _state.value = _state.value.copy(loading = true, message = null)
+            _state.value = _state.value.copy(loading = true, message = null, needLogin = false, loginMessage = "")
             try {
                 val result = withContext(Dispatchers.IO) { block(current) }
                 if (isStale(current)) return@launch
@@ -234,7 +254,13 @@ class PageViewModel(
                 _state.value = _state.value.copy(
                     loading = false,
                     needLogin = true,
-                    message = e.message ?: "登录已失效，请重新登录",
+                    message = null,
+                    loginMessage = e.message ?: "登录已失效，请重新登录",
+                )
+            } catch (e: SearchLoginRequiredException) {
+                if (isStale(current)) return@launch
+                _state.value = _state.value.copy(
+                    loading = false, needLogin = true, message = null, loginMessage = e.message.orEmpty(),
                 )
             } catch (e: Exception) {
                 if (isStale(current)) return@launch

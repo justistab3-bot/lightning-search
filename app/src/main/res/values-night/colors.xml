@@ -1,53 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 暗色主题：暖炭色表面，保持同样的暖色调 -->
+<!-- 暗色主题：墨蓝夜色表面。brand 提亮保证暗底上的可读性，白字改压深靛底为原则。 -->
 <resources>
-    <color name="parchment">#141413</color>
-    <color name="ivory">#30302E</color>
-    <color name="pure_white">#30302E</color>
-    <color name="warm_sand">#3D3D3A</color>
-    <color name="dark_surface">#30302E</color>
-    <color name="deep_dark">#0E0E0D</color>
+    <color name="on_subject">#171B2B</color>
+    <!-- 品牌：暗色下提亮 -->
+    <color name="brand">#9DB0FF</color>
+    <color name="brand_pressed">#8AA0FF</color>
+    <color name="on_brand">#141A38</color>
+    <color name="brand_container">#2A3160</color>
+    <color name="on_brand_container">#DDE4FF</color>
+    <color name="link">#7FA5FF</color>
+    <color name="star_amber">#FFC24D</color>
 
-    <color name="near_black">#FAF9F5</color>
-    <color name="charcoal_warm">#E8E6DC</color>
-    <color name="olive_gray">#B0AEA5</color>
-    <!-- 亮色下压暗到 #71706A；暗色下反过来要提亮。原值在卡片上只有 3.62:1 -->
-    <color name="stone_gray">#9A998F</color>
-    <color name="dark_warm">#D1CFC5</color>
-    <color name="warm_silver">#B0AEA5</color>
+    <!-- 语义色：暗色下提亮一档 -->
+    <color name="danger">#FF8585</color>
+    <color name="warning">#FFB454</color>
+    <color name="success">#5CC98E</color>
 
-    <!--
-      描边。原值是 #30302E —— 和卡片色**完全相同**，对比度 1.00，
-      暗色下卡片边框等于不存在。提到 #4D4C48（卡片上 1.54，背景上 2.14）。
-    -->
-    <color name="border_cream">#4D4C48</color>
-    <color name="border_warm">#3D3D3A</color>
-    <color name="border_dark">#3D3D3A</color>
-    <color name="ring_warm">#4D4C48</color>
-    <color name="ring_deep">#5E5D59</color>
+    <!-- 表面 -->
+    <color name="bg">#0F1220</color>
+    <color name="surface">#1A1F33</color>
+    <color name="surface_alt">#222842</color>
+    <color name="surface_sunken">#262D4A</color>
 
-    <!--
-      陶土色在暗色下要**提亮**：按钮文字用的是 ivory，而暗色主题里 ivory 是深色
-      (#30302E)，等于深字压在浅底上。原值 #D97757 只有 4.24:1，差一点。
-    -->
-    <color name="terracotta">#E08A6B</color>
-    <color name="terracotta_pressed">#D0704F</color>
-    <color name="coral">#E08A6B</color>
+    <!-- 相机 -->
+    <color name="cam_dark">#0A0D18</color>
+    <color name="cam_panel">#141930</color>
 
-    <!--
-      错误色原来没有暗色覆盖，沿用了亮色的 #B53333 —— 在深背景上只有 3.06:1、
-      卡片上 2.20:1，报错信息几乎看不清。这是亮色主题看不出来的问题。
-    -->
-    <color name="error_crimson">#E87F7F</color>
+    <!-- 文字（反转） -->
+    <color name="ink">#F2F4FC</color>
+    <color name="ink_body">#D3D8EA</color>
+    <color name="ink_secondary">#ADB6D4</color>
+    <color name="ink_tertiary">#8791B2</color>
 
-    <color name="subject_math">#D97757</color>
-    <color name="subject_chinese">#8B9A6F</color>
-    <color name="subject_english">#7B8B9C</color>
-    <color name="subject_physics">#9A7CAE</color>
-    <color name="subject_chemistry">#6F9A8B</color>
-    <color name="subject_biology">#8BAE6F</color>
-    <color name="subject_history">#BA8B5F</color>
-    <color name="subject_geography">#7F9AAE</color>
-    <color name="subject_politics">#AE7C7C</color>
-    <color name="subject_default">#87867F</color>
+    <!-- 描边：暗色下提到卡片可辨的亮度 -->
+    <color name="line">#333B5E</color>
+    <color name="line_subtle">#2A304F</color>
+    <color name="line_strong">#465075</color>
+
+    <!-- 学科色：暗色下整体提亮 -->
+    <color name="subject_math">#FF8A66</color>
+    <color name="subject_chinese">#5ECB95</color>
+    <color name="subject_english">#6FA8F5</color>
+    <color name="subject_physics">#A98AF0</color>
+    <color name="subject_chemistry">#54CFC9</color>
+    <color name="subject_biology">#93C863</color>
+    <color name="subject_history">#E8AC4E</color>
+    <color name="subject_geography">#6FBEE0</color>
+    <color name="subject_politics">#F07FA8</color>
+    <color name="subject_default">#8791B2</color>
 </resources>

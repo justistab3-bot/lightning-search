@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="page_gutter">8dp</dimen>
+    <dimen name="result_photo_height">72dp</dimen>
+</resources>

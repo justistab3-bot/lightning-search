@@ -39,7 +39,7 @@ class IdentityInputTest {
                 androidId = "android-id",
                 typewriting = "",
                 powerOnTime = 12345L,
-                memoryGb = 8,
+                memoryBytes = 8L * 1024 * 1024 * 1024,
                 hardDiskBytes = 1024,
                 screen = "1080*2400",
             ),
@@ -54,5 +54,6 @@ class IdentityInputTest {
         assertTrue(decoded.contains("\"model\":\"25067PYE3C\""))
         assertTrue(decoded.contains("\"did\":\"\""))
         assertTrue(decoded.contains("\"cpu\":\"armeabi-v7a\""))
+        assertTrue("getdid expects RAM in bytes", decoded.contains("\"memory\":8589934592"))
     }
 }

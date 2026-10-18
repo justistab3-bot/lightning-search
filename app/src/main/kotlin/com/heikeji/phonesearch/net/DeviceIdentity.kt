@@ -160,7 +160,7 @@ class DeviceIdentity(context: Context) {
                 )
             }.getOrDefault(""),
             powerOnTime = System.currentTimeMillis() - SystemClock.elapsedRealtime(),
-            memoryGb = totalMemoryGb(),
+            memoryBytes = totalMemoryBytes(),
             hardDiskBytes = totalDiskBytes(),
             screen = screenWh(),
         ),
@@ -177,10 +177,11 @@ class DeviceIdentity(context: Context) {
         }
     }.getOrDefault("")
 
-    private fun totalMemoryGb(): Long = runCatching {        val info = android.app.ActivityManager.MemoryInfo()
+    private fun totalMemoryBytes(): Long = runCatching {
+        val info = android.app.ActivityManager.MemoryInfo()
         (appContext.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager)
             .getMemoryInfo(info)
-        info.totalMem / (1024L * 1024L * 1024L)
+        info.totalMem
     }.getOrDefault(0L)
 
     private fun totalDiskBytes(): Long = runCatching {

@@ -1,194 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  整页结果页：上方原图缩略（点开框选），中间题块横排，下方当前题块的候选答案。
-  两级切换：题块 -> 候选答案。
--->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/root"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="?android:attr/colorBackground"
-    android:orientation="vertical">
-
-    <LinearLayout
-        android:id="@+id/headerBar"
-        android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingStart="4dp"
-        android:paddingEnd="12dp">
-
-        <ImageButton
-            android:id="@+id/backButton"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/action_close"
-            android:padding="10dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/ic_arrow_back"
-            app:tint="@color/charcoal_warm" />
-
-        <com.heikeji.phonesearch.ui.common.SubjectIconView
-            android:id="@+id/subjectBadge"
-            android:layout_width="28dp"
-            android:layout_height="28dp"
-            android:layout_marginStart="2dp" />
-
-        <TextView
-            android:id="@+id/headerTitle"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
-            android:layout_weight="1"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:text="@string/page_title"
-            android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Section" />
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:id="@+id/root" android:layout_width="match_parent" android:layout_height="match_parent" android:background="?android:attr/colorBackground" android:orientation="vertical">
+    <LinearLayout android:id="@+id/headerBar" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal" android:paddingStart="4dp" android:paddingEnd="12dp" android:minHeight="48dp">
+        <ImageButton android:id="@+id/backButton" android:layout_width="48dp" android:layout_height="48dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="@string/action_close" android:padding="10dp" android:scaleType="fitCenter" android:src="@drawable/ic_arrow_back" app:tint="@color/ink_body" />
+        <com.heikeji.phonesearch.ui.common.SubjectIconView android:id="@+id/subjectBadge" android:layout_width="28dp" android:layout_height="28dp" android:layout_marginStart="2dp" />
+        <TextView android:id="@+id/headerTitle" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="10dp" android:layout_weight="1" android:ellipsize="end" android:maxLines="1" android:text="@string/page_title" android:textAppearance="@style/TextAppearance.FlashSearch.Section" />
+        <ImageButton android:id="@+id/togglePhotoButton" android:layout_width="48dp" android:layout_height="48dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="@string/label_question_photo" android:padding="12dp" android:src="@drawable/ic_image" app:tint="@color/ink_body" />
     </LinearLayout>
-
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/photoCard"
-        android:layout_width="match_parent"
-        android:layout_height="180dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        app:cardBackgroundColor="@color/ivory"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="0dp"
-        app:strokeColor="@color/border_cream"
-        app:strokeWidth="1dp">
-
-        <FrameLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-            <ImageView
-                android:id="@+id/pagePhoto"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:contentDescription="@string/page_original_photo"
-                android:scaleType="fitCenter" />
-
-            <TextView
-                android:id="@+id/photoHint"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="bottom|end"
-                android:layout_margin="6dp"
-                android:background="@drawable/bg_circle_scrim"
-                android:paddingStart="10dp"
-                android:paddingTop="4dp"
-                android:paddingEnd="10dp"
-                android:paddingBottom="4dp"
-                android:text="@string/page_tap_to_select"
-                android:textColor="@color/white"
-                android:textSize="12sp" />
+    <com.google.android.material.card.MaterialCardView android:id="@+id/photoCard" android:layout_width="match_parent" android:layout_height="@dimen/result_photo_height" android:layout_marginStart="16dp" android:layout_marginEnd="16dp" app:cardBackgroundColor="@color/surface" app:cardCornerRadius="16dp" app:cardElevation="0dp" app:strokeColor="@color/line" app:strokeWidth="1dp">
+        <FrameLayout android:layout_width="match_parent" android:layout_height="match_parent">
+            <ImageView android:id="@+id/pagePhoto" android:layout_width="match_parent" android:layout_height="match_parent" android:contentDescription="@string/page_original_photo" android:scaleType="fitCenter" />
+            <TextView android:id="@+id/photoHint" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="bottom|end" android:layout_margin="6dp" android:background="@drawable/bg_circle_scrim" android:paddingStart="10dp" android:paddingTop="4dp" android:paddingEnd="10dp" android:paddingBottom="4dp" android:text="@string/page_tap_to_select" android:textColor="@color/white" android:textSize="12sp" />
         </FrameLayout>
     </com.google.android.material.card.MaterialCardView>
-
-    <HorizontalScrollView
-        android:id="@+id/blockScroll"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:scrollbars="none">
-
-        <LinearLayout
-            android:id="@+id/blockRow"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal" />
+    <HorizontalScrollView android:id="@+id/blockScroll" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:paddingStart="16dp" android:paddingEnd="16dp" android:scrollbars="none">
+        <LinearLayout android:id="@+id/blockRow" android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" />
     </HorizontalScrollView>
-
-    <com.google.android.material.tabs.TabLayout
-        android:id="@+id/indicator"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:visibility="gone"
-        app:tabIndicatorHeight="0dp"
-        app:tabMode="scrollable"
-        app:tabPaddingEnd="2dp"
-        app:tabPaddingStart="2dp" />
-
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1">
-
-        <androidx.viewpager2.widget.ViewPager2
-            android:id="@+id/pager"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/aiSolveButton"
-            style="@style/Widget.FlashSearch.PrimaryButton"
-            android:layout_width="wrap_content"
-            android:layout_height="40dp"
-            android:layout_gravity="bottom|end"
-            android:layout_margin="12dp"
-            android:paddingStart="14dp"
-            android:paddingEnd="14dp"
-            android:text="@string/action_ai_solve"
-            android:visibility="gone"
-            app:icon="@drawable/ic_ai_solve"
-            app:iconGravity="textStart"
-            app:iconPadding="6dp"
-            app:iconSize="18dp" />
-
-        <TextView
-            android:id="@+id/emptyText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:gravity="center"
-            android:paddingStart="32dp"
-            android:paddingEnd="32dp"
-            android:textAppearance="@style/TextAppearance.FlashSearch.Body"
-            android:visibility="gone" />
+    <com.google.android.material.tabs.TabLayout android:id="@+id/indicator" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:visibility="gone" app:tabIndicatorHeight="0dp" app:tabMode="scrollable" app:tabPaddingEnd="2dp" app:tabPaddingStart="2dp" />
+    <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+        <androidx.viewpager2.widget.ViewPager2 android:id="@+id/pager" android:layout_width="match_parent" android:layout_height="match_parent" />
+        <LinearLayout android:id="@+id/loginState" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_gravity="center" android:gravity="center" android:orientation="vertical" android:paddingStart="24dp" android:paddingEnd="24dp" android:visibility="gone">
+            <TextView android:id="@+id/loginMessageText" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:textAppearance="@style/TextAppearance.FlashSearch.Body" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/loginButton" style="@style/Widget.FlashSearch.PrimaryButton" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="@string/action_go_login" />
+        </LinearLayout>
+        <TextView android:id="@+id/emptyText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_gravity="center" android:gravity="center" android:paddingStart="32dp" android:paddingEnd="32dp" android:textAppearance="@style/TextAppearance.FlashSearch.Body" android:visibility="gone" />
     </FrameLayout>
-
-    <LinearLayout
-        android:id="@+id/bottomBar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingStart="16dp"
-        android:paddingTop="6dp"
-        android:paddingEnd="16dp"
-        android:paddingBottom="8dp">
-
-        <TextView
-            android:id="@+id/statusText"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:ellipsize="end"
-            android:maxLines="2"
-            android:textAppearance="@style/TextAppearance.FlashSearch.Caption" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/cropButton"
-            style="@style/Widget.FlashSearch.SecondaryButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:text="@string/action_crop_research" />
+    <LinearLayout android:id="@+id/bottomBar" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal" android:paddingStart="16dp" android:paddingTop="6dp" android:paddingEnd="16dp" android:paddingBottom="8dp">
+        <com.google.android.material.button.MaterialButton android:id="@+id/aiSolveButton" style="@style/Widget.FlashSearch.PrimaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:paddingStart="14dp" android:paddingEnd="14dp" android:text="@string/action_ai_solve" android:visibility="gone" app:icon="@drawable/ic_ai_solve" app:iconGravity="textStart" app:iconPadding="6dp" app:iconSize="18dp" android:minHeight="48dp" android:layout_weight="1" />
+        <TextView android:id="@+id/statusText" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:ellipsize="end" android:maxLines="2" android:textAppearance="@style/TextAppearance.FlashSearch.Caption" android:visibility="gone" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/cropButton" style="@style/Widget.FlashSearch.SecondaryButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:text="@string/action_crop_research" android:layout_weight="1" android:minWidth="0dp" android:paddingStart="8dp" android:paddingEnd="8dp" />
     </LinearLayout>
-
-    <ProgressBar
-        android:id="@+id/progress"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:indeterminateTint="@color/terracotta"
-        android:visibility="gone" />
-
+    <ProgressBar android:id="@+id/progress" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center_horizontal" android:indeterminateTint="@color/brand" android:visibility="gone" />
 </LinearLayout>

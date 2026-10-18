@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 没有答案的题块：虚线感的弱化描边 -->
+<!-- 没有答案的题块：透明底 + 冷描边，弱化呈现 -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:state_selected="true">
         <shape android:shape="rectangle">
-            <corners android:radius="14dp" />
-            <solid android:color="@color/olive_gray" />
+            <corners android:radius="999dp" />
+            <solid android:color="@color/ink_secondary" />
         </shape>
     </item>
     <item>
         <shape android:shape="rectangle">
-            <corners android:radius="14dp" />
+            <corners android:radius="999dp" />
             <solid android:color="@android:color/transparent" />
-            <stroke android:width="1dp" android:color="@color/ring_warm" />
+            <stroke android:width="1dp" android:color="@color/line_strong" />
         </shape>
     </item>
 </selector>

@@ -86,12 +86,6 @@ object NetConfig {
     const val VC = "1810"
     const val VC_NAME = "7.7.0"
 
-    /**
-     * 原生密钥不可用时的整体回退（老手表版参数 + 老 Java 密钥推导）。
-     * 服务器按版本号加密答案内容，参数与密钥必须成对切换，不能混搭。
-     */
-    const val VC_LEGACY = "1170"
-    const val VC_NAME_LEGACY = "6.49.0"
     const val OS = "android"
     const val OPERATOR_ID = "46000"
     const val PKG_NAME = "com.kuaiduizuoye.scan"

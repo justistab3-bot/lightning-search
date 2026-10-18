@@ -5,19 +5,20 @@ import com.heikeji.phonesearch.protocol.search.model.AnswerItem
 /**
  * 把一条 [AnswerItem] 渲染成答案页 WebView 的完整 HTML。
  *
- * 视觉语言：暖羊皮纸底、象牙白卡片、衬线标题、宽行高、大圆角图片。
+ * 视觉语言（v1.36.0「墨蓝学院」）：冷雾蓝灰底、纯白卡片、靛蓝强调色、
+ * 无衬线粗标题、冷描边 + 浅投影，与原生侧 colors.xml/themes.xml 同一套 token。
  *
  * 明暗两套配色由调用方通过 [darkTheme] 显式指定，不依赖 `prefers-color-scheme`——
  * WebView 是否跟随应用夜间模式在各版本上并不一致，显式传参更可靠。
  * 学科徽标颜色同理由调用方传入（`:protocol` 不依赖 Android 资源）。
  *
- * 公式：先清洗 HTML，再用 [LatexRenderer] 把文本节点里的 LaTeX 转成 HTML 排版，
- * 因此答案页 WebView 可以保持**禁用 JavaScript**。
+ * 公式：先清洗 HTML（含跨标签公式合并），再用 [LatexRenderer] 把文本节点里的
+ * LaTeX 转成 HTML 兜底排版；页面上的本地 KaTeX 会再按 `data-tex` 重渲染一遍。
  *
  * 安全约束：
- * - CSP 限制为 `default-src 'none'; img-src https: data:; style-src 'unsafe-inline'`
+ * - CSP 限制脚本/样式/字体只允许本地 appassets，图片只允许 https
  * - 图片只允许 https（由 [AnswerHtmlSanitizer] 保证）
- * - 调用方必须对 WebView 关闭 JavaScript 并禁止导航
+ * - 不注册任何 JS Bridge，禁止导航离开本地页
  */
 object AnswerPageRenderer {
 
@@ -59,7 +60,7 @@ object AnswerPageRenderer {
     ): String {
         val body = buildString {
             if (item.subject.isNotBlank() || index == 1) {
-                append(headerChips(item.subject, subjectColorHex, isBestMatch = index == 1))
+                append(headerChips(item.subject, subjectColorHex, isBestMatch = index == 1, darkTheme))
             }
             if (item.rawHtml != null) {
                 append(section("结果", item.rawHtml, emptyList()))
@@ -88,14 +89,17 @@ object AnswerPageRenderer {
         subject: String,
         colorHex: String?,
         isBestMatch: Boolean,
+        darkTheme: Boolean,
     ): String {
-        val color = colorHex ?: "#87867F"
+        val color = colorHex ?: "#6E7896"
         val sb = StringBuilder("<div class=\"chip-row\">")
         if (subject.isNotBlank()) {
             sb.append("<span class=\"subject-chip\">")
             sb.append("<span class=\"subject-badge\" style=\"background:").append(color).append("\">")
             sb.append("<svg viewBox=\"0 0 24 24\" width=\"15\" height=\"15\" fill=\"none\" ")
-                .append("stroke=\"#FAF9F5\" stroke-width=\"2\" stroke-linecap=\"round\" ")
+                .append("aria-hidden=\"true\" stroke=\"")
+                .append(if (darkTheme) "#171B2B" else "#FFFFFF")
+                .append("\" stroke-width=\"2\" stroke-linecap=\"round\" ")
                 .append("stroke-linejoin=\"round\"><path d=\"")
                 .append(SubjectIcons.pathData(subject))
                 .append("\"/></svg>")
@@ -105,9 +109,9 @@ object AnswerPageRenderer {
         }
         if (isBestMatch) {
             sb.append("<span class=\"best-chip\">")
-            sb.append("<svg viewBox=\"0 0 24 24\" width=\"13\" height=\"13\" fill=\"#C96442\">")
+            sb.append("<svg viewBox=\"0 0 24 24\" width=\"13\" height=\"13\" fill=\"#FFB020\">")
                 .append("<path d=\"").append(STAR_PATH).append("\"/></svg>")
-            sb.append("最佳匹配</span>")
+                .append("最佳匹配</span>")
         }
         sb.append("</div>")
         return sb.toString()
@@ -156,7 +160,6 @@ object AnswerPageRenderer {
         </html>
     """.trimIndent()
 
-    private const val SERIF = "Georgia, 'Noto Serif CJK SC', 'Source Han Serif SC', serif"
     private const val SANS =
         "-apple-system, 'Noto Sans CJK SC', 'Source Han Sans SC', 'Microsoft YaHei', sans-serif"
     private const val MATH_FONT =
@@ -178,36 +181,38 @@ object AnswerPageRenderer {
         val accentSoft: String,
     )
 
+    /** 「墨蓝学院」亮色：冷雾底 + 纯白卡 + 靛蓝强调（与原生 colors.xml 同值）。 */
     private val LIGHT = Palette(
-        bg = "#F5F4ED",
-        text = "#3D3D3A",
-        card = "#FAF9F5",
-        border = "#F0EEE6",
-        heading = "#141413",
-        imageBg = "#F0EEE6",
-        tableBorder = "#E8E6DC",
-        tableHeadBg = "#F5F4ED",
-        quoteBorder = "#D1CFC5",
-        quoteText = "#5E5D59",
-        muted = "#87867F",
-        accent = "#C96442",
-        accentSoft = "#F6EAE4",
+        bg = "#EEF1F8",
+        text = "#3A4258",
+        card = "#FFFFFF",
+        border = "#E6EAF6",
+        heading = "#171B2B",
+        imageBg = "#EEF1F8",
+        tableBorder = "#D8DEF0",
+        tableHeadBg = "#F4F7FD",
+        quoteBorder = "#C3CCE8",
+        quoteText = "#4E5B85",
+        muted = "#6E7896",
+        accent = "#3B4DB8",
+        accentSoft = "#E4E9FC",
     )
 
+    /** 「墨蓝学院」暗色：墨蓝夜色表面（与 values-night/colors.xml 同值）。 */
     private val DARK = Palette(
-        bg = "#141413",
-        text = "#D1CFC5",
-        card = "#30302E",
-        border = "#3D3D3A",
-        heading = "#FAF9F5",
-        imageBg = "#3D3D3A",
-        tableBorder = "#3D3D3A",
-        tableHeadBg = "#3D3D3A",
-        quoteBorder = "#5E5D59",
-        quoteText = "#B0AEA5",
-        muted = "#87867F",
-        accent = "#D97757",
-        accentSoft = "#3A2C25",
+        bg = "#0F1220",
+        text = "#D3D8EA",
+        card = "#1A1F33",
+        border = "#2A304F",
+        heading = "#F2F4FC",
+        imageBg = "#222842",
+        tableBorder = "#333B5E",
+        tableHeadBg = "#222842",
+        quoteBorder = "#3D4A75",
+        quoteText = "#9AA5CC",
+        muted = "#8791B2",
+        accent = "#9DB0FF",
+        accentSoft = "#2A3160",
     )
 
     private fun palette(dark: Boolean): String {
@@ -238,7 +243,7 @@ object AnswerPageRenderer {
               display: inline-flex; align-items: center; justify-content: center;
               width: 26px; height: 26px; border-radius: 9px;
             }
-            .subject-name { font-family: $SERIF; font-size: 15px; color: ${p.heading}; }
+            .subject-name { font-size: 15px; font-weight: 700; color: ${p.heading}; }
             .best-chip {
               display: inline-flex; align-items: center; gap: 5px;
               padding: 5px 12px; border-radius: 14px;
@@ -252,12 +257,13 @@ object AnswerPageRenderer {
               background: ${p.card};
               border: 1px solid ${p.border};
               border-radius: 16px;
+              box-shadow: 0 1px 2px rgba(23, 27, 43, 0.04);
               padding: 18px;
               margin: 0 0 14px;
             }
             section:last-child { margin-bottom: 0; }
             h2 {
-              font-family: $SERIF; font-weight: 500; font-size: 16px;
+              font-weight: 700; font-size: 16px;
               color: ${p.heading}; margin: 0 0 12px; letter-spacing: 0;
             }
             p { margin: 0 0 12px; }
@@ -291,7 +297,13 @@ object AnswerPageRenderer {
               line-height: 1.35;
               white-space: normal;
             }
-            .math[data-math-engine="katex"] {
+            /* $$ / \[..\] 独立公式：兜底也按块居中排版 */
+            .math[data-display="1"] {
+              display: block;
+              text-align: center;
+              margin: .45em 0;
+            }
+            .math[data-math-engine="katex"], .math[data-math-engine="katex-lenient"] {
               font-family: inherit;
               font-size: 1em;
               line-height: inherit;
@@ -314,6 +326,31 @@ object AnswerPageRenderer {
             .sp { display: inline-block; width: .17em; }
             .sp.wide { width: .33em; }
             .sp.wider { width: .66em; }
+
+            /* 顶标类命令（\vec \hat \overline…）：符号用 CSS 画在头顶 */
+            .acc { position: relative; display: inline-block; }
+            .acc::before {
+              position: absolute;
+              top: -.58em; left: 50%;
+              transform: translateX(-50%);
+              font-size: .68em; line-height: 1;
+              pointer-events: none;
+            }
+            .acc-vec::before { content: "→"; letter-spacing: -.12em; }
+            .acc-harpoon::before { content: "⟶"; letter-spacing: -.2em; }
+            .acc-harpoon-l::before { content: "⟵"; letter-spacing: -.2em; }
+            .acc-hat::before { content: "^"; font-weight: 600; }
+            .acc-tilde::before { content: "~"; }
+            .ovl { border-top: 1.2px solid currentColor; padding: 0 .1em; }
+            .und { text-decoration: underline; text-underline-offset: .18em; }
+
+            /* \begin{cases} / 矩阵 / aligned 等环境的兜底排版 */
+            .env { display: inline-flex; align-items: stretch; vertical-align: middle; margin: 0 .12em; }
+            .env-block { display: flex; justify-content: center; margin: .2em 0; }
+            .env-delim { display: flex; align-items: center; font-size: 1.7em; font-weight: 300; line-height: 1; }
+            .env-rows { display: inline-flex; flex-direction: column; justify-content: center; padding: .08em 0; }
+            .env-row { display: block; text-align: left; padding: .05em .3em; white-space: nowrap; }
+            .env-cell-gap { display: inline-block; width: 1.1em; }
         """.trimIndent()
     }
 }

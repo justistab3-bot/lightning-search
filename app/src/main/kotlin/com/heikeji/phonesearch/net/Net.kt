@@ -113,8 +113,7 @@ class Net(
             if (!merged.containsKey(key)) merged[key] = value
         }
         val session = sessions.current()
-        // 官方手机客户端匿名状态也发 identityIdV2=1（身份已初始化）；
-        // 登录后以会话里的值为准。
+        // 有会话时使用账号身份；缺省值仅用于通用请求的参数完整性。
         merged["identityIdV2"] = (session?.identityIdV2 ?: 1).toString()
         merged["occupationType"] = (session?.occupationType ?: 0).toString()
         merged["nt"] = identity.networkType()
@@ -183,7 +182,9 @@ class Net(
         }
         if (errNo != 0) {
             if (errNo == 3) sessions.clearIfCurrent(kduss)
-            throw ApiException(json.optString("errstr", "服务器拒绝请求（$errNo）"), errNo)
+            val message = json.optString("errstr").ifEmpty { json.optString("errMsg") }
+                .ifEmpty { "服务器拒绝请求（$errNo）" }
+            throw ApiException(message, errNo)
         }
         val data = json.opt("data")
         return when {

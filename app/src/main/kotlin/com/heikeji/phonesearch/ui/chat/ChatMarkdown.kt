@@ -29,12 +29,20 @@ object ChatMarkdown {
     /** 公式初始字号（会被等比缩放到目标高度，此值只影响画质）。 */
     private const val MATH_BASE_SIZE = 48f
 
+    /** 预提取公式的占位符：`\u0000<序号>\u0000`，内容存在 [render] 的暂存列表里。 */
+    private val MATH_TOKEN = Regex("\u0000(\\d+)\u0000")
+
     fun render(source: String, view: TextView): CharSequence {
         if (source.isEmpty()) return ""
+        // 先把跨行的公式块整体拎出来换成占位符 —— render 以前是按行处理的，
+        // `$$...$$` 一旦内部有换行（cases / aligned 环境几乎必然有）就永远匹配不到，
+        // 公式直接以 LaTeX 源码形式露出来。
+        val stash = ArrayList<String>()
+        val prepared = extractMathBlocks(source, stash)
         val out = SpannableStringBuilder()
         var inCodeBlock = false
 
-        for (rawLine in source.split('\n')) {
+        for (rawLine in prepared.split('\n')) {
             val line = rawLine.trimEnd('\r')
 
             // 代码块围栏
@@ -51,6 +59,19 @@ object ChatMarkdown {
                 continue
             }
 
+            // 预提取的公式：独占一行就按独立公式居中排版
+            val tokens = MATH_TOKEN.findAll(line).toList()
+            if (tokens.isNotEmpty()) {
+                val leftover = MATH_TOKEN.replace(line, "").trim()
+                if (leftover.isEmpty()) {
+                    for (token in tokens) {
+                        val latex = stash.getOrNull(token.groupValues[1].toInt()) ?: continue
+                        appendMath(out, latex, view, display = true)
+                    }
+                    continue
+                }
+            }
+
             // 独立行公式：整行只有一对 $$ 或 \[ \]
             val trimmed = line.trim()
             val block = BLOCK_MATH.find(trimmed)
@@ -59,7 +80,7 @@ object ChatMarkdown {
                 continue
             }
 
-            appendLine(out, line, view)
+            appendLine(out, line, view, stash)
         }
 
         // 去掉结尾多余换行
@@ -67,7 +88,67 @@ object ChatMarkdown {
         return out
     }
 
-    private fun appendLine(out: SpannableStringBuilder, line: String, view: TextView) {
+    /**
+     * 把源文本里跨行/同行的 `$$..$$`、`\[..\]`、`\(..\)` 公式换成占位符。
+     * 内容（含换行）存进 [stash]，换行转成空格 —— jlatexmath 不吃裸换行，
+     * 行间关系本来就该靠 `\\` 表达。
+     */
+    private fun extractMathBlocks(source: String, stash: MutableList<String>): String {
+        if (!source.contains("$$") && !source.contains("\\[") && !source.contains("\\(")) {
+            return source
+        }
+        val sb = StringBuilder(source.length)
+        var i = 0
+        var atLineStart = true
+        var inFence = false
+        while (i < source.length) {
+            if (atLineStart) {
+                val lineEnd = source.indexOf('\n', i).let { if (it == -1) source.length else it }
+                if (source.substring(i, lineEnd).trimStart().startsWith("```")) {
+                    inFence = !inFence
+                    sb.append(source, i, lineEnd)
+                    if (lineEnd < source.length) sb.append('\n')
+                    i = lineEnd + 1
+                    continue
+                }
+            }
+            if (!inFence) {
+                val open = when {
+                    source.startsWith("$$", i) -> "$$"
+                    source.startsWith("\\(", i) -> "\\("
+                    source.startsWith("\\[", i) -> "\\["
+                    else -> null
+                }
+                if (open != null) {
+                    val close = if (open == "\\(") "\\)" else open
+                    val closeStart = source.indexOf(close, i + open.length)
+                    if (closeStart != -1) {
+                        val latex = source.substring(i + open.length, closeStart)
+                            .replace("\r", "")
+                            .replace("\n", " ")
+                            .trim()
+                        sb.append('\u0000').append(stash.size).append('\u0000')
+                        stash.add(latex)
+                        i = closeStart + close.length
+                        atLineStart = false
+                        continue
+                    }
+                }
+            }
+            val c = source[i]
+            sb.append(c)
+            atLineStart = c == '\n'
+            i++
+        }
+        return sb.toString()
+    }
+
+    private fun appendLine(
+        out: SpannableStringBuilder,
+        line: String,
+        view: TextView,
+        stash: List<String>,
+    ) {
         val heading = HEADING.find(line)
         if (heading != null) {
             val level = heading.groupValues[1].length
@@ -87,7 +168,7 @@ object ChatMarkdown {
         // 引用
         if (trimmed.startsWith(">")) {
             out.append("  ")
-            appendInline(out, trimmed.removePrefix(">").trim(), view)
+            appendInline(out, trimmed.removePrefix(">").trim(), view, stash)
             out.append('\n')
             return
         }
@@ -97,20 +178,50 @@ object ChatMarkdown {
         if (bullet != null) {
             out.append("  ".repeat(indent.coerceAtMost(3) + 1))
             out.append("• ")
-            appendInline(out, trimmed.substring(bullet.value.length), view)
+            appendInline(out, trimmed.substring(bullet.value.length), view, stash)
             out.append('\n')
             return
         }
 
         out.append("  ".repeat(indent.coerceAtMost(3)))
-        appendInline(out, trimmed, view)
+        appendInline(out, trimmed, view, stash)
         out.append('\n')
     }
 
     /**
      * 行内内容：先按公式切段，公式画成图片，其余走粗体/斜体/代码/链接处理。
      */
-    private fun appendInline(out: SpannableStringBuilder, text: String, view: TextView) {
+    private fun appendInline(
+        out: SpannableStringBuilder,
+        text: String,
+        view: TextView,
+        stash: List<String>,
+    ) {
+        if (text.isEmpty()) return
+
+        var cursor = 0
+        for (match in MATH_TOKEN.findAll(text)) {
+            if (match.range.first > cursor) {
+                appendMathOrPlain(out, text.substring(cursor, match.range.first), view, stash)
+            }
+            val latex = stash.getOrNull(match.groupValues[1].toInt()).orEmpty()
+            if (latex.isNotEmpty()) {
+                appendMath(out, latex, view, display = false)
+            }
+            cursor = match.range.last + 1
+        }
+        if (cursor < text.length) {
+            appendMathOrPlain(out, text.substring(cursor), view, stash)
+        }
+    }
+
+    /** 一段普通文本（无占位符）：再按行内公式定界符切一次，然后走 Markdown 处理。 */
+    private fun appendMathOrPlain(
+        out: SpannableStringBuilder,
+        text: String,
+        view: TextView,
+        stash: List<String>,
+    ) {
         if (text.isEmpty()) return
 
         var cursor = 0

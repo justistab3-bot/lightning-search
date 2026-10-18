@@ -156,7 +156,7 @@ class CameraActivity : AppCompatActivity() {
         binding.flipButton.setColorFilter(
             ContextCompat.getColor(
                 this,
-                if (previewRotation == 0) R.color.white else R.color.terracotta,
+                if (previewRotation == 0) R.color.white else R.color.brand,
             ),
         )
     }

@@ -9,6 +9,7 @@ import com.heikeji.phonesearch.net.SearchChallengeException
 import com.heikeji.phonesearch.net.SessionExpiredException
 import com.heikeji.phonesearch.protocol.search.model.SearchMode
 import com.heikeji.phonesearch.protocol.search.model.SearchResult
+import com.heikeji.phonesearch.protocol.search.parse.SearchLoginRequiredException
 import com.heikeji.phonesearch.search.SearchRepository
 import com.heikeji.phonesearch.search.SearchTask
 import kotlinx.coroutines.CancellationException
@@ -70,6 +71,12 @@ class SearchViewModel(
     /** 从登录页回来后继续原任务。 */
     fun resumeAfterLogin(grade: Int) {
         challengeLaunched = false
+        repository.clearChallenge()
+        task = task?.copy(
+            generation = ++generation,
+            kdussSnapshot = sessions.kduss(),
+            uidSnapshot = sessions.current()?.uid.orEmpty(),
+        )
         run(grade)
     }
 
@@ -84,6 +91,10 @@ class SearchViewModel(
     }
 
     fun shouldLaunchChallenge(): Boolean = !challengeLaunched
+
+    fun requireLogin(message: String) {
+        _state.value = SearchUiState.NeedLogin(message)
+    }
 
     private fun buildTask(
         requestMode: SearchMode,
@@ -124,6 +135,9 @@ class SearchViewModel(
                 _state.value = SearchUiState.Challenge(e.validatedInfo, e.sid)
             } catch (e: SessionExpiredException) {
                 _state.value = SearchUiState.NeedLogin(e.message ?: "登录已失效，请重新登录")
+            } catch (e: SearchLoginRequiredException) {
+                if (isStale(current)) return@launch
+                _state.value = SearchUiState.NeedLogin(e.message.orEmpty())
             } catch (e: Exception) {
                 if (isStale(current)) return@launch
                 _state.value = SearchUiState.Failure(e.message ?: "搜题失败，请重试")

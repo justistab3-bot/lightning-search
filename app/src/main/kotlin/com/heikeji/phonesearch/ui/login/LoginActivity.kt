@@ -38,7 +38,7 @@ class LoginActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        binding.root.applySystemBarPadding(horizontal = true)
+        binding.root.applySystemBarPadding(horizontal = true, ime = true)
 
         // 首次启动先给出使用边界说明，未接受就不进入应用。
         UsageNotice.ensureAccepted(
@@ -49,7 +49,7 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun startLoginFlow() {
-        if (container.sessions.current() != null) {
+        if (!returnToCaller && container.sessions.current() != null) {
             leaveAfterLogin()
             return
         }
@@ -133,6 +133,7 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun leaveAfterLogin() {
+        setResult(RESULT_OK)
         if (returnToCaller) {
             finish()
         } else {

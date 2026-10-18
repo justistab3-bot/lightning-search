@@ -50,12 +50,10 @@ class StreamHandle internal constructor(
  */
 class HttpTransport(
     /**
-     * 官方手机客户端的附加请求头（Dp-Ticket、zyb-*、na__kf_source__、Trace 等）。
-     *
-     * 每次请求重新调用（Trace 与票据都是按请求现算的）；空值头会被跳过，
-     * 与官方 `j.java` 里「空头不加」的行为一致。仅对作业帮系主机生效。
+     * 设备标识与 Trace 等公共请求头。每次请求重新生成，跳过空值。
      */
     private val phoneHeaders: () -> Map<String, String> = { emptyMap() },
+    private val phoneUserAgent: () -> String = { NetConfig.USER_AGENT },
 ) {
 
     fun post(
@@ -179,7 +177,7 @@ class HttpTransport(
     }
 
     /**
-     * 对作业帮系主机换上官方手机客户端的身份：WebView UA + Dp-Ticket/zyb-* 等附加头。
+     * 对业务主机附加 WebView UA 与设备/追踪信息。
      * 返回最终使用的 UA。
      */
     private fun applyPhoneIdentity(
@@ -200,13 +198,6 @@ class HttpTransport(
         hostOrUrl.contains("kuaiduizuoye.com") ||
             hostOrUrl.contains("zuoyebang.com") ||
             hostOrUrl.contains("zybang.com")
-
-    /** 官方 7.7.0 的 WebView UA，按本机 Build 动态拼（与官方 App 同源）。 */
-    private fun phoneUserAgent(): String =
-        "Mozilla/5.0 (Linux; Android ${android.os.Build.VERSION.RELEASE}; " +
-            "${android.os.Build.MODEL} Build/${android.os.Build.ID}; wv) " +
-            "AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 " +
-            "Chrome/153.0.8010.36 Mobile Safari/537.36"
 
     private fun read(
         connection: HttpURLConnection,

@@ -132,4 +132,87 @@ class LatexRendererTest {
         assertTrue(html, html.contains("class=\"math\""))
         assertTrue(html, html.contains("m<sup>2</sup>") || html.contains("c<sup>2</sup>"))
     }
+
+    @Test
+    fun `display delimiters carry the display flag inline ones do not`() {
+        assertTrue(
+            LatexRenderer.renderInHtml("\\[E=mc^2\\]"),
+            htmlContainsDisplayFlag("\\[E=mc^2\\]"),
+        )
+        assertFalse(htmlContainsDisplayFlag(m("x^2")))
+        assertFalse(htmlContainsDisplayFlag("\\(x^2\\)"))
+    }
+
+    private fun htmlContainsDisplayFlag(input: String): Boolean =
+        LatexRenderer.renderInHtml(input).contains("data-display=\"1\"")
+
+    /** 取公式 span 的兜底排版主体（不含 data-tex 属性 —— 原始 LaTeX 保留在里面是预期行为）。 */
+    private fun fallbackBody(html: String): String =
+        html.substringAfterLast("\">").removeSuffix("</span>")
+
+    @Test
+    fun `overrightarrow renders the arrow instead of the command name`() {
+        val html = LatexRenderer.renderInHtml(m("\\overrightarrow{AB}"))
+        assertTrue(html, html.contains("acc-harpoon"))
+        val body = fallbackBody(html)
+        assertTrue(body, body.contains("AB"))
+        assertFalse(body, body.contains("overrightarrow"))
+    }
+
+    @Test
+    fun `vec hat and overline render with spans`() {
+        val vec = LatexRenderer.renderInHtml(m("\\vec{v}"))
+        assertTrue(vec, vec.contains("acc-vec"))
+        assertTrue(vec, vec.contains("v"))
+        val hat = LatexRenderer.renderInHtml(m("\\hat{x}"))
+        assertTrue(hat, hat.contains("acc-hat"))
+        val bar = LatexRenderer.renderInHtml(m("\\overline{AB}"))
+        assertTrue(bar, bar.contains("class=\"ovl\""))
+        assertTrue(bar, bar.contains("AB"))
+    }
+
+    @Test
+    fun `mathbb maps common letters`() {
+        val html = LatexRenderer.renderInHtml(m("x \\in \\mathbb{R}"))
+        val body = fallbackBody(html)
+        assertTrue(body, body.contains("ℝ"))
+        assertFalse(body, body.contains("mathbb"))
+    }
+
+    @Test
+    fun `leqslant and langle are covered`() {
+        val html = LatexRenderer.renderInHtml(m("a \\leqslant b, \\langle x, y \\rangle"))
+        val body = fallbackBody(html)
+        assertTrue(body, body.contains("≤"))
+        assertTrue(body, body.contains("⟨"))
+        assertFalse(body, body.contains("leqslant"))
+        assertFalse(body, body.contains("langle"))
+    }
+
+    @Test
+    fun `cases environment keeps rows and brace`() {
+        val html = LatexRenderer.renderInHtml(
+            m("\\begin{cases} x+y=1 \\\\ x-y=3 \\end{cases}"),
+        )
+        assertTrue(html, html.contains("env-delim"))
+        assertTrue(html, html.contains("env-row"))
+        assertTrue(html, html.contains("x+y=1"))
+        assertTrue(html, html.contains("x-y=3"))
+        // 行数对应两条（env-rows 容器不计入）
+        assertEquals(2, Regex("class=\"env-row\"").findAll(html).count())
+    }
+
+    @Test
+    fun `pmatrix renders paired delimiters`() {
+        val html = LatexRenderer.renderInHtml(m("\\begin{pmatrix} 1 \\\\ 2 \\end{pmatrix}"))
+        assertTrue(html, html.contains("("))
+        assertTrue(html, html.contains(")"))
+        assertTrue(html, html.contains("class=\"env-row\""))
+    }
+
+    @Test
+    fun `unmatched begin falls back to inline rendering`() {
+        val html = LatexRenderer.renderInHtml(m("\\begin{cases} x=1 "))
+        assertTrue(html, html.contains("x=1"))
+    }
 }

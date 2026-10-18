@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="action_go_login">前往登录</string>
     <string name="app_name">闪电搜题</string>
     <string name="brand_tagline">拍一下，答案立刻出来 ⚡</string>
 
@@ -11,6 +12,8 @@
     <string name="stats_today">今日搜题</string>
     <string name="stats_total">累计搜题</string>
     <string name="history_title">最近搜题</string>
+    <string name="home_history_stats">今日 %1$d 次 · 累计 %2$d 次</string>
+    <string name="home_history_loading">正在读取最近搜题…</string>
     <string name="history_empty">还没有搜题记录，拍一张试试 📷</string>
     <string name="action_logout">退出登录</string>
     <string name="logout_confirm_title">退出登录</string>
@@ -102,7 +105,6 @@
     <string name="no_network_settings">打开网络设置</string>
     <string name="no_network_still_offline">还是没有连上，再检查一下网络开关吧</string>
     <!-- 系统相机 -->
-    <string name="hint_long_press_system_camera">长按可用系统相机</string>
     <string name="system_camera_unavailable">没有找到可用的系统相机应用</string>
     <string name="system_camera_failed">系统相机没有返回照片，请重试</string>
     <!-- 应用内更新 -->
@@ -170,8 +172,8 @@
     <string name="error_image_failed">图片处理失败，请重新拍摄</string>
 
     <!-- 快问 AI -->
-    <string name="chat_title">快问 AI</string>
-    <string name="chat_entry">快问 AI</string>
+    <string name="chat_title">💬 快问 AI</string>
+    <string name="chat_entry">💬 快问 AI</string>
     <string name="chat_entry_hint">问什么都能聊</string>
     <string name="chat_entry_desc">学习、生活、奇思妙想</string>
     <string name="essay_entry_hint">AI 作文</string>

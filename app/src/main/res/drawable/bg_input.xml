@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 输入框：纯白底 + 1px 暖描边，与卡片层次一致 -->
+<!-- 输入框：浅雾底 + 冷描边 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="@color/pure_white" />
-    <corners android:radius="12dp" />
+    <solid android:color="@color/surface_alt" />
+    <corners android:radius="@dimen/radius_sm" />
     <stroke
         android:width="1dp"
-        android:color="@color/ring_warm" />
+        android:color="@color/line_strong" />
 </shape>

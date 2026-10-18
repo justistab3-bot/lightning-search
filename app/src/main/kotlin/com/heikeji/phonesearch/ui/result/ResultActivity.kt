@@ -1,6 +1,5 @@
 package com.heikeji.phonesearch.ui.result
 
-import android.animation.ValueAnimator
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
@@ -30,8 +29,12 @@ import com.heikeji.phonesearch.ui.common.SubjectStyle
 import com.heikeji.phonesearch.ui.common.applySystemBarPadding
 import com.heikeji.phonesearch.ui.common.dp
 import com.heikeji.phonesearch.ui.login.LoginActivity
+import com.heikeji.phonesearch.protocol.search.parse.SearchLoginNotice
+import com.heikeji.phonesearch.protocol.search.parse.SearchLoginRequiredException
 import com.heikeji.phonesearch.ui.verification.VerificationActivity
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.UUID
 import kotlin.math.abs
@@ -70,7 +73,7 @@ class ResultActivity : AppCompatActivity(), AnswerScrollHost, AnswerImageHost {
     private var retryAction: (() -> Unit)? = null
 
     private val isLandscape: Boolean
-        get() = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        get() = resources.getBoolean(R.bool.use_two_panes)
 
     private val verificationLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult(),
@@ -78,7 +81,8 @@ class ResultActivity : AppCompatActivity(), AnswerScrollHost, AnswerImageHost {
         when (activityResult.resultCode) {
             VerificationActivity.RESULT_VERIFIED -> viewModel.retryAfterVerification(grade())
 
-            VerificationActivity.RESULT_NEED_LOGIN -> launchLogin()
+            VerificationActivity.RESULT_NEED_LOGIN ->
+                viewModel.requireLogin(SearchLoginRequiredException().message.orEmpty())
 
             else -> showMessage(getString(R.string.verification_failed)) { launchVerification() }
         }
@@ -86,11 +90,13 @@ class ResultActivity : AppCompatActivity(), AnswerScrollHost, AnswerImageHost {
 
     private val loginLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult(),
-    ) {
-        if (appContainer.sessions.current() != null) {
-            viewModel.resumeAfterLogin(grade())
-        } else {
-            finish()
+    ) { loginResult ->
+        if (loginResult.resultCode == android.app.Activity.RESULT_OK && appContainer.sessions.current() != null) {
+            if (historyEntry != null) {
+                viewModel.start(jpegBytes, grade())
+            } else {
+                viewModel.resumeAfterLogin(grade())
+            }
         }
     }
 
@@ -115,17 +121,18 @@ class ResultActivity : AppCompatActivity(), AnswerScrollHost, AnswerImageHost {
             finish()
             return
         }
-        jpegBytes = file.readBytes()
-        if (jpegBytes.isEmpty()) {
-            finish()
-            return
+        lifecycleScope.launch {
+            jpegBytes = withContext(Dispatchers.IO) {
+                runCatching { file.readBytes() }.getOrDefault(ByteArray(0))
+            }
+            if (jpegBytes.isEmpty()) {
+                finish()
+                return@launch
+            }
+            setupPhoto()
+            if (savedInstanceState == null) viewModel.start(jpegBytes, grade())
+            observeState()
         }
-
-        setupPhoto()
-        if (savedInstanceState == null) {
-            viewModel.start(jpegBytes, grade())
-        }
-        observeState()
     }
 
     // ------------------------------------------------------------------ 初始化
@@ -137,7 +144,7 @@ class ResultActivity : AppCompatActivity(), AnswerScrollHost, AnswerImageHost {
         binding.subjectBadge.subject = ""
 
         // 全屏只在横屏有意义（竖屏原图在上方，收起即可）。
-        binding.fullscreenButton.visibility = if (isLandscape) View.VISIBLE else View.GONE
+        binding.fullscreenButton.visibility = View.VISIBLE
         binding.fullscreenButton.setOnClickListener { toggleAnswerFullscreen() }
         binding.exitFullscreenButton.setOnClickListener { toggleAnswerFullscreen() }
     }
@@ -152,10 +159,12 @@ class ResultActivity : AppCompatActivity(), AnswerScrollHost, AnswerImageHost {
     }
 
     private fun setupPhoto() {
-        expandedHeight = (resources.displayMetrics.heightPixels * PHOTO_HEIGHT_FRACTION).toInt()
-
-        photoBitmap = decodeSampled(jpegBytes, 1600)
-        binding.questionPhoto.setImageBitmap(photoBitmap)
+        expandedHeight = resources.getDimensionPixelSize(R.dimen.result_photo_height)
+        lifecycleScope.launch {
+            val maxEdge = if (resources.configuration.smallestScreenWidthDp < 320) 800 else 1200
+            photoBitmap = withContext(Dispatchers.IO) { decodeSampled(jpegBytes, maxEdge) }
+            binding.questionPhoto.setImageBitmap(photoBitmap)
+        }
 
         if (isLandscape) {
             // 横屏由布局权重撑满左栏，不做高度动画，也没有收起按钮。
@@ -171,6 +180,7 @@ class ResultActivity : AppCompatActivity(), AnswerScrollHost, AnswerImageHost {
     }
 
     private fun openFromHistory(historyId: String) {
+        observeState()
         val entry = appContainer.history.list().firstOrNull { it.id == historyId }
         if (entry == null) {
             finish()
@@ -207,7 +217,7 @@ class ResultActivity : AppCompatActivity(), AnswerScrollHost, AnswerImageHost {
                     launchVerification()
                 }
             }
-            is SearchUiState.NeedLogin -> showMessage(state.message) { launchLogin() }
+            is SearchUiState.NeedLogin -> showLoginRequired(state.message)
             is SearchUiState.Failure -> showMessage(state.message) {
                 viewModel.start(jpegBytes, grade())
             }
@@ -272,9 +282,20 @@ class ResultActivity : AppCompatActivity(), AnswerScrollHost, AnswerImageHost {
         binding.messageText.text = message
         retryAction = onRetry
         binding.retryButton.visibility = if (onRetry == null) View.GONE else View.VISIBLE
+        binding.retryButton.setText(R.string.action_retry)
+    }
+
+    private fun showLoginRequired(message: String) {
+        showMessage(message) { launchLogin() }
+        binding.retryButton.setText(R.string.action_go_login)
+        binding.indicator.visibility = View.GONE
     }
 
     private fun showResult(searchResult: SearchResult, recordHistory: Boolean) {
+        if (searchResult.items.any(SearchLoginNotice::isRequired)) {
+            showLoginRequired(SearchLoginRequiredException().message.orEmpty())
+            return
+        }
         result = searchResult
         binding.loadingState.visibility = View.GONE
         binding.messageState.visibility = View.GONE
@@ -287,7 +308,9 @@ class ResultActivity : AppCompatActivity(), AnswerScrollHost, AnswerImageHost {
         }
 
         if (recordHistory) {
-            runCatching { appContainer.history.record(jpegBytes, searchResult) }
+            lifecycleScope.launch(Dispatchers.IO) {
+                runCatching { appContainer.history.record(jpegBytes, searchResult) }
+            }
         }
 
         val pages = searchResult.items.map { item ->
@@ -300,7 +323,7 @@ class ResultActivity : AppCompatActivity(), AnswerScrollHost, AnswerImageHost {
             )
         }
         binding.pager.adapter = AnswerPagerAdapter(this, pages)
-        binding.pager.offscreenPageLimit = 1
+        binding.pager.offscreenPageLimit = ViewPager2.OFFSCREEN_PAGE_LIMIT_DEFAULT
         binding.pager.isUserInputEnabled = pages.size > 1
         binding.pager.visibility = View.VISIBLE
         hasMultiplePages = pages.size > 1
@@ -381,7 +404,7 @@ class ResultActivity : AppCompatActivity(), AnswerScrollHost, AnswerImageHost {
 
     private fun setReadingMode(enabled: Boolean, animate: Boolean = true) {
         readingMode = enabled
-        if (!isLandscape) setPhotoPaneVisible(!enabled, animate)
+        if (!isLandscape) setPhotoPaneVisible(!enabled, animate = false)
         updateIndicatorVisibility()
 
         val now = SystemClock.elapsedRealtime()
@@ -424,21 +447,15 @@ class ResultActivity : AppCompatActivity(), AnswerScrollHost, AnswerImageHost {
             binding.photoCard.layoutParams = params
             return
         }
-        val animator = ValueAnimator.ofInt(params.height, target)
-        animator.duration = 180L
-        animator.addUpdateListener { valueAnimator ->
-            params.height = valueAnimator.animatedValue as Int
-            binding.photoCard.layoutParams = params
-        }
-        animator.start()
+        params.height = target
+        binding.photoCard.layoutParams = params
     }
 
     /** 横屏：收起顶栏与左栏，答案区占满整屏；靠浮动按钮退出。 */
     private fun toggleAnswerFullscreen() {
-        if (!isLandscape) return
         answerFullscreen = !answerFullscreen
 
-        binding.photoPane.visibility = if (answerFullscreen) View.GONE else View.VISIBLE
+        binding.photoPane.visibility = if (answerFullscreen || (!isLandscape && readingMode)) View.GONE else View.VISIBLE
         binding.headerBar.visibility = if (answerFullscreen) View.GONE else View.VISIBLE
         binding.exitFullscreenButton.visibility =
             if (answerFullscreen) View.VISIBLE else View.GONE
@@ -511,7 +528,6 @@ class ResultActivity : AppCompatActivity(), AnswerScrollHost, AnswerImageHost {
     companion object {
         private const val EXTRA_JPEG_PATH = "jpeg_path"
         private const val EXTRA_HISTORY_ID = "history_id"
-        private const val PHOTO_HEIGHT_FRACTION = 0.36f
         private const val AUTO_TOGGLE_COOLDOWN_MS = 350L
 
         /** 程序化切换布局后屏蔽滚动回调的时长，避免「自己造成的滚动」把状态切回去。 */

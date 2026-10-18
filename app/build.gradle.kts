@@ -31,8 +31,8 @@ android {
         minSdk = 21
         targetSdk = 37
         // 每轮迭代都往上走：装到机器上后可以直接从「设置 - 应用」或首页底部确认版本。
-        versionCode = 39
-        versionName = "1.35.2"
+        versionCode = 41
+        versionName = "1.36.1"
 
         buildConfigField("String", "UMENG_APPKEY", "\"$umengAppKey\"")
     }
@@ -40,7 +40,7 @@ android {
     // ===== 兼容红线（运营要求，构建期强制校验）=====
     // 底线一：最低版本必须保持 Android 5.0（API 21）—— 词典笔普遍停在 5.x/6.x。
     // 底线二：32 位（armeabi-v7a）必须保留 —— 大量词典笔是 32 位设备，
-    //         且官方原生库只有 arm64 版（32 位上自动回退 Java 密钥链，见 PhoneNativeSdk）。
+    //         不限制 ABI，依赖库仍需包含 32 位构件。
     // 想动这两条，必须同时修改这里的断言并更新 VERSION.md，防止静默破坏。
     val compatMinSdk: Int = defaultConfig.minSdk ?: 0
     check(compatMinSdk == 21) {

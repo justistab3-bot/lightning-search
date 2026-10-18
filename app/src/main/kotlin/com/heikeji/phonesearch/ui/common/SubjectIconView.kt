@@ -14,7 +14,7 @@ import com.heikeji.phonesearch.R
 import com.heikeji.phonesearch.protocol.render.SubjectIcons
 
 /**
- * 学科图标：圆角方块底 + 该学科的线稿图标（物理是锥形瓶、化学是试管、数学是根号……）。
+ * 学科图标：圆角方块底 + 语义明确的学科线稿，与答案 HTML 共用路径。
  *
  * 图标路径来自 `:protocol` 的 [SubjectIcons]，与答案页 HTML 里的内联 SVG 共用同一份定义，
  * 避免原生和网页两处各画一套导致不一致。
@@ -49,7 +49,9 @@ class SubjectIconView @JvmOverloads constructor(
 
     init {
         backgroundPaint.color = ContextCompat.getColor(context, R.color.subject_default)
-        iconPaint.color = ContextCompat.getColor(context, R.color.ivory)
+        iconPaint.color = ContextCompat.getColor(context, R.color.on_subject)
+        importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
+        subject = ""
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -61,7 +63,7 @@ class SubjectIconView @JvmOverloads constructor(
         canvas.drawRoundRect(0f, 0f, w, h, radius, radius, backgroundPaint)
 
         val path = sourcePath ?: return
-        val iconSize = minOf(w, h) * 0.62f
+        val iconSize = minOf(w, h) * 0.72f
         val scale = iconSize / VIEWPORT
         renderMatrix.reset()
         renderMatrix.postScale(scale, scale)

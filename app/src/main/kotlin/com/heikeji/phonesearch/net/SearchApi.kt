@@ -68,8 +68,7 @@ class SearchApi(
             )
         }
 
-        // 官方链路：搜题前先完成设备 ID（getdid）与学段（getdiggrade）上报，
-        // 服务器记住后才会给真答案内容。
+        // 搜题请求携带服务器分配的设备 ID 与当前学段。
         ensureDid()
         ensureDigGrade(grade)
 
@@ -102,18 +101,15 @@ class SearchApi(
 
     // ------------------------------------------------------------------ 设备身份前置（官方搜题链路）
 
-    @Volatile
-    private var didAttempted = false
-
     /**
      * 官方 7.7.0 的设备 ID 链路：上报设备信息（RC4 加密）换服务器下发的 did。
      *
      * 官方标准：参数与端点由 `protocol.identity.Getdid.Input` 声明（官方 Getdid 模型）。
-     * did 会进入公共参数与 `zyb-did` 头。只尝试一次，失败静默。
+     * did 会进入公共参数与 `zyb-did` 头。成功后缓存；失败留待下次搜索重试。
      */
+    @Synchronized
     fun ensureDid() {
-        if (identity.did.isNotEmpty() || didAttempted) return
-        didAttempted = true
+        if (identity.did.isNotEmpty()) return
         DiagLog.append("ensureDid 开始")
         try {
             val input = Getdid.Input.buildInput(identity.didPayload())
@@ -127,18 +123,18 @@ class SearchApi(
     }
 
     @Volatile
-    private var digGradeAttempted = false
+    private var reportedGrade: Int? = null
 
     /**
      * 官方 7.7.0 的搜题前置：`/kdapi/device/getdiggrade` 上报学段。
      *
      * 官方标准：参数与端点由 `protocol.identity.KdapiDeviceGetDigGrade.Input` 声明。
      * 响应 `{"data":{"digGrade":6}}` 回填到后续所有请求的公共参数。
-     * 只尝试一次；失败静默（保留默认学段，不阻塞搜题）。
+     * 成功后缓存当前年级；切换年级会重新上报，失败留待下次搜索重试。
      */
+    @Synchronized
     fun ensureDigGrade(grade: Int) {
-        if (digGradeAttempted) return
-        digGradeAttempted = true
+        if (reportedGrade == grade) return
         DiagLog.append("ensureDigGrade 开始 grade=$grade")
         try {
             val input = KdapiDeviceGetDigGrade.Input.buildInput(grade)
@@ -146,6 +142,7 @@ class SearchApi(
             val dg = data.optString("digGrade", "")
             DiagLog.append("ensureDigGrade 返回 digGrade=$dg")
             identity.updateDigGrade(dg)
+            if (dg.isNotEmpty()) reportedGrade = grade
         } catch (e: Exception) {
             DiagLog.append("ensureDigGrade 异常：${e.javaClass.simpleName}: ${e.message}")
         }

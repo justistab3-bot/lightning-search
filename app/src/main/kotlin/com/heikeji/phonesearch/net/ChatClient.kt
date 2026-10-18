@@ -270,7 +270,7 @@ class ChatClient(
             if (!merged.containsKey(key)) merged[key] = value
         }
         val session = sessions.current()
-        // 官方手机客户端匿名状态也发 identityIdV2=1；登录后以会话里的值为准。
+        // 有会话时附加账号身份；快问 AI 本身不设登录门槛。
         merged["identityIdV2"] = (session?.identityIdV2 ?: 1).toString()
         merged["occupationType"] = (session?.occupationType ?: 0).toString()
         merged["nt"] = identity.networkType()

@@ -14,24 +14,38 @@
   var nodes = document.querySelectorAll('.math[data-tex]');
   var rendered = 0;
 
+  function renderInto(el, tex, displayMode, throwOnError) {
+    katex.render(tex, el, {
+      throwOnError: throwOnError,
+      displayMode: displayMode,
+      // 输出 HTML 而不是 MathML：Android WebView 对 MathML 支持很差
+      output: 'html',
+      strict: false
+    });
+  }
+
   if (typeof katex !== 'undefined') {
     for (var i = 0; i < nodes.length; i++) {
       var el = nodes[i];
       var tex = el.getAttribute('data-tex');
       if (!tex) continue;
+      var displayMode = el.getAttribute('data-display') === '1';
       try {
-        katex.render(tex, el, {
-          throwOnError: true,
-          displayMode: false,
-          // 输出 HTML 而不是 MathML：Android WebView 对 MathML 支持很差
-          output: 'html',
-          strict: false
-        });
+        renderInto(el, tex, displayMode, true);
         el.setAttribute('data-math-engine', 'katex');
         rendered++;
       } catch (e) {
-        // 这一条 KaTeX 渲染不了，保留 Kotlin 的兜底排版
-        el.setAttribute('data-math-engine', 'fallback');
+        // 整条公式里只要有一个 KaTeX 拿不准的命令就整条报错 —— 之前直接退回
+        // Kotlin 兜底排版（覆盖面小得多），公式看起来就是“没解析”。
+        // 现在降一级重试：渲染得动的部分照常排，出错的那一小截标红。
+        try {
+          renderInto(el, tex, displayMode, false);
+          el.setAttribute('data-math-engine', 'katex-lenient');
+          rendered++;
+        } catch (e2) {
+          // 这一条 KaTeX 完全渲染不了，保留 Kotlin 的兜底排版
+          el.setAttribute('data-math-engine', 'fallback');
+        }
       }
     }
   }

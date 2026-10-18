@@ -28,7 +28,7 @@
             android:background="?attr/selectableItemBackground"
             android:drawablePadding="6dp"
             android:textAppearance="@style/TextAppearance.FlashSearch.Label"
-            android:textColor="@color/stone_gray" />
+            android:textColor="@color/ink_tertiary" />
 
         <TextView
             android:id="@+id/reasoningText"
@@ -36,7 +36,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
             android:lineSpacingMultiplier="1.45"
-            android:textColor="@color/stone_gray"
+            android:textColor="@color/ink_tertiary"
             android:textSize="13sp"
             android:visibility="gone" />
     </LinearLayout>
@@ -62,7 +62,7 @@
         android:paddingTop="11dp"
         android:paddingEnd="14dp"
         android:paddingBottom="11dp"
-        android:textColor="@color/near_black"
+        android:textColor="@color/ink"
         android:textSize="15sp"
         android:textIsSelectable="true" />
 

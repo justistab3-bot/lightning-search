@@ -14,7 +14,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="28dp"
         android:text="@string/update_title"
-        android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Display" />
+        android:textAppearance="@style/TextAppearance.FlashSearch.Display" />
 
     <TextView
         android:id="@+id/versionText"
@@ -54,7 +54,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:max="100"
-            android:progressTint="@color/terracotta" />
+            android:progressTint="@color/brand" />
 
         <TextView
             android:id="@+id/progressText"

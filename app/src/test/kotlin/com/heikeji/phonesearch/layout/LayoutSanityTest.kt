@@ -266,6 +266,70 @@ class LayoutSanityTest {
         )
     }
 
+    @Test
+    fun `two pane layouts require sufficient width`() {
+        val screens = setOf(
+            "activity_home.xml", "activity_search_result.xml", "activity_page_result.xml",
+            "activity_chat.xml", "activity_essay.xml", "activity_login.xml",
+        )
+        assertTrue(layouts("layout-w600dp-land").map { it.name }.containsAll(screens))
+        val compact = parse(File(resDir, "values/adaptive_layout.xml"))
+        val wide = parse(File(resDir, "values-w600dp-land/adaptive_layout.xml"))
+        assertTrue(compact.getElementsByTagName("bool").item(0).textContent == "false")
+        assertTrue(wide.getElementsByTagName("bool").item(0).textContent == "true")
+    }
+
+    @Test
+    fun `home fills tall viewports and remains scrollable on short screens`() {
+        for (dir in allLayoutDirs()) {
+            val file = File(resDir, "$dir/activity_home.xml")
+            if (!file.isFile) continue
+            val elements = allElements(parse(file))
+            val scroll = elements.single { it.tagName.endsWith("NestedScrollView") }
+            assertTrue("$dir must fill the viewport on tall screens",
+                scroll.getAttribute("android:fillViewport") == "true")
+            val content = elements.single { it.getAttribute("android:id") == "@+id/homeContent" }
+            assertTrue("$dir content must retain its natural height for short-screen scrolling",
+                content.getAttribute("android:layout_height") == "wrap_content")
+            val main = elements.single { it.getAttribute("android:id") == "@+id/homeMain" }
+            assertTrue("$dir must distribute remaining height to the main task",
+                main.getAttribute("android:layout_weight") == "1")
+        }
+    }
+
+    @Test
+    fun `recent searches load in a separate scrollable panel`() {
+        for (dir in allLayoutDirs()) {
+            val file = File(resDir, "$dir/activity_home.xml")
+            if (!file.isFile) continue
+            val ids = idsOf(file)
+            assertTrue("$dir must provide a recent-searches entry", "historyToggle" in ids)
+            assertTrue("$dir must not reserve home space for hidden history",
+                "historyList" !in ids && "historyBody" !in ids)
+        }
+        val panel = File(resDir, "layout/dialog_recent_searches.xml")
+        assertTrue("Recent-searches panel must exist", panel.isFile)
+        val elements = allElements(parse(panel))
+        assertTrue("Recent-searches panel must scroll independently",
+            elements.any { it.tagName.endsWith("ScrollView") })
+        assertTrue("Recent-searches panel must include populated and empty states",
+            idsOf(panel).containsAll(setOf("historyList", "historyEmpty", "closeHistoryButton")))
+    }
+
+    @Test
+    fun `AI actions are outside the answer viewport`() {
+        for (dir in allLayoutDirs()) {
+            for (name in listOf("activity_search_result.xml", "activity_page_result.xml")) {
+                val file = File(resDir, "$dir/$name")
+                if (!file.isFile) continue
+                val elements = allElements(parse(file))
+                val pager = elements.single { it.getAttribute("android:id") == "@+id/pager" }
+                val action = elements.single { it.getAttribute("android:id") == "@+id/aiSolveButton" }
+                assertTrue("$dir/$name: AI button obscures the answer", pager.parentNode != action.parentNode)
+            }
+        }
+    }
+
     private companion object {
         /** 这些容器都只允许一个直接子 View（比较时只看标签名，去掉包名前缀）。 */
         val SCROLL_TAGS = setOf("ScrollView", "HorizontalScrollView", "NestedScrollView")

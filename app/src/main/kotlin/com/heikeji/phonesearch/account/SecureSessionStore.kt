@@ -25,13 +25,13 @@ import javax.crypto.spec.GCMParameterSpec
  * 硬件密钥库（能读到设备标识的人就能解密），但比明文落盘好：
  * 光把 SharedPreferences 文件拷走是解不开的。见 [softwareKey]。
  */
-class SecureSessionStore(context: Context) {
+class SecureSessionStore(context: Context) : SessionStorage {
 
     private val appContext = context.applicationContext
 
     private val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    fun load(): AccountSession? {
+    override fun load(): AccountSession? {
         val iv = prefs.getString(KEY_IV, null)
         val ciphertext = prefs.getString(KEY_CIPHERTEXT, null)
         if (iv.isNullOrEmpty() || ciphertext.isNullOrEmpty()) return null
@@ -59,14 +59,13 @@ class SecureSessionStore(context: Context) {
                 )
             }
         } catch (e: Exception) {
-            // 密钥被系统清除或密文损坏：清掉不可用的会话，让用户重新登录。
-            Log.w(TAG, "会话解密失败，已清除本地会话")
-            clear()
+            // 保留原密文，避免临时 Keystore 读取失败使升级用户永久丢失登录凭据。
+            Log.w(TAG, "暂时无法读取登录会话，保留本地凭据")
             null
         }
     }
 
-    fun save(session: AccountSession) {
+    override fun save(session: AccountSession) {
         require(session.kduss.isNotEmpty()) { "登录会话为空" }
         val json = JSONObject()
             .put("kduss", session.kduss)
@@ -90,7 +89,7 @@ class SecureSessionStore(context: Context) {
         if (!ok) throw IllegalStateException("无法保存登录会话")
     }
 
-    fun clear() {
+    override fun clear() {
         prefs.edit().clear().commit()
     }
 

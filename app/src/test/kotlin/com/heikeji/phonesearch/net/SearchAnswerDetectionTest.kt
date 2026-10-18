@@ -5,22 +5,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/**
- * `validatedInfo` 的判定规则。
- *
- * 这条规则来自一次真实事故（抓包定位）：匿名整页/单题搜题时，服务器在**成功响应**里
- * 同时返回了完整答案和 `validatedInfo`：
- * ```
- * "answers":{"count":4,"locs":[...],"locInfo":[...]},
- * "validatedInfo":"{\"appId\":\"scancode\",\"hitValidate\":1,\"validateRule\":\"2\"}"
- * ```
- * 而旧代码「只要 validatedInfo 非空就当被拦」，于是把已经拿到的答案扔掉、
- * 跳去官方反抓取验证页 —— 那个页面写着「需要登录」，用户看到的就是「不登录用不了」。
- *
- * 对照官方 APP 的抓包：它拿到同样的字段照样展示答案。
- *
- * 所以判据是**有没有答案**，不是有没有 validatedInfo。
- */
+/** 服务端附带验证信息时，已有结果仍可正常解析。 */
 class SearchAnswerDetectionTest {
 
     @Test

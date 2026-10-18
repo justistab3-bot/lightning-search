@@ -43,11 +43,11 @@ class SelectionImageView @JvmOverloads constructor(
     private val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         strokeWidth = context.dp(2f)
-        color = ContextCompat.getColor(context, R.color.terracotta)
+        color = ContextCompat.getColor(context, R.color.brand)
     }
     private val handlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
-        color = ContextCompat.getColor(context, R.color.terracotta)
+        color = ContextCompat.getColor(context, R.color.brand)
     }
     private val quadPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE

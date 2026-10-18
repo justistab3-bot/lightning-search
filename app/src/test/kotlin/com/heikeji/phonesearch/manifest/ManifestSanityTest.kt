@@ -13,9 +13,9 @@ import javax.xml.parsers.DocumentBuilderFactory
  *
  * 这里每条规则都对应一个**编译能过、装上去才发现**的坑。
  *
- * 第一条是真实事故：登录改成可选之后，引导页和匿名模式都做好了，但清单里
+ * 第一条是真实事故：登录改成可选之后，引导页和首页流程都做好了，但清单里
  * `LoginActivity` 仍然挂着 LAUNCHER —— 新设备点图标直接进登录页，
- * `HomeActivity` 根本没被启动过，整套匿名流程**一行都没跑到**。
+ * `HomeActivity` 根本没被启动过，整套首页流程**一行都没跑到**。
  * 编译、lint、单元测试全绿，只有装到新设备上才看得出来。
  */
 class ManifestSanityTest {
@@ -80,7 +80,7 @@ class ManifestSanityTest {
         )
         assertEquals(
             "启动入口必须是首页。若这里变回 LoginActivity，新装设备会直接进登录页，" +
-                "首次引导和匿名模式都走不到（真实发生过）。",
+                "首次引导和首页流程都走不到（真实发生过）。",
             ".ui.home.HomeActivity",
             launchers.first(),
         )

@@ -258,9 +258,11 @@ object PageSearchParser {
                 for (i in 0 until array.size()) {
                     val text = array.stringAt(i)
                     if (text.isEmpty()) continue
-                    val item = runCatching {
+                    val item = try {
                         AnswerParser.parse(text, parsed.size + 1, subject, sid, tid)
-                    }.getOrNull() ?: continue
+                    } catch (_: ProtocolException) {
+                        continue
+                    }
                     parsed.add(item)
                 }
                 if (parsed.isNotEmpty()) return parsed

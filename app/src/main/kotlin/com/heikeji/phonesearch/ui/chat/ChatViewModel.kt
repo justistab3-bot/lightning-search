@@ -16,6 +16,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.concurrent.atomic.AtomicLong
+
+private val bubbleIds = AtomicLong()
 
 /** 界面上的一个气泡。 */
 data class ChatBubble(
@@ -27,23 +30,25 @@ data class ChatBubble(
     val failed: Boolean = false,
     /** 用户发的图片（原图字节，直接展示）。 */
     val imageBytes: ByteArray? = null,
+    val id: Long = bubbleIds.incrementAndGet(),
 ) {
     // data class 带数组字段时 equals/hashCode 要显式实现，否则每次比较都不相等，
     // RecyclerView 会白白重绑。
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is ChatBubble) return false
-        return role == other.role &&
+        return id == other.id && role == other.role &&
             text == other.text &&
             reasoning == other.reasoning &&
             reasoningCostMs == other.reasoningCostMs &&
             streaming == other.streaming &&
             failed == other.failed &&
-            (imageBytes === other.imageBytes || imageBytes?.contentEquals(other.imageBytes) == true)
+            (imageBytes === other.imageBytes ||
+                (imageBytes != null && other.imageBytes != null && imageBytes.contentEquals(other.imageBytes)))
     }
 
     override fun hashCode(): Int {
-        var result = role.hashCode()
+        var result = 31 * id.hashCode() + role.hashCode()
         result = 31 * result + text.hashCode()
         result = 31 * result + reasoning.hashCode()
         result = 31 * result + reasoningCostMs.hashCode()

@@ -18,7 +18,6 @@ import com.heikeji.phonesearch.net.DeviceIdentity
 import com.heikeji.phonesearch.net.HttpTransport
 import com.heikeji.phonesearch.net.Net
 import com.heikeji.phonesearch.net.NetworkMonitor
-import com.heikeji.phonesearch.net.PhoneNativeSdk
 import com.heikeji.phonesearch.net.ProtocolContext
 import com.heikeji.phonesearch.net.SearchApi
 import com.heikeji.phonesearch.search.SearchChallengeStore
@@ -29,6 +28,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
+import java.util.UUID
 
 class SearchApp : Application() {
 
@@ -48,8 +48,7 @@ class SearchApp : Application() {
         container = AppContainer(this)
         container.network.start()
 
-        // 崩溃落盘：原生 abort 没有 logcat 时，靠这个文件定位
-        // （Android/data/com.heikeji.phonesearch/files/protocol-log.txt）。
+        // 未捕获异常写入应用私有日志，便于诊断。
         installCrashFileLogger()
 
         // 磁盘回收：清掉陈旧安装包与相机临时图（后台做，不挡启动）
@@ -137,21 +136,22 @@ class SearchApp : Application() {
 class AppContainer(context: Context) {
 
     val identity = DeviceIdentity(context)
+    private val systemUserAgent by lazy {
+        runCatching { android.webkit.WebSettings.getDefaultUserAgent(context) }
+            .getOrDefault(System.getProperty("http.agent").orEmpty())
+    }
 
-    /**
-     * 手机版模拟：对作业帮系主机附加官方 7.7.0 的请求头。
-     * 票据与 Trace 都是按请求现算；原生 SDK 未就绪时自动留空（行为同官方）。
-     */
+    /** 请求公共设备标识与追踪信息；账号凭据由 Net 按当前会话附加。 */
     val transport = HttpTransport(phoneHeaders = {
         buildMap {
-            PhoneNativeSdk.dpTicket().takeIf { it.isNotEmpty() }?.let { put("Dp-Ticket", it) }
             put("zyb-cuid", identity.cuid)
             identity.did.takeIf { it.isNotEmpty() }?.let { put("zyb-did", it) }
             put("na__kf_source__", "scancode")
-            put("X-Zyb-Trace-Id", PhoneNativeSdk.traceId())
+            val trace = UUID.randomUUID().toString().replace("-", "").take(16)
+            put("X-Zyb-Trace-Id", "$trace:$trace:0:1")
             put("X-Zyb-Trace-T", System.currentTimeMillis().toString())
         }
-    })
+    }, phoneUserAgent = { systemUserAgent })
     val protocol = ProtocolContext(context, identity, transport)
     val network = NetworkMonitor(context)
 
@@ -179,10 +179,6 @@ class AppContainer(context: Context) {
 
     init {
         sessions.restore()
-        // 预热官方设备保护 SDK（后台异步，同官方启动流程）：
-        // 票据要几秒后才可用，启动时先初始化，首搜就能拿到（v1.33.2 已修掉
-        // 之前的 JNI abort —— manifest <queries> + 官方 APP 安装预检查）。
-        PhoneNativeSdk.preInit(context)
     }
 }
 

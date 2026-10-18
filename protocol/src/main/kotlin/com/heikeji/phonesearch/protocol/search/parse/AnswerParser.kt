@@ -38,8 +38,9 @@ object AnswerParser {
         tid: String = "",
     ): AnswerItem {
         val title = "结果 $index"
-        val lower = decoded.lowercase()
+        val lower = decoded.trimStart().lowercase()
         if (HTML_PREFIXES.any { lower.startsWith(it) }) {
+            SearchLoginNotice.check(decoded)
             return AnswerItem(
                 index = index,
                 title = title,
@@ -71,6 +72,8 @@ object AnswerParser {
                 ?.objOrNull("subjectAnalysis")
                 .strOrEmpty("content")
         }
+
+        SearchLoginNotice.check(questionHtml, answerHtml, analysisHtml)
 
         if (questionHtml.isEmpty() && answerHtml.isEmpty() &&
             questionImages.isEmpty() && answerImages.isEmpty() && analysisHtml.isEmpty()

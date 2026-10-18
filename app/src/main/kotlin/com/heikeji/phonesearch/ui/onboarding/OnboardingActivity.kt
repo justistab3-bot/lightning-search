@@ -16,16 +16,7 @@ import com.heikeji.phonesearch.ui.common.applySystemBarPadding
 import com.heikeji.phonesearch.ui.home.HomeActivity
 import com.heikeji.phonesearch.ui.login.LoginActivity
 
-/**
- * 首次启动引导：选年级 + 账号说明。
- *
- * **为什么需要这一步**：实测确认搜题、整页搜题、快问 AI、AI 作文**都不需要登录**
- * （见 `SearchProbeTest`），所以登录从「必须」变成了「可选」。但年级是这些接口的必传参数，
- * 以前从登录会话里取，现在没会话了就得让用户直接给一个。
- *
- * 账号那一栏是**如实告知**，不是推销：不登录确实能用，登录的价值在于搜题更稳、不容易触发风控。
- * 用户点了「先不登录」就真的不再打扰他。
- */
+/** 首次使用选择年级；账号可稍后登录，搜题按服务端返回的要求处理。 */
 class OnboardingActivity : AppCompatActivity() {
 
     private lateinit var gradeGroup: ChipGroup

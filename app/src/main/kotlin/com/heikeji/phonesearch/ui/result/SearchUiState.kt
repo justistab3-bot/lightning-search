@@ -13,7 +13,7 @@ sealed interface SearchUiState {
     /** 服务端要求官方安全验证。 */
     data class Challenge(val validatedInfo: String, val sid: String) : SearchUiState
 
-    /** 登录态失效，需要重新登录（保留挑战，登录后继续原题）。 */
+    /** 搜题服务要求登录或会话失效；由用户点击按钮登录后继续原题。 */
     data class NeedLogin(val message: String) : SearchUiState
 
     data class Failure(val message: String) : SearchUiState

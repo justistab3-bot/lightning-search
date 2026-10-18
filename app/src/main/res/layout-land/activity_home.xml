@@ -1,411 +1,272 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  横屏首页 · **紧凑版**（横屏默认）。
-
-  ## 为什么紧凑版是默认，而不是给矮屏开小灶
-
-  Android 的尺寸限定符（w / h / sw）**全部是「最小值」**，没有「最大高度」这种限定符。
-  实测词典笔的配置是 `sw254dp-w960dp-h254dp-normal-long-land`：
-  它既不是 `small`（实际是 `normal`），`h280dp` 也匹配不上（254 < 280）。
-  也就是说，**没有限定符能把「矮屏」单独圈出来**。
-
-  所以反过来做：**把能在最矮屏幕上正常工作的版本作为横屏默认**，
-  用 `layout-h340dp-land`（可用高度 ≥ 340dp）给常规手机/平板横屏提供宽敞版。
-  这是 Android 官方推荐的「先保证最小尺寸可用，再向上增强」。
-
-  - 矮屏（词典笔 254dp、小手机横屏 320dp）→ 用这一份
-  - 常规横屏（可用高度 ≥ 340dp）→ 用 layout-h340dp-land 的三卡片宽敞版
-
-  ## 这一份的设计
-
-  本机实测 960×254dp。原先那份宽敞版在这里会崩：主操作行只剩 112dp，
-  拍照按钮被压到 20dp、两条提示文字直接变成 0dp（完全不可见）。
-
-  所以把纵向堆叠改成横向铺开：
-
-  1. 问候与版本压成一行（原来占 51dp，现在约 40dp）。
-  2. 三块功能不再各占一张高卡片，而是**并排一行**：左边「单题/整页 + 拍照搜题」
-     合成一条，右边两个次要入口各留一个按钮。
-  3. 文案能省就省 —— 按钮本身已经写了「AI 作文 ✍️」「快问 AI」，
-     卡片里的标题和描述在这块屏幕上属于奢侈品，去掉。
-  4. 最近搜题仍然默认收起，展开时吃掉中间剩余高度、列表内部滚动。
-
-  **ID 与类型必须和 layout/activity_home.xml 完全一致** —— ViewBinding 只按其中一份
-  生成字段类型，不一致就是转屏闪退。LayoutSanityTest 检查 id 集合与视图类型两条规则。
--->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?android:attr/colorBackground"
     android:orientation="vertical"
-    android:paddingBottom="4dp">
-
-    <!-- ======================= 一行：问候 + 标语 + 版本 ======================= -->
-    <LinearLayout
-        android:id="@+id/header"
+    android:background="@color/bg">
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/homeScroll"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:baselineAligned="false"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingStart="20dp"
-        android:paddingTop="4dp"
-        android:paddingEnd="20dp"
-        android:paddingBottom="4dp">
-
-        <TextView
-            android:id="@+id/dateLabel"
-            android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:clipToPadding="false">
+        <!-- Natural height provides scrolling on short screens; weights fill taller screens. -->
+        <LinearLayout
+            android:id="@+id/homeContent"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textAppearance="@style/TextAppearance.FlashSearch.Label"
-            android:textSize="13sp" />
-
-        <TextView
-            android:id="@+id/greeting"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
-            android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Title"
-            android:textSize="16sp" />
-
-        <Space
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_weight="1" />
-
-        <TextView
-            android:id="@+id/tagline"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="12dp"
-            android:maxLines="1"
-            android:text="@string/brand_tagline"
-            android:textAppearance="@style/TextAppearance.FlashSearch.Label"
-            android:textSize="12sp" />
-
-        <TextView
-            android:id="@+id/versionLabel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="?attr/selectableItemBackground"
-            android:paddingStart="8dp"
+            android:orientation="vertical"
+            android:paddingStart="@dimen/page_gutter"
+            android:paddingEnd="@dimen/page_gutter"
             android:paddingTop="4dp"
-            android:paddingEnd="8dp"
-            android:paddingBottom="4dp"
-            android:textAppearance="@style/TextAppearance.FlashSearch.Label"
-            android:textSize="12sp" />
-    </LinearLayout>
-
-    <!-- ======================= 一行：全部功能 ======================= -->
-    <!--
-      weight=2（而不是 1）：展开「最近搜题」时 historySection 会被代码设成 weight=1，
-      如果这里也是 1，两者五五分，主操作行只剩 ~85dp，卡片又会被压扁。
-      2 : 1 让主操作拿三分之二（~113dp），刚好装得下「模式+拍照」48dp 加两行小字。
-    -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="2"
-        android:baselineAligned="false"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp">
-
-        <!-- 主操作：模式 + 拍照，合成一条，不再上下堆 -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/heroCard"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="3.2"
-            app:cardBackgroundColor="@color/ivory"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="0dp"
-            app:strokeColor="@color/border_cream"
-            app:strokeWidth="1dp">
-
+            android:paddingBottom="8dp">
             <LinearLayout
+                android:id="@+id/header"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingStart="12dp"
-                android:paddingTop="10dp"
-                android:paddingEnd="12dp"
-                android:paddingBottom="10dp">
-
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:minHeight="48dp">
                 <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="4dp"
+                    android:orientation="vertical">
+                    <TextView
+                        android:id="@+id/greeting"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="@style/TextAppearance.FlashSearch.Title"
+                        android:maxLines="2" />
+                    <TextView
+                        android:id="@+id/tagline"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:textAppearance="@style/TextAppearance.FlashSearch.Caption"
+                        android:textColor="@color/ink_secondary"
+                        android:maxLines="2" />
+                </LinearLayout>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/settingsButton"
+                    style="@style/Widget.FlashSearch.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    android:minWidth="48dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:text="@string/settings_title" />
+            </LinearLayout>
+            <LinearLayout
+                android:id="@+id/homeMain"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="4dp"
+                android:orientation="vertical"
+                android:gravity="center_vertical"
+                android:baselineAligned="false">
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/heroCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    app:cardBackgroundColor="@color/surface"
+                    app:cardCornerRadius="@dimen/radius_md"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/line"
+                    app:strokeWidth="1dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:padding="8dp"
+                        android:gravity="center_vertical">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+                            <com.google.android.material.button.MaterialButtonToggleGroup
+                                android:id="@+id/modeGroup"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                app:selectionRequired="true"
+                                app:singleSelection="true">
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/modeSingle"
+                                    style="@style/Widget.Material3.Button.OutlinedButton"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:minHeight="48dp"
+                                    android:minWidth="0dp"
+                                    android:insetTop="0dp"
+                                    android:insetBottom="0dp"
+                                    android:paddingTop="8dp"
+                                    android:paddingBottom="8dp"
+                                    android:paddingStart="8dp"
+                                    android:paddingEnd="8dp"
+                                    android:text="@string/mode_single" />
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/modePage"
+                                    style="@style/Widget.Material3.Button.OutlinedButton"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:minHeight="48dp"
+                                    android:minWidth="0dp"
+                                    android:insetTop="0dp"
+                                    android:insetBottom="0dp"
+                                    android:paddingTop="8dp"
+                                    android:paddingBottom="8dp"
+                                    android:paddingStart="8dp"
+                                    android:paddingEnd="8dp"
+                                    android:text="@string/mode_page" />
+                            </com.google.android.material.button.MaterialButtonToggleGroup>
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/takePhotoButton"
+                                style="@style/Widget.FlashSearch.PrimaryButton"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1.3"
+                                android:layout_marginStart="8dp"
+                                android:minHeight="48dp"
+                                android:minWidth="0dp"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:paddingTop="8dp"
+                                android:paddingBottom="8dp"
+                                android:paddingStart="8dp"
+                                android:paddingEnd="8dp"
+                                android:text="@string/action_take_photo"
+                                android:textSize="16sp"
+                                android:textColor="@color/on_brand_container"
+                                android:gravity="center"
+                                android:elevation="0dp"
+                                android:stateListAnimator="@null"
+                                app:backgroundTint="@color/brand_container"
+                                app:icon="@drawable/ic_camera"
+                                app:iconTint="@color/brand"
+                                app:iconSize="24dp"
+                                app:iconGravity="textStart"
+                                app:iconPadding="8dp" />
+                        </LinearLayout>
+                        <TextView
+                            android:id="@+id/modeHint"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textAppearance="@style/TextAppearance.FlashSearch.Caption"
+                            android:paddingTop="8dp"
+                            android:maxLines="2"
+                            android:text="@string/mode_hint_single"
+                            android:visibility="gone" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+                <LinearLayout
+                    android:id="@+id/homeTools"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:baselineAligned="false"
-                    android:gravity="center_vertical"
+                    android:layout_marginTop="8dp"
                     android:orientation="horizontal">
-
-                    <com.google.android.material.button.MaterialButtonToggleGroup
-                        android:id="@+id/modeGroup"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        app:selectionRequired="true"
-                        app:singleSelection="true">
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/modeSingle"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:minWidth="0dp"
-                            android:paddingStart="12dp"
-                            android:paddingEnd="12dp"
-                            android:text="@string/mode_single"
-                            android:textSize="13sp" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/modePage"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:minWidth="0dp"
-                            android:paddingStart="12dp"
-                            android:paddingEnd="12dp"
-                            android:text="@string/mode_page"
-                            android:textSize="13sp" />
-                    </com.google.android.material.button.MaterialButtonToggleGroup>
-
                     <com.google.android.material.button.MaterialButton
-                        android:id="@+id/takePhotoButton"
-                        style="@style/Widget.FlashSearch.PrimaryButton"
+                        android:id="@+id/essayButton"
+                        style="@style/Widget.FlashSearch.SecondaryButton"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
                         android:layout_weight="1"
+                        android:minHeight="@dimen/home_tool_height"
+                        android:minWidth="0dp"
                         android:insetTop="0dp"
                         android:insetBottom="0dp"
-                        android:paddingTop="12dp"
-                        android:paddingBottom="12dp"
-                        android:text="@string/action_take_photo"
-                        app:icon="@drawable/ic_camera" />
+                        android:paddingTop="8dp"
+                        android:paddingBottom="8dp"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:text="@string/essay_entry" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/chatButton"
+                        style="@style/Widget.FlashSearch.SecondaryButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="8dp"
+                        android:minHeight="@dimen/home_tool_height"
+                        android:minWidth="0dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:paddingTop="8dp"
+                        android:paddingBottom="8dp"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:text="@string/chat_entry" />
                 </LinearLayout>
-
-                <TextView
-                    android:id="@+id/systemCameraHint"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:ellipsize="end"
-                    android:gravity="center"
-                    android:maxLines="1"
-                    android:text="@string/hint_long_press_system_camera"
-                    android:textAppearance="@style/TextAppearance.FlashSearch.Label"
-                    android:textSize="12sp" />
-
-                <TextView
-                    android:id="@+id/modeHint"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:ellipsize="end"
-                    android:gravity="center"
-                    android:maxLines="1"
-                    android:text="@string/home_tip"
-                    android:textAppearance="@style/TextAppearance.FlashSearch.Caption"
-                    android:textSize="12sp" />
             </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- 次要入口：AI 作文（按钮自带名称，去掉卡片里的标题与描述） -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
-            android:layout_weight="1.3"
-            app:cardBackgroundColor="@color/ivory"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="0dp"
-            app:strokeColor="@color/border_cream"
-            app:strokeWidth="1dp">
-
             <LinearLayout
+                android:id="@+id/homeFooter"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center"
-                android:orientation="vertical"
-                android:padding="12dp">
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/essayButton"
-                    style="@style/Widget.FlashSearch.SecondaryButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:maxLines="2"
-                    android:text="@string/essay_entry"
-                    android:textSize="13sp" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- 次要入口：快问 AI -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
-            android:layout_weight="1.3"
-            app:cardBackgroundColor="@color/ivory"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="0dp"
-            app:strokeColor="@color/border_cream"
-            app:strokeWidth="1dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:orientation="vertical"
-                android:padding="12dp">
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/chatButton"
-                    style="@style/Widget.FlashSearch.SecondaryButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:maxLines="2"
-                    android:text="@string/chat_entry"
-                    android:textSize="13sp" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-    </LinearLayout>
-
-    <!-- ======================= 最近搜题（收起，展开时内部滚动） ======================= -->
-    <LinearLayout
-        android:id="@+id/historySection"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp">
-
-        <LinearLayout
-            android:id="@+id/historyToggle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="?attr/selectableItemBackground"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingTop="2dp"
-            android:paddingBottom="2dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/history_title"
-                android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Section"
-                android:textSize="13sp" />
-
-            <ImageView
-                android:id="@+id/historyChevron"
-                android:layout_width="16dp"
-                android:layout_height="16dp"
-                android:layout_marginStart="6dp"
-                android:contentDescription="@string/history_title"
-                android:src="@drawable/ic_chevron_down" />
-        </LinearLayout>
-
-        <ScrollView
-            android:id="@+id/historyBody"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:visibility="gone">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
                 <LinearLayout
-                    android:id="@+id/historyList"
-                    android:layout_width="match_parent"
+                    android:id="@+id/historySection"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical" />
-
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+                    <LinearLayout
+                        android:id="@+id/historyToggle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:minHeight="48dp"
+                        android:background="?attr/selectableItemBackground"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:textAppearance="@style/TextAppearance.FlashSearch.Section"
+                            android:text="@string/history_title" />
+                        <ImageView
+                            android:id="@+id/historyChevron"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:contentDescription="@null"
+                            android:importantForAccessibility="no"
+                            android:src="@drawable/ic_chevron_right"
+                            app:tint="@color/ink_secondary" />
+                    </LinearLayout>
+                </LinearLayout>
                 <TextView
-                    android:id="@+id/historyEmpty"
-                    android:layout_width="match_parent"
+                    android:id="@+id/versionLabel"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="@string/history_empty"
-                    android:textAppearance="@style/TextAppearance.FlashSearch.Caption"
-                    android:textSize="12sp"
-                    android:visibility="gone" />
+                    android:minHeight="48dp"
+                    android:minWidth="48dp"
+                    android:maxWidth="120dp"
+                    android:layout_marginStart="12dp"
+                    android:maxLines="2"
+                    android:ellipsize="end"
+                    android:gravity="center_vertical"
+                    android:textAppearance="@style/TextAppearance.FlashSearch.Label" />
             </LinearLayout>
-        </ScrollView>
-    </LinearLayout>
-
-    <!-- ======================= 一行：统计 + 退出 ======================= -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:baselineAligned="false"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingStart="20dp"
-        android:paddingTop="2dp"
-        android:paddingEnd="20dp">
-
-        <LinearLayout
-            android:id="@+id/statsRow"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/todayCount"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Section"
-                android:textSize="14sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="5dp"
-                android:text="@string/stats_today"
-                android:textAppearance="@style/TextAppearance.FlashSearch.Label"
-                android:textSize="12sp" />
-
-            <TextView
-                android:id="@+id/totalCount"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Section"
-                android:textSize="14sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="5dp"
-                android:text="@string/stats_total"
-                android:textAppearance="@style/TextAppearance.FlashSearch.Label"
-                android:textSize="12sp" />
         </LinearLayout>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/logoutButton"
-            style="@style/Widget.FlashSearch.TextButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:minWidth="0dp"
-            android:paddingTop="4dp"
-            android:paddingBottom="4dp"
-            android:text="@string/action_logout"
-            android:textSize="13sp" />
-    </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 </LinearLayout>

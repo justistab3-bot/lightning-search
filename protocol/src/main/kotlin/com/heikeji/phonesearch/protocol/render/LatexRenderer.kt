@@ -3,11 +3,13 @@ package com.heikeji.phonesearch.protocol.render
 /**
  * 把答案 HTML 里的 LaTeX 公式转成纯 HTML + CSS 排版。
  *
- * **刻意不引入 MathJax/KaTeX**：答案 WebView 是禁用 JavaScript 的（安全约束），
- * 而且从网络加载脚本会破坏 CSP。这里用一个小型 LaTeX 子集渲染器覆盖 K12 常见写法：
- * 分式、根式、上下标、希腊字母、常用运算符与函数名。
+ * 这是 KaTeX 不可用时的**兜底渲染器**：答案页 WebView 平时会用本地 KaTeX
+ * 按 `data-tex` 重新渲染一遍（见 app 的 `assets/math/render.js`），
+ * KaTeX 加载失败或整条公式报错时才落到这里产出的 HTML 排版。
+ * 所以这里覆盖得越全，「公式没被正确解析」的观感越少。
  *
- * 支持的定界符：`$...$`、`$$...$$`、`\(...\)`、`\[...\]`。
+ * 支持的定界符：`$...$`、`$$...$$`、`\(...\)`、`\[...\]`（后两者与 `$$` 会带
+ * `data-display="1"`，KaTeX 与 CSS 据此用独立公式版式）。
  * 无法识别的命令会原样输出命令名，不会丢内容。
  *
  * 输入必须是**已清洗过的 HTML**：这里只在标签之外的文本段上工作，
@@ -49,7 +51,9 @@ object LatexRenderer {
                 val latex = unescape(segment.content)
                 // data-tex 保留原始 LaTeX：答案页的 KaTeX 会用它重新渲染一遍；
                 // KaTeX 加载失败时，下面这段 HTML 就是兜底排版。
-                sb.append("<span class=\"math\" data-tex=\"")
+                sb.append("<span class=\"math\"")
+                if (segment.display) sb.append(" data-display=\"1\"")
+                sb.append(" data-tex=\"")
                     .append(escapeAttribute(latex))
                     .append("\">")
                     .append(renderMath(latex))
@@ -61,7 +65,7 @@ object LatexRenderer {
         return sb.toString()
     }
 
-    private class Segment(val isMath: Boolean, val content: String)
+    private class Segment(val isMath: Boolean, val content: String, val display: Boolean = false)
 
     private fun split(text: String): List<Segment> {
         val result = ArrayList<Segment>()
@@ -71,18 +75,19 @@ object LatexRenderer {
             val c = text[i]
             val open: String
             val close: String
+            val display: Boolean
             when {
                 c == '$' && i + 1 < text.length && text[i + 1] == '$' -> {
-                    open = "$$"; close = "$$"
+                    open = "$$"; close = "$$"; display = true
                 }
                 c == '$' -> {
-                    open = "$"; close = "$"
+                    open = "$"; close = "$"; display = false
                 }
                 c == '\\' && i + 1 < text.length && text[i + 1] == '(' -> {
-                    open = "\\("; close = "\\)"
+                    open = "\\("; close = "\\)"; display = false
                 }
                 c == '\\' && i + 1 < text.length && text[i + 1] == '[' -> {
-                    open = "\\["; close = "\\]"
+                    open = "\\["; close = "\\]"; display = true
                 }
                 else -> {
                     i++
@@ -96,7 +101,7 @@ object LatexRenderer {
                 continue
             }
             if (i > plainStart) result.add(Segment(false, text.substring(plainStart, i)))
-            result.add(Segment(true, text.substring(start, end)))
+            result.add(Segment(true, text.substring(start, end), display))
             i = end + close.length
             plainStart = i
         }
@@ -109,7 +114,11 @@ object LatexRenderer {
     fun renderMath(latex: String): String =
         MathParser(latex.replace('\uFF3C', '\\')).parseAll()
 
-    private class MathParser(private val src: String) {
+    private class MathParser(
+        private val src: String,
+        /** 环境行内（cases/matrix）：`&` 渲染成列间距而不是空格。 */
+        private val inEnvCells: Boolean = false,
+    ) {
         private var pos = 0
 
         fun parseAll(): String = parseSequence(stopAtBrace = false)
@@ -139,7 +148,7 @@ object LatexRenderer {
                     }
                     '&' -> {
                         pos++
-                        sb.append(' ')
+                        sb.append(if (inEnvCells) "<span class=\"env-cell-gap\"></span>" else " ")
                     }
                     '~' -> {
                         pos++
@@ -169,6 +178,15 @@ object LatexRenderer {
                     escapeChar(c)
                 }
             }
+        }
+
+        /** 取一个完整分组 `{...}` 并按公式渲染；没有分组时按单个原子处理。 */
+        private fun parseGroupOrAtom(): String {
+            if (pos < src.length && src[pos] == '{') {
+                pos++
+                return parseSequence(stopAtBrace = true)
+            }
+            return parseAtom()
         }
 
         private fun parseCommand(): String {
@@ -205,6 +223,35 @@ object LatexRenderer {
             "text", "textrm", "mathrm", "mbox", "operatorname" ->
                 escape(readRawGroup())
 
+            // 加重音符号的命令：参数渲染后用 CSS 在头顶画符号
+            // （兜底排版不用 Unicode 组合符，廉价屏的字体栈经常拼不对）
+            "vec" -> accented(parseGroupOrAtom(), "vec")
+            "overrightarrow" -> accented(parseGroupOrAtom(), "harpoon")
+            "overleftarrow" -> accented(parseGroupOrAtom(), "harpoon-l")
+            "hat" -> accented(parseGroupOrAtom(), "hat")
+            "widehat" -> accented(parseGroupOrAtom(), "hat")
+            "tilde" -> accented(parseGroupOrAtom(), "tilde")
+            "widetilde" -> accented(parseGroupOrAtom(), "tilde")
+            "overline", "bar" -> wrapped(parseGroupOrAtom(), "ovl")
+            "underline" -> wrapped(parseGroupOrAtom(), "und")
+
+            // 字体命令：内容照常渲染，只包一层粗体/原样输出
+            "mathbf", "boldsymbol", "bm" -> {
+                if (pos >= src.length || src[pos] != '{') {
+                    ""
+                } else {
+                    pos++
+                    "<b>" + parseSequence(stopAtBrace = true) + "</b>"
+                }
+            }
+            "mathit", "mathsf", "mathtt", "textsf" -> {
+                if (pos >= src.length || src[pos] != '{') "" else {
+                    pos++
+                    parseSequence(stopAtBrace = true)
+                }
+            }
+            "mathbb" -> blackboard(readRawGroup())
+
             "left", "right", "big", "Big", "bigg", "Bigg", "bigl", "bigr" -> {
                 if (pos >= src.length) {
                     ""
@@ -217,7 +264,8 @@ object LatexRenderer {
                 }
             }
 
-            "begin", "end" -> {
+            "begin" -> parseEnvironment(readRawGroup())
+            "end" -> {
                 readRawGroup()
                 ""
             }
@@ -232,6 +280,73 @@ object LatexRenderer {
             " " -> " "
             else -> SYMBOLS[name] ?: escape(name)
         }
+
+        private fun accented(body: String, kind: String): String =
+            "<span class=\"acc acc-$kind\"><span class=\"acc-body\">$body</span></span>"
+
+        private fun wrapped(body: String, kind: String): String =
+            "<span class=\"$kind\">$body</span>"
+
+        /** `\mathbb{RNZQC}` → ℝ ℕ ℤ ℚ ℂ（其余字母原样）。 */
+        private fun blackboard(raw: String): String = buildString(raw.length) {
+            for (c in raw) {
+                append(
+                    when (c) {
+                        'R' -> "ℝ"; 'N' -> "ℕ"; 'Z' -> "ℤ"; 'Q' -> "ℚ"; 'C' -> "ℂ"
+                        'P' -> "ℙ"; 'H' -> "ℍ"; 'F' -> "𝔽"
+                        else -> escapeChar(c)
+                    },
+                )
+            }
+        }
+
+        /**
+         * `\begin{env}...\end{env}`：按行拆 `\\`、按列拆 `&`，
+         * cases 画左侧大括号，矩阵族画配对定界符，align 族只堆行。
+         */
+        private fun parseEnvironment(env: String): String {
+            val name = env.trim()
+            if (name.isEmpty()) return ""
+            val endTag = "\\end{$name}"
+            val endIdx = src.indexOf(endTag, pos)
+            if (endIdx == -1) return "" // 没有配对的 \end：内容由外层循环照常渲染
+            val body = src.substring(pos, endIdx)
+            pos = endIdx + endTag.length
+
+            val rows = body.split("\\\\")
+                .map { row -> MathParser(row, inEnvCells = true).parseAll().trim() }
+                .filter { it.isNotEmpty() }
+                .joinToString("") { "<span class=\"env-row\">$it</span>" }
+
+            return when {
+                name == "cases" ->
+                    "<span class=\"env\"><span class=\"env-delim\">{</span>" +
+                        "<span class=\"env-rows\">$rows</span></span>"
+                name.startsWith("p") && name.endsWith("matrix") ->
+                    delimitedEnv(rows, "(", ")")
+                name.startsWith("b") && name.endsWith("matrix") ->
+                    delimitedEnv(rows, "[", "]")
+                name.startsWith("v") && name.endsWith("matrix") ->
+                    delimitedEnv(rows, "|", "|")
+                name.startsWith("B") && name.endsWith("matrix") ->
+                    delimitedEnv(rows, "{", "}")
+                name.startsWith("V") && name.endsWith("matrix") ->
+                    delimitedEnv(rows, "‖", "‖")
+                name == "matrix" || name == "array" ->
+                    "<span class=\"env\"><span class=\"env-rows\">$rows</span></span>"
+                name.startsWith("align") || name.startsWith("align*") ||
+                    name.startsWith("gather") || name.startsWith("gather*") ||
+                    name.startsWith("eqnarray") ->
+                    "<span class=\"env env-block\"><span class=\"env-rows\">$rows</span></span>"
+                else -> rows // 未识别的环境：至少把行结构保留下来
+            }
+        }
+
+        private fun delimitedEnv(rows: String, open: String, close: String): String =
+            "<span class=\"env\">" +
+                "<span class=\"env-delim\">$open</span>" +
+                "<span class=\"env-rows\">$rows</span>" +
+                "<span class=\"env-delim\">$close</span></span>"
 
         /** 读 `{...}` 原始内容（不解析，用于 \text 与 \begin）。 */
         private fun readRawGroup(): String {
@@ -307,46 +422,64 @@ object LatexRenderer {
         put("epsilon", "ε"); put("varepsilon", "ε"); put("zeta", "ζ"); put("eta", "η")
         put("theta", "θ"); put("vartheta", "ϑ"); put("iota", "ι"); put("kappa", "κ")
         put("lambda", "λ"); put("mu", "μ"); put("nu", "ν"); put("xi", "ξ")
-        put("pi", "π"); put("varpi", "ϖ"); put("rho", "ρ"); put("sigma", "σ")
-        put("tau", "τ"); put("upsilon", "υ"); put("phi", "φ"); put("varphi", "φ")
-        put("chi", "χ"); put("psi", "ψ"); put("omega", "ω")
+        put("pi", "π"); put("varpi", "ϖ"); put("rho", "ρ"); put("varrho", "ϱ")
+        put("sigma", "σ"); put("varsigma", "ς"); put("tau", "τ"); put("upsilon", "υ")
+        put("phi", "φ"); put("varphi", "φ"); put("chi", "χ"); put("psi", "ψ")
+        put("omega", "ω")
         put("Gamma", "Γ"); put("Delta", "Δ"); put("Theta", "Θ"); put("Lambda", "Λ")
-        put("Xi", "Ξ"); put("Pi", "Π"); put("Sigma", "Σ"); put("Phi", "Φ")
-        put("Psi", "Ψ"); put("Omega", "Ω")
+        put("Xi", "Ξ"); put("Pi", "Π"); put("Sigma", "Σ"); put("Upsilon", "Υ")
+        put("Phi", "Φ"); put("Psi", "Ψ"); put("Omega", "Ω")
 
         // 运算符与关系
         put("times", "×"); put("div", "÷"); put("pm", "±"); put("mp", "∓")
         put("cdot", "·"); put("ast", "∗"); put("star", "⋆"); put("circ", "∘")
-        put("bullet", "•"); put("oplus", "⊕"); put("otimes", "⊗")
-        put("leq", "≤"); put("le", "≤"); put("geq", "≥"); put("ge", "≥")
+        put("bullet", "•"); put("oplus", "⊕"); put("ominus", "⊖"); put("otimes", "⊗")
+        put("odot", "⊙"); put("oslash", "⊘")
+        put("leq", "≤"); put("le", "≤"); put("leqslant", "≤"); put("leqq", "≦")
+        put("geq", "≥"); put("ge", "≥"); put("geqslant", "≥"); put("geqq", "≧")
         put("neq", "≠"); put("ne", "≠"); put("equiv", "≡"); put("approx", "≈")
-        put("sim", "∼"); put("propto", "∝"); put("ll", "≪"); put("gg", "≫")
+        put("sim", "∼"); put("simeq", "≃"); put("cong", "≅"); put("asymp", "≍")
+        put("propto", "∝"); put("ll", "≪"); put("gg", "≫"); put("doteq", "≐")
         put("infty", "∞"); put("partial", "∂"); put("nabla", "∇")
-        put("sum", "∑"); put("prod", "∏"); put("int", "∫"); put("oint", "∮")
+        put("sum", "∑"); put("prod", "∏"); put("coprod", "∐")
+        put("int", "∫"); put("iint", "∬"); put("iiint", "∭"); put("oint", "∮")
         put("lim", "lim"); put("log", "log"); put("ln", "ln"); put("lg", "lg")
         put("sin", "sin"); put("cos", "cos"); put("tan", "tan"); put("cot", "cot")
         put("sec", "sec"); put("csc", "csc"); put("arcsin", "arcsin")
         put("arccos", "arccos"); put("arctan", "arctan"); put("max", "max")
-        put("min", "min"); put("exp", "exp"); put("deg", "°")
+        put("min", "min"); put("exp", "exp")
+        put("deg", "°"); put("bmod", " mod "); put("pmod", " mod ")
 
         // 箭头
         put("to", "→"); put("rightarrow", "→"); put("leftarrow", "←")
         put("leftrightarrow", "↔"); put("Rightarrow", "⇒"); put("Leftarrow", "⇐")
         put("Leftrightarrow", "⇔"); put("uparrow", "↑"); put("downarrow", "↓")
+        put("updownarrow", "↕"); put("Uparrow", "⇑"); put("Downarrow", "⇓")
         put("longrightarrow", "⟶"); put("longleftarrow", "⟵")
+        put("Longrightarrow", "⟹")
+        put("mapsto", "↦"); put("nearrow", "↗"); put("searrow", "↘")
+        put("swarrow", "↙"); put("nwarrow", "↖")
 
         // 几何与集合
-        put("angle", "∠"); put("perp", "⊥"); put("parallel", "∥")
-        put("triangle", "△"); put("square", "□"); put("cong", "≅")
-        put("in", "∈"); put("notin", "∉"); put("subset", "⊂"); put("supset", "⊃")
-        put("subseteq", "⊆"); put("supseteq", "⊇"); put("cup", "∪"); put("cap", "∩")
-        put("emptyset", "∅"); put("varnothing", "∅"); put("forall", "∀")
-        put("exists", "∃"); put("neg", "¬"); put("land", "∧"); put("lor", "∨")
-        put("because", "∵"); put("therefore", "∴"); put("degree", "°")
+        put("angle", "∠"); put("measuredangle", "∡"); put("perp", "⊥")
+        put("parallel", "∥"); put("nparallel", "∦"); put("mid", "∣"); put("nmid", "∤")
+        put("triangle", "△"); put("square", "□"); put("blacksquare", "■")
+        put("in", "∈"); put("notin", "∉"); put("ni", "∋")
+        put("subset", "⊂"); put("supset", "⊃"); put("subseteq", "⊆")
+        put("supseteq", "⊇"); put("subsetneq", "⊊"); put("supsetneq", "⊋")
+        put("cup", "∪"); put("cap", "∩"); put("bigcup", "⋃"); put("bigcap", "⋂")
+        put("setminus", "∖"); put("emptyset", "∅"); put("varnothing", "∅")
+        put("forall", "∀"); put("exists", "∃"); put("nexists", "∄")
+        put("neg", "¬"); put("land", "∧"); put("lor", "∨")
+        put("because", "∵"); put("therefore", "∴")
+        put("langle", "⟨"); put("rangle", "⟩"); put("lbrace", "{"); put("rbrace", "}")
 
         // 其他
         put("dots", "…"); put("ldots", "…"); put("cdots", "⋯"); put("vdots", "⋮")
-        put("prime", "′"); put("hbar", "ℏ"); put("ell", "ℓ")
+        put("ddots", "⋱"); put("dotsb", "⋯"); put("dotsc", "…")
+        put("prime", "′"); put("hbar", "ℏ"); put("ell", "ℓ"); put("Re", "ℜ")
+        put("Im", "ℑ"); put("aleph", "ℵ"); put("wp", "℘")
+        put("cdotp", "·"); put("colon", ":")
         put("vec", ""); put("overline", ""); put("bar", ""); put("hat", "")
         put("mathrm", "")
     }

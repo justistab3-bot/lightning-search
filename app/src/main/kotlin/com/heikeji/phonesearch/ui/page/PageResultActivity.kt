@@ -34,6 +34,7 @@ import com.heikeji.phonesearch.ui.common.displayMessage
 import com.heikeji.phonesearch.ui.common.dp
 import com.heikeji.phonesearch.ui.common.showMessage
 import com.heikeji.phonesearch.ui.login.LoginActivity
+import com.heikeji.phonesearch.protocol.search.parse.SearchLoginRequiredException
 import com.heikeji.phonesearch.ui.result.AnswerImageHost
 import com.heikeji.phonesearch.ui.result.AnswerPagerAdapter
 import com.heikeji.phonesearch.ui.result.ImageViewerDialog
@@ -78,18 +79,17 @@ class PageResultActivity : AppCompatActivity(), AnswerImageHost {
     ) { result ->
         when (result.resultCode) {
             VerificationActivity.RESULT_VERIFIED -> viewModel.retryAfterVerification(grade())
-            VerificationActivity.RESULT_NEED_LOGIN -> launchLogin()
+            VerificationActivity.RESULT_NEED_LOGIN ->
+                viewModel.requireLogin(SearchLoginRequiredException().message.orEmpty())
             else -> binding.root.showMessage(getString(R.string.verification_failed))
         }
     }
 
     private val loginLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult(),
-    ) {
-        if (appContainer.sessions.current() != null) {
+    ) { loginResult ->
+        if (loginResult.resultCode == android.app.Activity.RESULT_OK && appContainer.sessions.current() != null) {
             viewModel.resumeAfterLogin(grade())
-        } else {
-            finish()
         }
     }
 
@@ -103,6 +103,22 @@ class PageResultActivity : AppCompatActivity(), AnswerImageHost {
         binding.cropButton.setOnClickListener { openSelection() }
         binding.pagePhoto.setOnClickListener { openSelection() }
         binding.aiSolveButton.setOnClickListener { launchAiSolve() }
+        binding.loginButton.setOnClickListener { launchLogin() }
+        val compact = !resources.getBoolean(R.bool.use_two_panes) &&
+            resources.configuration.screenHeightDp < 360
+        binding.photoCard.visibility = if (compact) View.GONE else View.VISIBLE
+        fun updatePhotoAction() {
+            binding.togglePhotoButton.contentDescription = getString(
+                if (binding.photoCard.visibility == View.VISIBLE) R.string.action_collapse_photo
+                else R.string.label_question_photo,
+            )
+        }
+        binding.togglePhotoButton.setOnClickListener {
+            binding.photoCard.visibility =
+                if (binding.photoCard.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+            updatePhotoAction()
+        }
+        updatePhotoAction()
 
         if (viewModel.originalHandle != null) {
             // 配置变更后重建：句柄在 ViewModel 里，直接接着渲染
@@ -190,16 +206,22 @@ class PageResultActivity : AppCompatActivity(), AnswerImageHost {
     private fun render(state: PageUiState) {
         binding.progress.visibility = if (state.loading) View.VISIBLE else View.GONE
         binding.cropButton.isEnabled = state.result != null && !state.loading
+        binding.loginState.visibility = if (state.needLogin) View.VISIBLE else View.GONE
+        binding.blockScroll.visibility = if (state.needLogin) View.GONE else View.VISIBLE
+        binding.bottomBar.visibility = if (state.needLogin) View.GONE else View.VISIBLE
+
+        if (state.needLogin) {
+            binding.loginMessageText.text = state.loginMessage
+            binding.pager.visibility = View.INVISIBLE
+            binding.emptyText.visibility = View.GONE
+            binding.indicator.visibility = View.GONE
+            return
+        }
 
         state.message?.let {
             binding.root.showMessage(it)
             viewModel.consumeMessage()
         }
-        if (state.needLogin) {
-            launchLogin()
-            return
-        }
-
         val result = state.result
         if (result == null) {
             binding.blockRow.removeAllViews()
@@ -278,6 +300,7 @@ class PageResultActivity : AppCompatActivity(), AnswerImageHost {
             text = getString(R.string.page_block_format, position + 1)
             textSize = 14f
             gravity = Gravity.CENTER
+            minimumHeight = dp(48)
             setPadding(dp(16), dp(8), dp(16), dp(8))
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
@@ -337,7 +360,7 @@ class PageResultActivity : AppCompatActivity(), AnswerImageHost {
             )
         }
         binding.pager.adapter = AnswerPagerAdapter(this, pages)
-        binding.pager.offscreenPageLimit = 1
+        binding.pager.offscreenPageLimit = ViewPager2.OFFSCREEN_PAGE_LIMIT_DEFAULT
         binding.pager.isUserInputEnabled = pages.size > 1
         binding.pager.visibility = View.VISIBLE
         binding.pager.setCurrentItem(state.selectedCandidatePosition, false)

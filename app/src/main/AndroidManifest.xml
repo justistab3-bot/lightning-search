@@ -22,14 +22,11 @@
         android:name="android.hardware.camera"
         android:required="false" />
 
-    <!--
-      包可见性（Android 11+）：官方设备保护 SDK（dpsdk）会以官方包名
-      getPackageInfo 读取签名，不声明 <queries> 会抛 NameNotFoundException，
-      原生层未处理该异常会直接 JNI abort（定位过 tombstone）。
-      闪电搜题为快对作业官方运营的精简版客户端（研发部已确认）。
-    -->
+    <!-- 系统相机查询（Android 11+ 包可见性）。 -->
     <queries>
-        <package android:name="com.kuaiduizuoye.scan" />
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE" />
+        </intent>
     </queries>
 
     <application
@@ -44,12 +41,7 @@
         android:theme="@style/Theme.FlashSearch"
         android:usesCleartextTraffic="false">
 
-        <!--
-          启动入口是首页，不是登录页。
-          登录已经改成可选项（实测搜题不需要账号），入口在首页的设置里。
-          之前这里是 LoginActivity 当 LAUNCHER，导致新装设备点图标直接进登录页，
-          连首次引导都走不到 —— 匿名模式等于没生效。
-        -->
+        <!-- 首页始终是启动入口，服务端要求登录时由结果页提供入口。 -->
         <activity
             android:name=".ui.home.HomeActivity"
             android:exported="true">
@@ -141,7 +133,7 @@
             android:windowSoftInputMode="adjustResize" />
 
         <!--
-          长按拍照搜题时，把目标文件交给系统相机写入。
+          点击拍照搜题时，把目标文件交给系统相机写入。
           只暴露 cache/captures/，exported=false，且只授予单次 URI 权限。
         -->
         <provider

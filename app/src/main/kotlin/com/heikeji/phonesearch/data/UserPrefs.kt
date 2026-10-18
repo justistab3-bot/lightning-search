@@ -6,10 +6,7 @@ import com.heikeji.phonesearch.protocol.aiwriting.AiWritingRequest
 /**
  * 本地用户偏好：年级 + 引导完成标记。
  *
- * **为什么年级要单独存**：搜题接口和 AI 作文接口都要传年级，而年级以前是从登录会话里取的
- * （`sessions.current()?.grade ?: 0`）。但实测确认搜题、整页搜题、快问 AI、AI 作文
- * **都不需要登录**（见 `SearchProbeTest`），所以没登录时也得有个年级可用，
- * 否则只能传 0 —— 那会让识别结果明显变差。
+ * 年级独立于账号保存，以便尚未登录时也能配置 AI 功能与搜题请求。
  *
  * 优先级：**登录会话的年级 > 本地年级 > [AiWritingRequest.DEFAULT_GRADE]**。
  * 登录后以账号里的为准，退出登录则回落到本地存的值。

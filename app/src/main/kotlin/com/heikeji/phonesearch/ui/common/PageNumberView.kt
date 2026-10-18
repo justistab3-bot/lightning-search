@@ -62,13 +62,13 @@ class PageNumberView @JvmOverloads constructor(
         val inset = strokePaint.strokeWidth / 2f
 
         if (active) {
-            fillPaint.color = ContextCompat.getColor(context, R.color.terracotta)
+            fillPaint.color = ContextCompat.getColor(context, R.color.brand)
             canvas.drawCircle(radius, radius, radius - inset, fillPaint)
-            textPaint.color = ContextCompat.getColor(context, R.color.ivory)
+            textPaint.color = ContextCompat.getColor(context, R.color.white)
         } else {
-            strokePaint.color = ContextCompat.getColor(context, R.color.ring_warm)
+            strokePaint.color = ContextCompat.getColor(context, R.color.line_strong)
             canvas.drawCircle(radius, radius, radius - inset, strokePaint)
-            textPaint.color = ContextCompat.getColor(context, R.color.olive_gray)
+            textPaint.color = ContextCompat.getColor(context, R.color.ink_secondary)
         }
 
         val baseline = radius - (textPaint.descent() + textPaint.ascent()) / 2f

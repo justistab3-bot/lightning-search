@@ -7,6 +7,7 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.LinearLayout
@@ -44,12 +45,15 @@ class ChatActivity : AppCompatActivity() {
     private lateinit var binding: ActivityChatBinding
     private lateinit var viewModel: ChatViewModel
     private val adapter = BubbleAdapter()
+    private var followingLatest = true
+    private var pendingFollow = false
+    private val reasoningExpansion = mutableMapOf<Long, Boolean>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityChatBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        binding.root.applySystemBarPadding(horizontal = true)
+        binding.root.applySystemBarPadding(horizontal = true, ime = true)
 
         val app = application as SearchApp
         viewModel = ViewModelProvider(
@@ -61,10 +65,50 @@ class ChatActivity : AppCompatActivity() {
         )[ChatViewModel::class.java]
 
         binding.backButton.setOnClickListener { finish() }
-        binding.clearButton.setOnClickListener { viewModel.clear() }
+        binding.clearButton.setOnClickListener {
+            followingLatest = true
+            reasoningExpansion.clear()
+            viewModel.clear()
+        }
 
         binding.messageList.layoutManager = LinearLayoutManager(this)
         binding.messageList.adapter = adapter
+        // Stream updates must not start another item animation on every partial answer.
+        binding.messageList.itemAnimator = null
+        binding.messageList.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+                if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
+                    followingLatest = false
+                    pendingFollow = false
+                }
+            }
+
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                if (recyclerView.scrollState != RecyclerView.SCROLL_STATE_IDLE) {
+                    followingLatest = !recyclerView.canScrollVertically(1)
+                }
+            }
+        })
+        // Align the measured bottom of a growing answer after layout. Position-based
+        // scrolling re-anchors oversized bubbles at their top and makes the page jump.
+        binding.messageList.viewTreeObserver.addOnPreDrawListener(
+            ViewTreeObserver.OnPreDrawListener {
+                if (pendingFollow && followingLatest && adapter.itemCount > 0) {
+                    pendingFollow = false
+                    val list = binding.messageList
+                    val manager = list.layoutManager as LinearLayoutManager
+                    val last = manager.findViewByPosition(adapter.itemCount - 1)
+                    if (last == null) {
+                        manager.scrollToPosition(adapter.itemCount - 1)
+                        pendingFollow = true
+                    } else {
+                        list.scrollBy(0, manager.getDecoratedBottom(last) -
+                            (list.height - list.paddingBottom))
+                    }
+                }
+                true
+            },
+        )
 
         binding.thinkChip.setOnCheckedChangeListener { _, _ -> viewModel.toggleThink() }
         binding.searchChip.setOnCheckedChangeListener { _, _ -> viewModel.toggleSearch() }
@@ -127,6 +171,7 @@ class ChatActivity : AppCompatActivity() {
         if (text.isBlank()) return
         binding.input.setText("")
         hideKeyboard()
+        followingLatest = true
         viewModel.send(text)
     }
 
@@ -145,6 +190,7 @@ class ChatActivity : AppCompatActivity() {
             }
             binding.input.setText("")
             hideKeyboard()
+            followingLatest = true
             viewModel.sendImage(bytes, caption)
         }
     }
@@ -204,7 +250,7 @@ class ChatActivity : AppCompatActivity() {
     }
 
     private fun render(state: ChatUiState) {
-        adapter.submit(state.bubbles)
+        val contentChanged = adapter.submit(state.bubbles)
         binding.emptyBox.isVisible = state.isEmpty
         binding.connecting.isVisible = state.connecting
 
@@ -228,9 +274,7 @@ class ChatActivity : AppCompatActivity() {
             viewModel.consumeMessage()
         }
 
-        if (state.bubbles.isNotEmpty()) {
-            binding.messageList.scrollToPosition(state.bubbles.size - 1)
-        }
+        if (contentChanged && followingLatest) pendingFollow = true
     }
 
     private fun renderSuggestions(suggestions: List<String>) {
@@ -260,10 +304,22 @@ class ChatActivity : AppCompatActivity() {
 
         private var items: List<ChatBubble> = emptyList()
 
-        fun submit(next: List<ChatBubble>) {
-            // 流式时最后一条每帧都在变，直接全量刷新最省心（气泡数量很少）
+        init { setHasStableIds(true) }
+
+        fun submit(next: List<ChatBubble>): Boolean {
+            val previous = items
+            if (previous == next) return false
             items = next
-            notifyDataSetChanged()
+            val shared = minOf(previous.size, next.size)
+            for (index in 0 until shared) {
+                if (previous[index] != next[index]) notifyItemChanged(index)
+            }
+            if (next.size > previous.size) {
+                notifyItemRangeInserted(previous.size, next.size - previous.size)
+            } else if (next.size < previous.size) {
+                notifyItemRangeRemoved(next.size, previous.size - next.size)
+            }
+            return true
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BubbleHolder {
@@ -280,6 +336,7 @@ class ChatActivity : AppCompatActivity() {
         }
 
         override fun getItemCount(): Int = items.size
+        override fun getItemId(position: Int): Long = items[position].id
     }
 
     private inner class BubbleHolder(
@@ -287,6 +344,10 @@ class ChatActivity : AppCompatActivity() {
     ) : RecyclerView.ViewHolder(item.root) {
 
         private var expanded = true
+        private var boundId = -1L
+        private var boundImage: ByteArray? = null
+        private var boundText: String? = null
+        private var wasStreaming = false
 
         fun bind(bubble: ChatBubble) {
             val isUser = bubble.role == ChatRole.USER
@@ -302,14 +363,17 @@ class ChatActivity : AppCompatActivity() {
             item.bubbleText.maxWidth =
                 (item.root.resources.displayMetrics.widthPixels * 0.82f).toInt()
 
-            item.bubbleText.text = if (isUser) {
-                bubble.text
-            } else if (bubble.streaming) {
-                // 流式期间显示纯文本：markdown/公式的整段重排版只在结束后做一次，
-                // 否则逐字刷新会卡死主线程（AI 讲解答案很长，卡顿非常明显）。
-                bubble.text
-            } else {
-                ChatMarkdown.render(bubble.text, item.bubbleText)
+            if (boundId != bubble.id || boundText != bubble.text || wasStreaming != bubble.streaming) {
+                item.bubbleText.setTextIsSelectable(!bubble.streaming)
+                val previousText = boundText
+                if (boundId == bubble.id && wasStreaming && bubble.streaming &&
+                    previousText != null && bubble.text.startsWith(previousText)
+                ) {
+                    item.bubbleText.append(bubble.text.substring(previousText.length))
+                } else {
+                    item.bubbleText.text = if (isUser || bubble.streaming) bubble.text
+                        else ChatMarkdown.render(bubble.text, item.bubbleText)
+                }
             }
             item.bubbleText.isVisible = bubble.text.isNotEmpty()
 
@@ -325,22 +389,28 @@ class ChatActivity : AppCompatActivity() {
                 } else {
                     getString(R.string.chat_reasoning)
                 }
-                item.reasoningText.text = bubble.reasoning.trim()
-                // 流式时展开让用户看到在思考，结束后自动收起
-                expanded = bubble.streaming
+                val reasoning = bubble.reasoning.trim()
+                if (item.reasoningText.text.toString() != reasoning) item.reasoningText.text = reasoning
+                expanded = reasoningExpansion[bubble.id] ?: bubble.streaming
                 applyExpanded()
                 item.reasoningHeader.setOnClickListener {
                     expanded = !expanded
+                    reasoningExpansion[bubble.id] = expanded
                     applyExpanded()
                 }
             }
 
             item.bubbleProgress.isVisible = bubble.streaming && bubble.text.isEmpty()
+            boundId = bubble.id
+            boundText = bubble.text
+            wasStreaming = bubble.streaming
         }
 
         /** 用户发的图：直接显示在气泡上方，右对齐。 */
         private fun bindImage(bubble: ChatBubble, isUser: Boolean) {
             val bytes = bubble.imageBytes
+            if (boundId == bubble.id && boundImage === bytes) return
+            boundImage = bytes
             if (bytes == null) {
                 item.bubbleImage.setImageDrawable(null)
                 item.bubbleImage.isVisible = false

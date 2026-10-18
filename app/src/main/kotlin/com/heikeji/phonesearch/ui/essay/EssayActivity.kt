@@ -30,6 +30,7 @@ import com.heikeji.phonesearch.protocol.aiwriting.EssayLanguage
 import com.heikeji.phonesearch.protocol.aiwriting.model.WritingMode
 import kotlinx.coroutines.launch
 import com.heikeji.phonesearch.data.UserPrefs
+import com.heikeji.phonesearch.ui.common.applySystemBarPadding
 
 /**
  * AI 作文。
@@ -73,6 +74,7 @@ class EssayActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_essay)
+        findViewById<View>(R.id.root).applySystemBarPadding(horizontal = true, ime = true)
 
         viewModel = ViewModelProvider(this)[EssayViewModel::class.java]
 

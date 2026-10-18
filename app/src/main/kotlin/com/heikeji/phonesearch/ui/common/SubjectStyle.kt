@@ -26,7 +26,7 @@ object SubjectStyle {
             value.contains("生物") -> Style(R.color.subject_biology, "生")
             value.contains("历史") -> Style(R.color.subject_history, "史")
             value.contains("地理") -> Style(R.color.subject_geography, "地")
-            value.contains("政治") || value.contains("思想") -> Style(R.color.subject_politics, "政")
+            value.contains("政治") || value.contains("思想") || value.contains("道德") || value.contains("法治") -> Style(R.color.subject_politics, "政")
             else -> Style(R.color.subject_default, value.substring(0, 1))
         }
     }

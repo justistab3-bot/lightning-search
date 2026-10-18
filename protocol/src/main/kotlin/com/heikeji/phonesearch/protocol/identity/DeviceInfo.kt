@@ -28,7 +28,7 @@ object DeviceInfo {
         val androidId: String,
         val typewriting: String,
         val powerOnTime: Long,
-        val memoryGb: Long,
+        val memoryBytes: Long,
         val hardDiskBytes: Long,
         val screen: String,
     )
@@ -39,8 +39,9 @@ object DeviceInfo {
         json.addProperty("did", "")
         json.addProperty("os", "android")
         json.addProperty("appId", facts.appId)
+        json.addProperty("imei", "")
         json.addProperty("imei1", "")
-        json.addProperty("imei2", "")
+        json.addProperty("imsi", "")
         json.addProperty("oaid", "")
         json.addProperty("sn", facts.sn)
         json.addProperty("androidId", facts.androidId)
@@ -56,11 +57,13 @@ object DeviceInfo {
         json.addProperty("country", facts.country)
         json.addProperty("brand", facts.brand)
         json.addProperty("model", facts.model)
-        json.addProperty("memory", facts.memoryGb)
+        // DeviceIdHelper uses getTotalMemorySize(), not getTotalMemorySizeGB().
+        // The server rejects values such as 2 with errNo=4000 (param invalid).
+        json.addProperty("memory", facts.memoryBytes)
         json.addProperty("cpu", "armeabi-v7a")
         json.addProperty("hardDisk", facts.hardDiskBytes)
         json.addProperty("sdkVersion", "4")
-        json.addProperty("uidStr", "")
+        json.addProperty("uidStr", "-1")
         json.addProperty("screen", facts.screen)
 
         val encrypted = Rc4.apply(json.toString().toByteArray(Charsets.UTF_8), ENTRY_KEY)

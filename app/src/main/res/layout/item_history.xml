@@ -9,11 +9,11 @@
     android:layout_marginEnd="20dp"
     android:clickable="true"
     android:focusable="true"
-    app:cardBackgroundColor="@color/ivory"
+    app:cardBackgroundColor="@color/surface"
     app:cardCornerRadius="16dp"
     app:cardElevation="0dp"
-    app:rippleColor="@color/warm_sand"
-    app:strokeColor="@color/border_cream"
+    app:rippleColor="@color/surface_sunken"
+    app:strokeColor="@color/line"
     app:strokeWidth="1dp">
 
     <LinearLayout
@@ -58,7 +58,7 @@
                     android:layout_weight="1"
                     android:ellipsize="end"
                     android:maxLines="1"
-                    android:textAppearance="@style/TextAppearance.FlashSearch.Serif.Section"
+                    android:textAppearance="@style/TextAppearance.FlashSearch.Section"
                     android:textSize="15sp" />
             </LinearLayout>
 
@@ -76,6 +76,6 @@
             android:layout_height="20dp"
             android:contentDescription="@null"
             android:src="@drawable/ic_chevron_right"
-            app:tint="@color/stone_gray" />
+            app:tint="@color/ink_tertiary" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
