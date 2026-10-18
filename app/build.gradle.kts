@@ -31,8 +31,8 @@ android {
         minSdk = 21
         targetSdk = 37
         // 每轮迭代都往上走：装到机器上后可以直接从「设置 - 应用」或首页底部确认版本。
-        versionCode = 41
-        versionName = "1.36.1"
+        versionCode = 42
+        versionName = "1.36.2"
 
         buildConfigField("String", "UMENG_APPKEY", "\"$umengAppKey\"")
     }
@@ -95,6 +95,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.exifinterface)
     implementation(libs.androidx.webkit)
+    implementation(libs.androidx.dynamicanimation)
     implementation(libs.androidx.camera.core)
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)

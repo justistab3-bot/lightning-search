@@ -14,6 +14,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
+import com.heikeji.phonesearch.ui.common.UiMotion
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -290,6 +291,7 @@ class ChatActivity : AppCompatActivity() {
                 }
             }
             binding.suggestionGroup.addView(chip)
+            UiMotion.bindControl(chip)
         }
     }
 
@@ -303,11 +305,15 @@ class ChatActivity : AppCompatActivity() {
     private inner class BubbleAdapter : RecyclerView.Adapter<BubbleHolder>() {
 
         private var items: List<ChatBubble> = emptyList()
+        private var receivedInitialList = false
+        private val pendingEntrances = mutableSetOf<Long>()
 
         init { setHasStableIds(true) }
 
         fun submit(next: List<ChatBubble>): Boolean {
             val previous = items
+            val animateInsertions = receivedInitialList
+            receivedInitialList = true
             if (previous == next) return false
             items = next
             val shared = minOf(previous.size, next.size)
@@ -315,8 +321,10 @@ class ChatActivity : AppCompatActivity() {
                 if (previous[index] != next[index]) notifyItemChanged(index)
             }
             if (next.size > previous.size) {
+                if (animateInsertions) pendingEntrances.addAll(next.drop(previous.size).map { it.id })
                 notifyItemRangeInserted(previous.size, next.size - previous.size)
             } else if (next.size < previous.size) {
+                pendingEntrances.retainAll(next.map { it.id }.toSet())
                 notifyItemRangeRemoved(next.size, previous.size - next.size)
             }
             return true
@@ -333,6 +341,7 @@ class ChatActivity : AppCompatActivity() {
 
         override fun onBindViewHolder(holder: BubbleHolder, position: Int) {
             holder.bind(items[position])
+            if (pendingEntrances.remove(items[position].id)) UiMotion.reveal(holder.itemView)
         }
 
         override fun getItemCount(): Int = items.size
@@ -396,8 +405,9 @@ class ChatActivity : AppCompatActivity() {
                 item.reasoningHeader.setOnClickListener {
                     expanded = !expanded
                     reasoningExpansion[bubble.id] = expanded
-                    applyExpanded()
+                    applyExpanded(animate = true)
                 }
+                UiMotion.bindControl(item.reasoningHeader)
             }
 
             item.bubbleProgress.isVisible = bubble.streaming && bubble.text.isEmpty()
@@ -428,8 +438,8 @@ class ChatActivity : AppCompatActivity() {
             item.bubbleImage.isVisible = true
         }
 
-        private fun applyExpanded() {
-            item.reasoningText.isVisible = expanded
+        private fun applyExpanded(animate: Boolean = false) {
+            UiMotion.visible(item.reasoningText, expanded, animate)
             item.reasoningHeader.setCompoundDrawablesRelativeWithIntrinsicBounds(
                 0,
                 0,

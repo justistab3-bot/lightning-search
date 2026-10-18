@@ -10,6 +10,7 @@ import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.lifecycleScope
 import com.heikeji.phonesearch.R
+import com.heikeji.phonesearch.ui.common.UiMotion
 import com.heikeji.phonesearch.image.RemoteImageLoader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -70,6 +71,8 @@ object ImageViewerDialog {
         Dialog(activity, android.R.style.Theme_Black_NoTitleBar_Fullscreen).apply {
             setContentView(R.layout.dialog_image_viewer)
             findViewById<View>(R.id.closeButton).setOnClickListener { dismiss() }
+            window?.setWindowAnimations(R.style.Animation_FlashSearch_Dialog)
+            setOnShowListener { UiMotion.bindTree(window!!.decorView) }
         }
 
     private fun decodeSampled(jpeg: ByteArray): Bitmap? {

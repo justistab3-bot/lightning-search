@@ -11,6 +11,7 @@ import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import com.heikeji.phonesearch.ui.common.UiMotion
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -171,7 +172,7 @@ class ResultActivity : AppCompatActivity(), AnswerScrollHost, AnswerImageHost {
             binding.togglePhoto.visibility = View.GONE
         } else {
             setPhotoHeight(expandedHeight, animate = false)
-            binding.togglePhoto.setOnClickListener { setReadingMode(!readingMode) }
+            binding.togglePhoto.setOnClickListener { setReadingMode(!readingMode, animate = true) }
         }
 
         binding.questionPhoto.setOnClickListener {
@@ -283,6 +284,7 @@ class ResultActivity : AppCompatActivity(), AnswerScrollHost, AnswerImageHost {
         retryAction = onRetry
         binding.retryButton.visibility = if (onRetry == null) View.GONE else View.VISIBLE
         binding.retryButton.setText(R.string.action_retry)
+        UiMotion.reveal(binding.messageState)
     }
 
     private fun showLoginRequired(message: String) {
@@ -326,6 +328,7 @@ class ResultActivity : AppCompatActivity(), AnswerScrollHost, AnswerImageHost {
         binding.pager.offscreenPageLimit = ViewPager2.OFFSCREEN_PAGE_LIMIT_DEFAULT
         binding.pager.isUserInputEnabled = pages.size > 1
         binding.pager.visibility = View.VISIBLE
+        UiMotion.reveal(binding.pager)
         hasMultiplePages = pages.size > 1
         updateIndicatorVisibility()
         updateAiSolveButton()
@@ -348,6 +351,7 @@ class ResultActivity : AppCompatActivity(), AnswerScrollHost, AnswerImageHost {
             number.number = position + 1
             tab.customView = number
         }.also { it.attach() }
+        UiMotion.bindTree(binding.indicator)
 
         updateHeader(0)
     }
@@ -402,41 +406,15 @@ class ResultActivity : AppCompatActivity(), AnswerScrollHost, AnswerImageHost {
         }
     }
 
-    private fun setReadingMode(enabled: Boolean, animate: Boolean = true) {
+    private fun setReadingMode(enabled: Boolean, animate: Boolean = false) {
         readingMode = enabled
-        if (!isLandscape) setPhotoPaneVisible(!enabled, animate = false)
+        if (!isLandscape) UiMotion.visible(binding.photoPane, !enabled, animate)
         updateIndicatorVisibility()
 
         val now = SystemClock.elapsedRealtime()
         lastAutoToggleAt = now
         scrollAccumulator = 0
         suppressScrollUntil = now + SCROLL_SUPPRESS_MS
-    }
-
-    /**
-     * 阅读模式下原图**整块隐藏**（不是留一条），把竖向空间全部让给答案。
-     * 恢复靠向下滚动；淡出过程中若已退出阅读模式则不隐藏。
-     */
-    private fun setPhotoPaneVisible(visible: Boolean, animate: Boolean) {
-        val pane = binding.photoPane
-        pane.animate().cancel()
-        if (visible) {
-            pane.visibility = View.VISIBLE
-            if (animate) {
-                pane.animate().alpha(1f).setDuration(FADE_IN_MS).start()
-            } else {
-                pane.alpha = 1f
-            }
-        } else if (animate) {
-            pane.animate()
-                .alpha(0f)
-                .setDuration(FADE_OUT_MS)
-                .withEndAction { if (readingMode) pane.visibility = View.GONE }
-                .start()
-        } else {
-            pane.alpha = 0f
-            pane.visibility = View.GONE
-        }
     }
 
     private fun setPhotoHeight(target: Int, animate: Boolean) {
@@ -466,6 +444,7 @@ class ResultActivity : AppCompatActivity(), AnswerScrollHost, AnswerImageHost {
             if (answerFullscreen) R.string.action_answer_exit_fullscreen
             else R.string.action_answer_fullscreen,
         )
+        UiMotion.reveal(binding.pager)
     }
 
     /** 答案页里点击图片：打开全屏查看器。 */
@@ -533,8 +512,6 @@ class ResultActivity : AppCompatActivity(), AnswerScrollHost, AnswerImageHost {
         /** 程序化切换布局后屏蔽滚动回调的时长，避免「自己造成的滚动」把状态切回去。 */
         private const val SCROLL_SUPPRESS_MS = 700L
 
-        private const val FADE_IN_MS = 160L
-        private const val FADE_OUT_MS = 140L
 
         fun newIntent(context: Context, jpegPath: String): Intent =
             Intent(context, ResultActivity::class.java).putExtra(EXTRA_JPEG_PATH, jpegPath)

@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <dimen name="home_capture_height">80dp</dimen>
+    <dimen name="home_capture_height">64dp</dimen>
     <dimen name="home_tool_height">56dp</dimen>
+    <dimen name="home_greeting_size">28sp</dimen>
+    <dimen name="home_tagline_size">16sp</dimen>
+    <dimen name="home_header_min_height">100dp</dimen>
 </resources>

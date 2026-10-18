@@ -29,7 +29,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:minHeight="56dp">
+                android:minHeight="@dimen/home_header_min_height">
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -42,16 +42,14 @@
                         android:id="@+id/greeting"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textAppearance="@style/TextAppearance.FlashSearch.Title"
-                        android:maxLines="2" />
+                        android:textAppearance="@style/TextAppearance.FlashSearch.HomeGreeting" />
                     <TextView
                         android:id="@+id/tagline"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:textAppearance="@style/TextAppearance.FlashSearch.Caption"
-                        android:textColor="@color/ink_secondary"
-                        android:maxLines="2" />
+                        android:layout_marginTop="8dp"
+                        android:textAppearance="@style/TextAppearance.FlashSearch.HomeTagline"
+                        android:textColor="@color/ink_secondary" />
                 </LinearLayout>
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/settingsButton"
@@ -76,12 +74,12 @@
                 android:layout_marginTop="8dp"
                 android:layout_marginBottom="8dp"
                 android:orientation="horizontal"
-                android:gravity="center_vertical"
+                android:gravity="top"
                 android:baselineAligned="false">
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/heroCard"
                     android:layout_width="0dp"
-                    android:layout_height="match_parent"
+                    android:layout_height="wrap_content"
                     android:layout_weight="1.25"
                     app:cardBackgroundColor="@color/surface"
                     app:cardCornerRadius="@dimen/radius_md"
@@ -90,7 +88,7 @@
                     app:strokeWidth="1dp">
                     <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="match_parent"
+                        android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:padding="@dimen/space_lg"
                         android:gravity="center_vertical">
@@ -135,8 +133,7 @@
                             android:id="@+id/takePhotoButton"
                             style="@style/Widget.FlashSearch.PrimaryButton"
                             android:layout_width="match_parent"
-                            android:layout_height="0dp"
-                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
                             android:layout_marginTop="12dp"
                             android:minHeight="@dimen/home_capture_height"
                             android:minWidth="0dp"
@@ -147,15 +144,15 @@
                             android:paddingStart="8dp"
                             android:paddingEnd="8dp"
                             android:text="@string/action_take_photo"
-                            android:textSize="20sp"
+                            android:textSize="17sp"
                             android:textColor="@color/on_brand_container"
                             android:gravity="center"
                             android:elevation="0dp"
-                            android:stateListAnimator="@null"
+                            android:stateListAnimator="@animator/control_spring"
                             app:backgroundTint="@color/brand_container"
                             app:icon="@drawable/ic_camera"
                             app:iconTint="@color/brand"
-                            app:iconSize="28dp"
+                            app:iconSize="26dp"
                             app:iconGravity="textStart"
                             app:iconPadding="10dp" />
                         <TextView

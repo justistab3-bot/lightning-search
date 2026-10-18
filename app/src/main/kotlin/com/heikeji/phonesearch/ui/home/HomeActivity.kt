@@ -37,6 +37,7 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.heikeji.phonesearch.protocol.search.model.SearchMode
 import com.heikeji.phonesearch.ui.camera.CameraActivity
 import com.heikeji.phonesearch.ui.common.Greetings
+import com.heikeji.phonesearch.ui.common.UiMotion
 import com.heikeji.phonesearch.ui.common.SearchEntry
 import com.heikeji.phonesearch.ui.common.applySystemBarPadding
 import com.heikeji.phonesearch.ui.common.dp
@@ -148,6 +149,7 @@ class HomeActivity : AppCompatActivity() {
                 if (checkedId == R.id.modePage) R.string.mode_hint_page
                 else R.string.mode_hint_single,
             )
+            UiMotion.reveal(binding.modeHint)
         }
         binding.modeHint.setText(
             if (currentMode() == SearchMode.PAGE) R.string.mode_hint_page else R.string.mode_hint_single,
@@ -510,16 +512,20 @@ class HomeActivity : AppCompatActivity() {
         if (historyDialog != null) return
         val panel = DialogRecentSearchesBinding.inflate(layoutInflater)
         val dialog = BottomSheetDialog(this)
+        dialog.dismissWithAnimation = true
         historyDialog = dialog
         dialog.setContentView(panel.root)
         panel.closeHistoryButton.setOnClickListener { dialog.dismiss() }
         panel.historyStats.setText(R.string.home_history_loading)
         dialog.setOnShowListener {
+            UiMotion.bindTree(panel.root)
+            UiMotion.rotate(binding.historyChevron, 90f)
             resizeHistoryPanel(panel, dialog, 0)
             dialog.behavior.skipCollapsed = true
             dialog.behavior.state = BottomSheetBehavior.STATE_EXPANDED
         }
         dialog.setOnDismissListener {
+            UiMotion.rotate(binding.historyChevron, 0f)
             historyJob?.cancel()
             historyJob = null
             historyDialog = null
@@ -568,6 +574,7 @@ class HomeActivity : AppCompatActivity() {
                     dialog.dismiss()
                     startActivity(ResultActivity.historyIntent(this@HomeActivity, entry.id))
                 }
+                UiMotion.bindTree(row.root)
                 panel.historyList.addView(row.root)
                 row.historyThumb.setImageBitmap(withContext(Dispatchers.IO) {
                     decodeThumbnail(entry.questionFile)

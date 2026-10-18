@@ -16,6 +16,7 @@ import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.heikeji.phonesearch.ui.common.UiMotion
 import androidx.core.widget.NestedScrollView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
@@ -193,7 +194,7 @@ class EssayActivity : AppCompatActivity() {
     }
 
     private fun renderFullscreen() {
-        configArea.visibility = if (fullscreen) View.GONE else View.VISIBLE
+        UiMotion.visible(configArea, !fullscreen)
         fullscreenButton.text = getString(
             if (fullscreen) R.string.essay_exit_fullscreen else R.string.essay_fullscreen,
         )
@@ -287,7 +288,7 @@ class EssayActivity : AppCompatActivity() {
 
         // 提纲卡片：仅提纲类模式显示
         val showOutline = state.mode.needsThought && state.outline.isNotBlank()
-        outlineCard.visibility = if (showOutline) View.VISIBLE else View.GONE
+        UiMotion.visible(outlineCard, showOutline)
         if (showOutline) outlineText.text = state.outline
 
         // 生成按钮
@@ -312,7 +313,7 @@ class EssayActivity : AppCompatActivity() {
         } else {
             getString(R.string.essay_empty_result)
         }
-        copyButton.visibility = if (state.done && state.hasResult) View.VISIBLE else View.GONE
+        UiMotion.visible(copyButton, state.done && state.hasResult)
 
         // 流式期间跟随到底部
         if (state.running && state.hasResult) scrollResultToBottom()

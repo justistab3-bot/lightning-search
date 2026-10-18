@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="motion_state" type="id" />
+    <item name="motion_feedback_bound" type="id" />
+    <item name="motion_recycler_bound" type="id" />
+
+    <style name="Animation.FlashSearch.Page" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/page_enter</item>
+        <item name="android:activityOpenExitAnimation">@anim/page_exit</item>
+        <item name="android:activityCloseEnterAnimation">@anim/page_return</item>
+        <item name="android:activityCloseExitAnimation">@anim/page_close</item>
+    </style>
+    <style name="Animation.FlashSearch.Dialog" parent="@android:style/Animation.Dialog">
+        <item name="android:windowEnterAnimation">@anim/dialog_enter</item>
+        <item name="android:windowExitAnimation">@anim/dialog_exit</item>
+    </style>
+    <style name="ThemeOverlay.FlashSearch.Dialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="android:windowAnimationStyle">@style/Animation.FlashSearch.Dialog</item>
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.FlashSearch.TextButton</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.FlashSearch.TextButton</item>
+        <item name="buttonBarNeutralButtonStyle">@style/Widget.FlashSearch.TextButton</item>
+    </style>
+</resources>

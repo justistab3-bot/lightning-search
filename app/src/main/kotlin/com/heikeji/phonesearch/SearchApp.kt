@@ -23,6 +23,7 @@ import com.heikeji.phonesearch.net.SearchApi
 import com.heikeji.phonesearch.search.SearchChallengeStore
 import com.heikeji.phonesearch.search.SearchRepository
 import com.heikeji.phonesearch.ui.offline.NoNetworkActivity
+import com.heikeji.phonesearch.ui.common.UiMotion
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -124,8 +125,19 @@ class SearchApp : Application() {
             if (resumedActivity.get() === activity) resumedActivity = WeakReference(null)
         }
 
-        override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
-        override fun onActivityStarted(activity: Activity) = Unit
+        override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
+            if (android.os.Build.VERSION.SDK_INT >= 34) {
+                activity.overrideActivityTransition(Activity.OVERRIDE_TRANSITION_OPEN, R.anim.page_enter, R.anim.page_exit)
+                activity.overrideActivityTransition(Activity.OVERRIDE_TRANSITION_CLOSE, R.anim.page_return, R.anim.page_close)
+            }
+        }
+        override fun onActivityStarted(activity: Activity) {
+            activity.window.decorView.post {
+                if (!activity.isDestroyed && !activity.isFinishing) {
+                    UiMotion.bindTree(activity.findViewById(android.R.id.content))
+                }
+            }
+        }
         override fun onActivityStopped(activity: Activity) = Unit
         override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
         override fun onActivityDestroyed(activity: Activity) = Unit

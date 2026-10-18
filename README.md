@@ -31,7 +31,7 @@
 - 应用名：**闪电搜题**
 - 包名：`com.heikeji.phonesearch`（与原手表版隔离，可共存）
 - minSdk 21 / targetSdk 37 / compileSdk 37
-- 当前版本：**v1.36.1**（见 [VERSION.md](VERSION.md)）
+- 当前版本：**v1.36.2**（见 [VERSION.md](VERSION.md)）
 
 ## 账号与功能
 

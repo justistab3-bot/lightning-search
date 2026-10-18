@@ -12,6 +12,7 @@ import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import com.heikeji.phonesearch.ui.common.UiMotion
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -109,13 +110,12 @@ class PageResultActivity : AppCompatActivity(), AnswerImageHost {
         binding.photoCard.visibility = if (compact) View.GONE else View.VISIBLE
         fun updatePhotoAction() {
             binding.togglePhotoButton.contentDescription = getString(
-                if (binding.photoCard.visibility == View.VISIBLE) R.string.action_collapse_photo
+                if (UiMotion.isShown(binding.photoCard)) R.string.action_collapse_photo
                 else R.string.label_question_photo,
             )
         }
         binding.togglePhotoButton.setOnClickListener {
-            binding.photoCard.visibility =
-                if (binding.photoCard.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+            UiMotion.visible(binding.photoCard, !UiMotion.isShown(binding.photoCard))
             updatePhotoAction()
         }
         updatePhotoAction()
@@ -315,6 +315,7 @@ class PageResultActivity : AppCompatActivity(), AnswerImageHost {
             )
             isClickable = true
             setOnClickListener { viewModel.selectBlock(position) }
+            UiMotion.bindControl(this)
         }
 
     private fun renderStatus(state: PageUiState) {
@@ -363,6 +364,7 @@ class PageResultActivity : AppCompatActivity(), AnswerImageHost {
         binding.pager.offscreenPageLimit = ViewPager2.OFFSCREEN_PAGE_LIMIT_DEFAULT
         binding.pager.isUserInputEnabled = pages.size > 1
         binding.pager.visibility = View.VISIBLE
+        UiMotion.reveal(binding.pager)
         binding.pager.setCurrentItem(state.selectedCandidatePosition, false)
 
         pageCallback?.let { binding.pager.unregisterOnPageChangeCallback(it) }
@@ -384,6 +386,7 @@ class PageResultActivity : AppCompatActivity(), AnswerImageHost {
             null
         }
         binding.indicator.visibility = if (pages.size > 1) View.VISIBLE else View.GONE
+        UiMotion.bindTree(binding.indicator)
     }
 
     // ------------------------------------------------------------------ 操作
