@@ -23,6 +23,7 @@ import com.heikeji.phonesearch.net.SearchApi
 import com.heikeji.phonesearch.search.SearchChallengeStore
 import com.heikeji.phonesearch.search.SearchRepository
 import com.heikeji.phonesearch.ui.offline.NoNetworkActivity
+import com.heikeji.phonesearch.ui.offline.OfflinePromptPolicy
 import com.heikeji.phonesearch.ui.common.UiMotion
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -38,6 +39,7 @@ class SearchApp : Application() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var resumedActivity = WeakReference<Activity>(null)
+    private val offlinePromptPolicy = OfflinePromptPolicy()
 
     override fun onCreate() {
         super.onCreate()
@@ -90,7 +92,7 @@ class SearchApp : Application() {
     }
 
     /**
-     * 断网时拉起全屏提示页。
+     * 每次断网只自动拉起一次提示页，允许用户返回原页面。
      *
      * 两条触发路径：
      * 1. 每次有页面回到前台时检查一次（覆盖「打开应用时就没网」）
@@ -99,6 +101,7 @@ class SearchApp : Application() {
     private fun observeConnectivity() {
         scope.launch {
             container.network.online.collect { online ->
+                offlinePromptPolicy.onNetworkChanged(online)
                 if (!online) showOfflinePage()
             }
         }
@@ -106,19 +109,21 @@ class SearchApp : Application() {
 
     private fun showOfflinePage() {
         val activity = resumedActivity.get() ?: return
-        if (activity is NoNetworkActivity) return
         if (activity.isFinishing || activity.isDestroyed) return
+        // 先占用本次断网的提示机会，防止生命周期与网络回调重复启动。
+        if (!offlinePromptPolicy.tryShow(container.network.isOnline())) return
+        if (activity is NoNetworkActivity) return
         runCatching {
             activity.startActivity(Intent(activity, NoNetworkActivity::class.java))
+        }.onFailure {
+            offlinePromptPolicy.onLaunchFailed()
         }
     }
 
     private inner class ActivityTracker : ActivityLifecycleCallbacks {
         override fun onActivityResumed(activity: Activity) {
             resumedActivity = WeakReference(activity)
-            if (activity !is NoNetworkActivity && !container.network.isOnline()) {
-                showOfflinePage()
-            }
+            showOfflinePage()
         }
 
         override fun onActivityPaused(activity: Activity) {

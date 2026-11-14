@@ -100,9 +100,10 @@
     <string name="notice_decline">不同意</string>
     <!-- 断网提示 -->
     <string name="no_network_title">网络好像断开了</string>
-    <string name="no_network_message">检查一下 WiFi 或移动数据是否正常，连上后会自动继续。</string>
+    <string name="no_network_message">请检查 WiFi 或移动数据，联网后会自动返回。也可以按返回键或点击下方“返回”。</string>
     <string name="no_network_retry">重新检测</string>
     <string name="no_network_settings">打开网络设置</string>
+    <string name="no_network_back">返回</string>
     <string name="no_network_still_offline">还是没有连上，再检查一下网络开关吧</string>
     <!-- 系统相机 -->
     <string name="system_camera_unavailable">没有找到可用的系统相机应用</string>

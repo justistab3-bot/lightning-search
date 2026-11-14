@@ -31,9 +31,9 @@
 
 ## 下载与兼容性
 
-**当前版本：v1.36.2（versionCode 42）**
+**当前版本：v1.36.3（versionCode 43）**
 
-[下载 v1.36.2 APK](https://gitee.com/tab3/lightning-search/releases/download/v1.36.2/lightning-search-v1.36.2.apk) · [发行说明](https://gitee.com/tab3/lightning-search/releases/tag/v1.36.2) · [全部发行版](https://gitee.com/tab3/lightning-search/releases)
+[下载 v1.36.3 APK](https://gitee.com/tab3/lightning-search/releases/download/v1.36.3/lightning-search-v1.36.3.apk) · [发行说明](https://gitee.com/tab3/lightning-search/releases/tag/v1.36.3) · [全部发行版](https://gitee.com/tab3/lightning-search/releases)
 
 | 项目 | 说明 |
 |---|---|
@@ -43,10 +43,10 @@
 | 架构 | 保留 `armeabi-v7a` 32 位支持，同时包含 `arm64-v8a`、`x86`、`x86_64` |
 | 升级 | 本仓库发行包沿用既有签名链，可覆盖安装；账号存储格式与密钥沿用旧版 |
 
-v1.36.2 APK 的 SHA-256：
+v1.36.3 APK 的 SHA-256：
 
 ```text
-C39240057ED74DB69CAE4BEA4694D7AC7AAD1183294B3CDE2A0654CB24167F1D
+20AD6F14A6A41F45EDA819C4F1BF7423BA4A8304BBFAB512EECE2E565E70E355
 ```
 
 ## 主要功能
@@ -57,6 +57,12 @@ C39240057ED74DB69CAE4BEA4694D7AC7AAD1183294B3CDE2A0654CB24167F1D
 - **💬 快问 AI**：文字或图片提问、多轮对话、深度思考、联网搜索、推荐问题和停止生成。
 - **最近搜题**：从首页打开历史面板，查看题目和统计；历史记录按需加载。
 - **界面适配**：问候与鼓励语、深浅色主题、横竖屏及窄屏布局、断网提示、应用内更新。
+
+## v1.36.3 的修复
+
+修复断网提示页按返回键后立即重新弹出的问题。同一次断网只自动提示一次，返回、切换页面或旋转屏幕时不再循环弹出；网络恢复后，下一次断网仍会正常提示。
+
+提示页新增“返回”按钮，支持系统返回键；重新检测、网络设置与联网自动关闭入口继续保留。内容可滚动，窄屏、横屏和大字体下也能找到返回入口。
 
 ## v1.36.2 的界面与动效
 
@@ -143,7 +149,7 @@ Gitee release API → 比较版本号 → 应用内下载 APK → 系统安装�
 
 先查询 `/releases/latest`；若没有可用 APK，再从发行列表选择版本号最高且带 APK 的记录。下载先写入 `.part`，完成后改名；安装通过 FileProvider 授权。Android 8+ 若需“安装未知应用”授权，会打开系统设置并在授权后继续。
 
-`NetworkMonitor` 监听网络变化，断网时显示全屏提示页，恢复网络后返回原页面；旧系统使用兼容的网络回调。页面提供重新检测和打开网络设置入口。
+`NetworkMonitor` 监听网络变化，每次断网自动提示一次，恢复网络后返回原页面；旧系统使用兼容的网络回调。页面支持系统返回键，并提供返回、重新检测和打开网络设置入口。用户返回后，同一次断网不会反复打断操作。
 
 启动时回收陈旧安装包与相机临时图片，历史记录和 WebView 缓存设有容量限制。首页设置入口可查看和管理相关存储。
 
@@ -180,7 +186,7 @@ pwsh -File tools/package-apk.ps1
 
 AGP 已内置 Android Kotlin 支持，**不要再添加 `org.jetbrains.kotlin.android` 插件**，否则会出现扩展重复注册。可选的友盟 AppKey 从本机 `local.properties` 读取；未配置时跳过正式初始化，不影响主要功能。
 
-v1.36.2 的交付检查：203 项单元测试通过，2 项网络探针默认跳过，Android Lint 0 错误，APK 编译与签名核对通过。该轮未进行模拟器、真机或接口可用性测试。
+v1.36.3 的交付检查：208 项单元测试通过（含 5 项断网提示回归），2 项网络探针默认跳过，Android Lint 0 错误，APK 编译与升级签名核对通过。该轮未进行模拟器、真机或接口可用性测试。
 
 ## 工程结构
 

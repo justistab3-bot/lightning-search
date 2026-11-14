@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
  * 断网时的全屏提示页。
  *
  * 由 [com.heikeji.phonesearch.SearchApp] 在检测到无网络时拉起；
- * 网络恢复后自己关掉，用户不需要手动返回。
+ * 网络恢复后自己关掉，也允许通过系统返回键或页面按钮返回。
  */
 class NoNetworkActivity : AppCompatActivity() {
 
@@ -30,6 +30,7 @@ class NoNetworkActivity : AppCompatActivity() {
         setContentView(binding.root)
         binding.root.applySystemBarPadding(horizontal = true)
 
+        binding.backButton.setOnClickListener { finish() }
         binding.retryButton.setOnClickListener {
             if (appContainer.network.isOnline()) {
                 finish()
